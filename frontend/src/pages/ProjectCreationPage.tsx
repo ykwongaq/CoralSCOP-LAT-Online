@@ -4,22 +4,22 @@ import Header from "../components/layout/Header";
 import SideBar from "../components/layout/SideBar";
 import { SideBarButton } from "../components/common/SideBarButtons";
 import { UploadImagePanel, ProjectSettingPanel } from "../components/panels";
-import type { PanelId } from "../types";
+import { UploadImagePanelID, ProjectSettingPanelID } from "../components/panels";
 
-const PANEL_CONFIG: { id: PanelId; icon: string; label: string }[] = [
-  { id: "gallery", icon: "ico-grid", label: "Gallery" },
-  { id: "settings", icon: "ico-gear", label: "Setting" },
+const PANEL_CONFIG: { id: string; icon: string; label: string }[] = [
+  { id: UploadImagePanelID, icon: "ico-grid", label: "Gallery" },
+  { id: ProjectSettingPanelID, icon: "ico-gear", label: "Setting" },
 ];
 
 function ProjectCreationPage() {
   const navigate = useNavigate();
-  const [activePanel, setActivePanel] = useState<PanelId>("gallery");
+  const [activePanel, setActivePanel] = useState<string>(UploadImagePanelID);
 
   const handleBackToHome = useCallback(() => {
     navigate("/");
   }, [navigate]);
 
-  const handlePanelChange = useCallback((panelId: PanelId) => {
+  const handlePanelChange = useCallback((panelId: string) => {
     setActivePanel(panelId);
   }, []);
 
@@ -46,12 +46,12 @@ function ProjectCreationPage() {
           ))}
         </SideBar>
         <main className="main-section">
-          {activePanel === "gallery" && (
+          {activePanel === UploadImagePanelID && (
             <div className="page active-page" id="galleryPage">
               <UploadImagePanel />
             </div>
           )}
-          {activePanel === "settings" && (
+          {activePanel === ProjectSettingPanelID && (
             <div className="page active-page" id="settingPage">
               <ProjectSettingPanel />
             </div>

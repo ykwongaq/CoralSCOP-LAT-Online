@@ -1,3 +1,5 @@
+export const ProjectSettingPanelID = "project-creation-setting-panel";
+
 export default function ProjectSettingPanel() {
   return (
     <div className="main-section__inner">

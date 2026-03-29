@@ -2,6 +2,9 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import EntryPage from "./pages/EntryPage";
 import ProjectCreationPage from "./pages/ProjectCreationPage";
 import MainPage from "./pages/MainPage";
+import "./App.css";
+import "./assets/icon/style.css";
+
 
 function App() {
   return (
