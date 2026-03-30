@@ -1655,16 +1655,13 @@ html:has(#confirm-button:not(.hidden)) #default-bar .float-bar__inner {
   margin-top: 14px;
   margin-bottom: 8px;
 }
-#drop-container {
-  height: calc(100vh * 0.07);
+.drop-container {
+  height: calc(100vh * 0.1);
   border: 2px dashed black;
   display: flex;
   justify-content: center;
   margin: 5px;
 }
-/* #drop-container:has(~ #deselected-gallery .gallery-item) {
-    display: none;
-} */
 
 .drop-text {
   display: flex;
