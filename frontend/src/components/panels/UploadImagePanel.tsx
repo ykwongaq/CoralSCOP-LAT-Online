@@ -1,6 +1,7 @@
 export const UploadImagePanelID = "upload-image-panel";
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import { useProjectCreation } from "../../features/ProjectCreation/context";
+import { usePopMessage } from "../common/PopUpMessages/PopMessageContext";
 import ImageUploader from "../common/ImageUploader";
 import type {
   ImageSelectionData,
@@ -10,9 +11,21 @@ import type { ImageData } from "../../types/ImageData";
 import ImageGallery from "../common/ImageGallery/ImageGallery";
 import BottomBar from "../layout/BottomBar";
 import Button from "../common/Button";
+import type { ApiRequestHandle } from "../../types/api";
+import { createProject } from "../../services/ProjectService";
 
 export default function UploadImagePanel() {
   const { state, dispatch } = useProjectCreation();
+  const {
+    showMessage,
+    closeMessage,
+    showError,
+    showLoading,
+    updateLoadingProgress,
+  } = usePopMessage();
+
+  // Holds the active request handle so we can cancel it from the modal button.
+  const requestHandleRef = useRef<ApiRequestHandle | null>(null);
 
   const handleImages = useCallback(
     (images: ImageSelectionData[]) => {
@@ -37,16 +50,61 @@ export default function UploadImagePanel() {
   }, [dispatch]);
 
   const handleCreateProject = useCallback(() => {
-    // Get all the selected images, and the config
-    const selectedImages: ImageData[] = state.imageDataList
-      .filter((img) => img.selected)
-      .map(({ imageUrl, imageName }) => ({
-        imageUrl,
-        imageName,
-      }));
-    const config: ProjectConfig = state.config;
-    const modelSelection: string | null = state.model_selection;
-  }, [dispatch]);
+    requestHandleRef.current = createProject(
+      {
+        images: state.imageDataList,
+        config: state.config,
+        model: state.model_selection,
+      },
+      {
+        onLoading: () => {
+          showLoading({
+            title: "Creating Project",
+            content: "Uploading images and processing…",
+            progress: null,
+            buttons: [
+              {
+                label: "Cancel",
+                onClick: () => {
+                  requestHandleRef.current?.cancel();
+                  requestHandleRef.current = null;
+                  closeMessage();
+                },
+              },
+            ],
+          });
+        },
+        onProgress: (pct) => {
+          updateLoadingProgress(pct);
+        },
+        onError: (err) => {
+          showError({
+            title: "Failed to Create Project",
+            content: "An error occurred while communicating with the server.",
+            errorMessage: err.message,
+            buttons: [{ label: "Close", onClick: closeMessage }],
+          });
+        },
+        onComplete: (_data) => {
+          closeMessage();
+          showMessage({
+            title: "Project Created",
+            content: "Your project has been created successfully.",
+            buttons: [{ label: "OK", onClick: closeMessage }],
+          });
+        },
+      },
+    );
+  }, [
+    state.imageDataList,
+    state.config,
+    state.model_selection,
+    showLoading,
+    showError,
+    showMessage,
+    closeMessage,
+    updateLoadingProgress,
+  ]);
 
   return (
     <div className="main-section__inner">
@@ -74,7 +132,7 @@ export default function UploadImagePanel() {
             Select All
           </Button>
           <Button
-            onClick={() => console.log("Create project")}
+            onClick={handleCreateProject}
             disabled={state.imageDataList.every((image) => !image.selected)}
           >
             Create Project

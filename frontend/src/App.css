@@ -1543,11 +1543,6 @@ html:has(#confirm-button:not(.hidden)) #default-bar .float-bar__inner {
   align-items: center;
   justify-content: center;
 }
-.modal-pop:not(.active) {
-  opacity: 0;
-  visibility: hidden;
-  transform: translate(0, -20px);
-}
 .modal-pop__inner {
   border-radius: 10px;
   background-color: #fff;
@@ -1583,7 +1578,7 @@ html:has(#confirm-button:not(.hidden)) #default-bar .float-bar__inner {
   font-weight: 300;
   /* white-space: pre-wrap; */
 }
-.model-pop__textarea {
+.modal-pop__textarea {
   width: 100%;
   border: 1px solid #ccc;
   overflow: auto;
@@ -1600,13 +1595,7 @@ html:has(#confirm-button:not(.hidden)) #default-bar .float-bar__inner {
   inset: 0;
   z-index: 12;
   background-color: #000;
-  visibility: hidden;
-  transition: 0.3s all;
-  opacity: 0;
-}
-.modal-pop.active ~ .modal-pop-backdrop {
   opacity: 0.7;
-  visibility: visible;
 }
 .modal-pop__row {
   display: flex;
