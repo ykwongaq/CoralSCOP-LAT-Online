@@ -7,16 +7,114 @@ export type ProjectCreationAction =
   | { type: "ADD_IMAGE"; payload: ImageSelectionData }
   | { type: "ADD_IMAGES"; payload: ImageSelectionData[] }
   | { type: "TOGGLE_IMAGE_SELECTION"; payload: number }
-  | { type: "SET_CONFIG"; payload: Record<string, any> }
-  | { type: "SET_NEED_SEGMENTATION"; payload: boolean }
   | { type: "SELECT_ALL_IMAGES"; payload: null }
-  | { type: "DESELECT_ALL_IMAGES"; payload: null };
+  | { type: "DESELECT_ALL_IMAGES"; payload: null }
+  | { type: "UPDATE_MIN_AREA"; payload: number }
+  | { type: "UPDATE_MIN_CONFIDENCE"; payload: number }
+  | { type: "UPDATE_MAX_OVERLAP"; payload: number }
+  | { type: "UPDATE_MODEL_SELECTION"; payload: string | null };
 
-export const initialState: ProjectCreationState = {
-  imageDataList: [],
-  config: {},
-  needSegmentation: false,
-};
+function add_image(state: ProjectCreationState, payload: ImageSelectionData) {
+  return {
+    ...state,
+    imageDataList: [
+      ...state.imageDataList,
+      { ...payload, selected: payload.selected ?? true },
+    ],
+  };
+}
+
+function add_images(
+  state: ProjectCreationState,
+  payload: ImageSelectionData[],
+) {
+  return {
+    ...state,
+    imageDataList: [
+      ...state.imageDataList,
+      ...payload.map((img) => ({
+        ...img,
+        selected: img.selected ?? true,
+      })),
+    ],
+  };
+}
+
+function toggle_image_selection(
+  state: ProjectCreationState,
+  payload: number,
+): ProjectCreationState {
+  if (payload < 0 || payload >= state.imageDataList.length) return state;
+  const newList = [...state.imageDataList];
+  newList[payload] = {
+    ...newList[payload],
+    selected: !newList[payload].selected,
+  };
+
+  return { ...state, imageDataList: newList };
+}
+
+function select_all_images(state: ProjectCreationState): ProjectCreationState {
+  return {
+    ...state,
+    imageDataList: state.imageDataList.map((img) => ({
+      ...img,
+      selected: true,
+    })),
+  };
+}
+
+function deselect_all_images(
+  state: ProjectCreationState,
+): ProjectCreationState {
+  return {
+    ...state,
+    imageDataList: state.imageDataList.map((img) => ({
+      ...img,
+      selected: false,
+    })),
+  };
+}
+
+function update_min_area(state: ProjectCreationState, payload: number) {
+  return {
+    ...state,
+    config: {
+      ...state.config,
+      min_area: payload,
+    },
+  };
+}
+
+function update_min_confidence(state: ProjectCreationState, payload: number) {
+  return {
+    ...state,
+    config: {
+      ...state.config,
+      min_confidence: payload,
+    },
+  };
+}
+
+function update_max_overlap(state: ProjectCreationState, payload: number) {
+  return {
+    ...state,
+    config: {
+      ...state.config,
+      max_overlap: payload,
+    },
+  };
+}
+
+function update_model_selection(
+  state: ProjectCreationState,
+  payload: string | null,
+) {
+  return {
+    ...state,
+    model_selection: payload,
+  };
+}
 
 export function projectCreationReducer(
   state: ProjectCreationState,
@@ -24,61 +122,30 @@ export function projectCreationReducer(
 ): ProjectCreationState {
   switch (action.type) {
     case "ADD_IMAGE":
-      return {
-        ...state,
-        imageDataList: [
-          ...state.imageDataList,
-          { ...action.payload, selected: action.payload.selected ?? true },
-        ],
-      };
+      return add_image(state, action.payload);
     case "ADD_IMAGES":
-      return {
-        ...state,
-        imageDataList: [
-          ...state.imageDataList,
-          ...action.payload.map((img) => ({
-            ...img,
-            selected: img.selected ?? true,
-          })),
-        ],
-      };
+      return add_images(state, action.payload);
     case "TOGGLE_IMAGE_SELECTION": {
-      const index = action.payload;
-      if (index < 0 || index >= state.imageDataList.length) return state;
-      const newList = [...state.imageDataList];
-      newList[index] = {
-        ...newList[index],
-        selected: !newList[index].selected,
-      };
-
-      console.log(
-        "Number of selected images:",
-        newList.filter((img) => img.selected).length,
-      );
-      return { ...state, imageDataList: newList };
+      return toggle_image_selection(state, action.payload);
     }
     case "SELECT_ALL_IMAGES": {
-      return {
-        ...state,
-        imageDataList: state.imageDataList.map((img) => ({
-          ...img,
-          selected: true,
-        })),
-      };
+      return select_all_images(state);
     }
     case "DESELECT_ALL_IMAGES": {
-      return {
-        ...state,
-        imageDataList: state.imageDataList.map((img) => ({
-          ...img,
-          selected: false,
-        })),
-      };
+      return deselect_all_images(state);
     }
-    case "SET_CONFIG":
-      return { ...state, config: action.payload };
-    case "SET_NEED_SEGMENTATION":
-      return { ...state, needSegmentation: action.payload };
+    case "UPDATE_MIN_AREA": {
+      return update_min_area(state, action.payload);
+    }
+    case "UPDATE_MIN_CONFIDENCE": {
+      return update_min_confidence(state, action.payload);
+    }
+    case "UPDATE_MAX_OVERLAP": {
+      return update_max_overlap(state, action.payload);
+    }
+    case "UPDATE_MODEL_SELECTION": {
+      return update_model_selection(state, action.payload);
+    }
     default:
       return state;
   }

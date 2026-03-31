@@ -22,6 +22,6 @@ export function toJSON(state: ProjectCreationState): string {
       selected,
     })),
     config: state.config,
-    need_segmentation: state.needSegmentation,
+    model_selection: state.model_selection,
   });
 }
