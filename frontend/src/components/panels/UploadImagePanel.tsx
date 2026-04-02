@@ -3,18 +3,18 @@ import { useCallback, useRef } from "react";
 import { useProjectCreation } from "../../features/ProjectCreation/context";
 import { usePopMessage } from "../common/PopUpMessages/PopMessageContext";
 import ImageUploader from "../common/ImageUploader";
-import type {
-  ImageSelectionData,
-  ProjectConfig,
-} from "../../types/projectCreation";
-import type { ImageData } from "../../types/ImageData";
+import type { ImageSelectionData } from "../../types/projectCreation";
 import ImageGallery from "../common/ImageGallery/ImageGallery";
 import BottomBar from "../layout/BottomBar";
 import Button from "../common/Button";
 import type { ApiRequestHandle } from "../../types/api";
-import { createProject } from "../../services/ProjectService";
+import { createProject } from "../../services/CreateProjectService";
+import { deleteProject } from "../../services/DeleteProjectService";
+import { downloadProject } from "../../services/DownloadProjectService";
+import { useNavigate } from "react-router-dom";
 
 export default function UploadImagePanel() {
+  const navigate = useNavigate();
   const { state, dispatch } = useProjectCreation();
   const {
     showMessage,
@@ -23,6 +23,10 @@ export default function UploadImagePanel() {
     showLoading,
     updateLoadingProgress,
   } = usePopMessage();
+
+  const backToHome = useCallback(() => {
+    navigate("/");
+  }, [navigate]);
 
   // Holds the active request handle so we can cancel it from the modal button.
   const requestHandleRef = useRef<ApiRequestHandle | null>(null);
@@ -85,12 +89,56 @@ export default function UploadImagePanel() {
             buttons: [{ label: "Close", onClick: closeMessage }],
           });
         },
-        onComplete: (_data) => {
+        onComplete: (data) => {
           closeMessage();
           showMessage({
             title: "Project Created",
-            content: "Your project has been created successfully.",
-            buttons: [{ label: "OK", onClick: closeMessage }],
+            content:
+              "Your project has been created successfully. Please click Download to get your project file.",
+            buttons: [
+              {
+                label: "Cancel",
+                onClick: () => {
+                  deleteProject(
+                    { token: data.downloadToken },
+                    {
+                      onComplete: closeMessage,
+                      onError(error) {
+                        showError({
+                          title: "Failed to Delete Project",
+                          content:
+                            "An error occurred while communicating with the server.",
+                          errorMessage: error.message,
+                          buttons: [{ label: "Close", onClick: closeMessage }],
+                        });
+                      },
+                    },
+                  );
+                },
+              },
+              {
+                label: "Download",
+                onClick: () =>
+                  downloadProject(
+                    { token: data.downloadToken },
+                    {
+                      onComplete: () => {
+                        closeMessage();
+                        backToHome();
+                      },
+                      onError: (error) => {
+                        showError({
+                          title: "Failed to Download Project",
+                          content:
+                            "An error occurred while communicating with the server.",
+                          errorMessage: error.message,
+                          buttons: [{ label: "Close", onClick: closeMessage }],
+                        });
+                      },
+                    },
+                  ),
+              },
+            ],
           });
         },
       },

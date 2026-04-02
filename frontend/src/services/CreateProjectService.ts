@@ -17,9 +17,7 @@ export interface CreateProjectRequest {
 }
 
 export interface CreateProjectResponse {
-    projectId: string;
-    name: string;
-    createdAt: string;
+    downloadToken: string;
 }
 
 // ---------------------------------------------------------------------------

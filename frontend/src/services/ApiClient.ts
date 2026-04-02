@@ -19,6 +19,13 @@ interface ApiRequestConfig<TData> {
    *   {"type":"error","message":".."}  — triggers onError
    */
   streaming?: boolean;
+  /**
+   * Controls how the response body is parsed (default: "json").
+   *   "json" — parse as JSON and pass to onComplete
+   *   "blob" — read as Blob and pass to onComplete
+   * 204 No Content responses skip body parsing entirely regardless of this setting.
+   */
+  responseType?: "json" | "blob";
   onProgress?: (progress: number) => void;
   onError?: (error: ApiError) => void;
   onComplete?: (data: TData) => void;
@@ -76,6 +83,12 @@ export class ApiClient {
 
       if (config.streaming) {
         await this.readStream(response, config, controller);
+      } else if (response.status === 204) {
+        // No Content — nothing to parse.
+        config.onComplete?.(undefined as TData);
+      } else if (config.responseType === "blob") {
+        const data = (await response.blob()) as TData;
+        config.onComplete?.(data);
       } else {
         const data = (await response.json()) as TData;
         config.onComplete?.(data);
