@@ -9,6 +9,7 @@ import numpy as np
 import torch
 from PIL import Image
 
+from .models.CoralSCOPModel import CoralSCOPModel
 from .models.SAM3Model import SAM3Model
 from .utils.logger import get_logger
 from .utils.path import resolve_path
@@ -20,8 +21,9 @@ class ProjectHandler:
     TEMP_FOLDER = os.path.join(tempfile.gettempdir())
     # TEMP_FOLDER = "/home/davidwong/Documents/temp"
 
-    def __init__(self, sam_model: SAM3Model):
+    def __init__(self, sam_model: SAM3Model, coralSCOP_model: CoralSCOPModel = None):
         self.sam3_model = sam_model
+        self.coralSCOP_model = coralSCOP_model
 
     def clean_up(self, token: str) -> None:
         zip_path = os.path.join(self.TEMP_FOLDER, f"project_{token}.coral")
@@ -68,6 +70,8 @@ class ProjectHandler:
         os.makedirs(annotations_folder, exist_ok=True)
         os.makedirs(embeddings_folder, exist_ok=True)
 
+        _logger.info(f"Config for project {token}: {config}")
+
         try:
             sorted_indexes = np.argsort(image_filenames)
             images = [images[i] for i in sorted_indexes]
@@ -84,6 +88,9 @@ class ProjectHandler:
                 state = self.sam3_model.gen_embeddings(image)
 
                 if config.get("model") == "CoralSCOP":
+                    min_area = config["min_area"]  # 0.001
+                    min_confidence = config["min_confidence"]  # 0.5
+                    max_overlap = config["max_overlap"]  # 0.001
                     annotations = self.run_coral_scop(image)
                 elif config.get("model") == "CoralTank":
                     annotations = self.run_coral_tank(image)
