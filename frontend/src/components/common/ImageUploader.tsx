@@ -1,10 +1,10 @@
-// import type { ImageSelectionData } from "../../types/ProjectCreation";
-import type { ImageData } from "../../types/ImageData";
+import type { ImageSelectionData } from "../../types/ProjectCreation";
+// import type { ImageData } from "../../types/ImageData";
 import { useImageUploader } from "../../hooks/useImageUploader";
 import "../../App.css";
 
 interface ImageUploaderProps {
-  onImages: (images: ImageData[]) => void;
+  onImages: (images: ImageSelectionData[]) => void;
 }
 
 export default function ImageUploader({ onImages }: ImageUploaderProps) {

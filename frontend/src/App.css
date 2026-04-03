@@ -1214,9 +1214,6 @@ button {
   height: 100%;
   max-width: var(--logo-blk-width);
 }
-.wrapper.wrapper:has(#annotationPage.active-page) .side-bar {
-  flex: 1;
-}
 .side-bar__main {
   width: var(--nav-width);
   background-color: #fff;
@@ -1225,10 +1222,10 @@ button {
   justify-content: space-between;
 }
 .side-bar__sub {
-  width: calc(100% - var(--nav-width));
+  width: calc(var(--logo-blk-width) - var(--nav-width));
   background-color: #fff;
   margin-left: 1px;
-  padding-top: 20px;
+  padding: 20px 22px 0;
   display: none;
   flex-direction: column;
   height: calc(100vh - var(--header-height));
@@ -1352,6 +1349,9 @@ button {
   position: relative;
   padding: var(--gap) var(--gap) 0;
   display: flex;
+}
+#annotationPage {
+  padding: 0;
 }
 .main-section__container {
   padding: 40px;
@@ -1683,10 +1683,19 @@ html:has(#confirm-button:not(.hidden)) #default-bar .float-bar__inner {
   margin: 5px;
 }
 
+.drop-container--large {
+  height: 90%;
+  min-height: calc(100vh * 0.5);
+}
+
 .drop-text {
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+.drop-text code {
+  font-family: inherit;
 }
 
 .select-link {

@@ -7,6 +7,7 @@ import {
   type ChangeEvent,
 } from "react";
 import type { ImageData } from "../types/ImageData";
+import type { ImageSelectionData } from "../types/ProjectCreation";
 
 const IMAGE_MIME_TYPES = new Set([
   "image/jpeg",
@@ -25,10 +26,11 @@ function isImageFile(file: File): boolean {
   );
 }
 
-function fileToImageData(file: File): ImageData {
+function fileToImageData(file: File): ImageSelectionData {
   return {
     imageUrl: URL.createObjectURL(file),
     imageName: file.name,
+    selected: true,
   };
 }
 
@@ -111,7 +113,7 @@ export interface UseImageUploaderResult {
 }
 
 export function useImageUploader(
-  onImages: (images: ImageData[]) => void,
+  onImages: (images: ImageSelectionData[]) => void,
   fileInputRefHTML?: HTMLInputElement,
 ): UseImageUploaderResult {
   const [isDragging, setIsDragging] = useState(false);

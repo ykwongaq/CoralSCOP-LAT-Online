@@ -1,13 +1,26 @@
 import { useNavigate } from "react-router-dom";
 import type { ProjectState, Data, Label } from "../types/Annotation/";
 import { projectAnnotationReducer } from "../features/ProjectAnnotation/reducer";
-import { useCallback, useReducer } from "react";
+import { useCallback, useReducer, useState } from "react";
 import { ProjectContext } from "../features/ProjectAnnotation/context";
 import HeaderWithNavigation from "../components/layout/HeaderWIthNavigation";
 import SideBar from "../components/layout/SideBar";
 import { SideBarButton } from "../components/common/SideBarButtons";
 import SideBarDropDownList from "../components/common/SideBarButtons/SideBarDropDownList";
 import SideBarDropDownButton from "../components/common/SideBarButtons/SideBarDropDownButton";
+import {
+  UploadProjectPanel,
+  StatisticPanel,
+  StatisticPanelID,
+  ImageGalleryPanel,
+  ImageGalleryPanelID,
+  AnnotationPanel,
+  AnnotationPanelID,
+} from "../components/panels/ProjectAnnotation";
+
+function isProjectLoaded(state: ProjectState): boolean {
+  return state.dataList.length > 0;
+}
 
 function ProjectAnnotationPage() {
   const navigate = useNavigate();
@@ -18,10 +31,17 @@ function ProjectAnnotationPage() {
   };
 
   const [state, dispatch] = useReducer(projectAnnotationReducer, initialState);
+  const [activePanel, setActivePanel] = useState<string>(AnnotationPanelID);
+
+  const projectLoaded = isProjectLoaded(state);
 
   const handleBackToHome = useCallback(() => {
     navigate("/");
   }, [navigate]);
+
+  const handlePanelChange = useCallback((panelId: string) => {
+    setActivePanel(panelId);
+  }, []);
 
   return (
     <ProjectContext.Provider value={{ state, dispatch }}>
@@ -43,25 +63,32 @@ function ProjectAnnotationPage() {
               id="gallery-button"
               icon="ico-grid"
               label="All Images"
-              onClick={handleBackToHome}
+              onClick={() => handlePanelChange(ImageGalleryPanelID)}
+              isActive={projectLoaded && activePanel === ImageGalleryPanelID}
+              disabled={!projectLoaded}
             />
             <SideBarButton
-              id="label-button"
+              id="annotation-button"
               icon="ico-stack"
               label="Annotations"
-              onClick={handleBackToHome}
+              onClick={() => handlePanelChange(AnnotationPanelID)}
+              isActive={projectLoaded && activePanel === AnnotationPanelID}
+              disabled={!projectLoaded}
             />
             <SideBarButton
               id="statistic-button"
               icon="ico-wave"
               label="Statistics"
-              onClick={handleBackToHome}
+              onClick={() => handlePanelChange(StatisticPanelID)}
+              isActive={projectLoaded && activePanel === StatisticPanelID}
+              disabled={!projectLoaded}
             />
             <SideBarButton
               id="save-button"
               icon="ico-save"
               label="Save"
-              onClick={handleBackToHome}
+              onClick={() => {}}
+              disabled={!projectLoaded}
             />
             <SideBarDropDownList
               id="file-button"
@@ -71,35 +98,56 @@ function ProjectAnnotationPage() {
               <SideBarDropDownButton
                 id="export-image-button"
                 label="Export All Images"
-                onClick={handleBackToHome}
-              ></SideBarDropDownButton>
+                onClick={() => {}}
+              />
               <SideBarDropDownButton
                 id="export-annotated-images-button"
                 label="Export Annotated Images"
-                onClick={handleBackToHome}
-              ></SideBarDropDownButton>
+                onClick={() => {}}
+              />
               <SideBarDropDownButton
                 id="export-excel-button"
                 label="Export Excel"
-                onClick={handleBackToHome}
-              ></SideBarDropDownButton>
+                onClick={() => {}}
+              />
               <SideBarDropDownButton
                 id="export-coco-button"
                 label="Export COCO"
-                onClick={handleBackToHome}
-              ></SideBarDropDownButton>
+                onClick={() => {}}
+              />
               <SideBarDropDownButton
                 id="export-chart-button"
                 label="Export Chart"
-                onClick={handleBackToHome}
-              ></SideBarDropDownButton>
+                onClick={() => {}}
+              />
               <SideBarDropDownButton
                 id="export-all-button"
                 label="Export All"
-                onClick={handleBackToHome}
-              ></SideBarDropDownButton>
+                onClick={() => {}}
+              />
             </SideBarDropDownList>
           </SideBar>
+
+          {!projectLoaded && (
+            <div className="main-section page active-page" id="uploadProjectPage">
+              <UploadProjectPanel />
+            </div>
+          )}
+          {projectLoaded && activePanel === ImageGalleryPanelID && (
+            <div className="main-section page active-page" id="galleryPage">
+              <ImageGalleryPanel />
+            </div>
+          )}
+          {projectLoaded && activePanel === AnnotationPanelID && (
+            <div className="main-section page active-page" id="annotationPage">
+              <AnnotationPanel />
+            </div>
+          )}
+          {projectLoaded && activePanel === StatisticPanelID && (
+            <div className="main-section page active-page" id="statisticPage">
+              <StatisticPanel />
+            </div>
+          )}
         </div>
       </div>
     </ProjectContext.Provider>

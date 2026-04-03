@@ -4,6 +4,7 @@ interface SideBarButtonProps {
   label: string;
   onClick: () => void;
   isActive?: boolean;
+  disabled?: boolean;
 }
 
 export default function SideBarButton({
@@ -12,6 +13,7 @@ export default function SideBarButton({
   label,
   onClick,
   isActive = false,
+  disabled = false,
 }: SideBarButtonProps) {
   return (
     <li className="nav-list__item">
@@ -21,6 +23,7 @@ export default function SideBarButton({
         onClick={onClick}
         aria-label={label}
         aria-pressed={isActive}
+        disabled={disabled}
       >
         <span className={icon}></span>
         <span className="arrow-tooltip">{label}</span>

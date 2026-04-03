@@ -1,9 +1,9 @@
-import { useProjectCreation } from "../../features/ProjectCreation/context";
+import { useProjectCreation } from "../../../features/ProjectCreation/context";
 import {
   SettingSliderBlock,
   SettingGroups,
   SettingSelectBlock,
-} from "../common/Settings";
+} from "../../common/Settings";
 
 const MODEL_OPTIONS = [
   { label: "None", value: null },

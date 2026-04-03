@@ -3,20 +3,16 @@ import { useNavigate } from "react-router-dom";
 import Header from "../components/layout/Header";
 import SideBar from "../components/layout/SideBar";
 import { SideBarButton } from "../components/common/SideBarButtons";
-import { UploadImagePanel, ProjectSettingPanel } from "../components/panels";
 import {
+  UploadImagePanel,
   UploadImagePanelID,
+  ProjectSettingPanel,
   ProjectSettingPanelID,
-} from "../components/panels";
+} from "../components/panels/ProjectCreation";
 
 import { type ProjectCreationState } from "../types/ProjectCreation";
 import { ProjectCreationContext } from "../features/ProjectCreation/context";
 import { projectCreationReducer } from "../features/ProjectCreation/reducer";
-
-const PANEL_CONFIG: { id: string; icon: string; label: string }[] = [
-  { id: UploadImagePanelID, icon: "ico-grid", label: "Upload Images" },
-  { id: ProjectSettingPanelID, icon: "ico-gear", label: "Project Settings" },
-];
 
 function ProjectCreationPage() {
   const navigate = useNavigate();
@@ -54,16 +50,20 @@ function ProjectCreationPage() {
               label="Home"
               onClick={handleBackToHome}
             />
-            {PANEL_CONFIG.map((panel) => (
-              <SideBarButton
-                key={panel.id}
-                id={`${panel.id}-button`}
-                icon={panel.icon}
-                label={panel.label}
-                onClick={() => handlePanelChange(panel.id)}
-                isActive={activePanel === panel.id}
-              />
-            ))}
+            <SideBarButton
+              id={`${UploadImagePanelID}-button`}
+              icon="ico-grid"
+              label="Upload Images"
+              onClick={() => handlePanelChange(UploadImagePanelID)}
+              isActive={activePanel === UploadImagePanelID}
+            />
+            <SideBarButton
+              id={`${ProjectSettingPanelID}-button`}
+              icon="ico-gear"
+              label="Project Settings"
+              onClick={() => handlePanelChange(ProjectSettingPanelID)}
+              isActive={activePanel === ProjectSettingPanelID}
+            />
           </SideBar>
           {activePanel === UploadImagePanelID && (
             <div className="main-section page active-page" id="galleryPage">

@@ -1,16 +1,16 @@
 export const UploadImagePanelID = "upload-image-panel";
 import { useCallback, useRef } from "react";
-import { useProjectCreation } from "../../features/ProjectCreation/context";
-import { usePopMessage } from "../common/PopUpMessages/PopMessageContext";
-import ImageUploader from "../common/ImageUploader";
-import type { ImageSelectionData } from "../../types/ProjectCreation";
-import ImageGallery from "../common/ImageGallery/ImageGallery";
-import BottomBar from "../layout/BottomBar";
-import Button from "../common/Button";
-import type { ApiRequestHandle } from "../../types/api";
-import { createProject } from "../../services/CreateProjectService";
-import { deleteProject } from "../../services/DeleteProjectService";
-import { downloadProject } from "../../services/DownloadProjectService";
+import { useProjectCreation } from "../../../features/ProjectCreation/context";
+import { usePopMessage } from "../../common/PopUpMessages/PopMessageContext";
+import ImageUploader from "../../common/ImageUploader";
+import type { ImageSelectionData } from "../../../types/ProjectCreation";
+import ImageGallery from "../../common/ImageGallery/ImageGallery";
+import BottomBar from "../../layout/BottomBar";
+import Button from "../../common/Button";
+import type { ApiRequestHandle } from "../../../types/api";
+import { createProject } from "../../../services/CreateProjectService";
+import { deleteProject } from "../../../services/DeleteProjectService";
+import { downloadProject } from "../../../services/DownloadProjectService";
 import { useNavigate } from "react-router-dom";
 
 export default function UploadImagePanel() {
