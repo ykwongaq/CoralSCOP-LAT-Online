@@ -3,7 +3,7 @@ import { useCallback, useRef } from "react";
 import { useProjectCreation } from "../../features/ProjectCreation/context";
 import { usePopMessage } from "../common/PopUpMessages/PopMessageContext";
 import ImageUploader from "../common/ImageUploader";
-import type { ImageSelectionData } from "../../types/projectCreation";
+import type { ImageSelectionData } from "../../types/ProjectCreation";
 import ImageGallery from "../common/ImageGallery/ImageGallery";
 import BottomBar from "../layout/BottomBar";
 import Button from "../common/Button";

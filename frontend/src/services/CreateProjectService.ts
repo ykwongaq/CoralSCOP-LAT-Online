@@ -1,9 +1,6 @@
-import type {
-    ApiRequestCallbacks,
-    ApiRequestHandle,
-} from "../types/api";
-import type { ImageSelectionData } from "../types/projectCreation/ImageSelectionData";
-import type { ProjectConfig } from "../types/projectCreation/ProjectConfig";
+import type { ApiRequestCallbacks, ApiRequestHandle } from "../types/api";
+import type { ImageSelectionData } from "../types/ProjectCreation";
+import type { ProjectConfig } from "../types/ProjectCreation";
 import { apiClient } from "./ApiClient";
 
 // ---------------------------------------------------------------------------
@@ -11,13 +8,13 @@ import { apiClient } from "./ApiClient";
 // ---------------------------------------------------------------------------
 
 export interface CreateProjectRequest {
-    images: ImageSelectionData[];
-    config: ProjectConfig;
-    model: string | null;
+  images: ImageSelectionData[];
+  config: ProjectConfig;
+  model: string | null;
 }
 
 export interface CreateProjectResponse {
-    downloadToken: string;
+  downloadToken: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -51,65 +48,62 @@ export interface CreateProjectResponse {
  * handle.cancel();
  */
 export function createProject(
-    request: CreateProjectRequest,
-    callbacks: ApiRequestCallbacks<CreateProjectResponse>,
+  request: CreateProjectRequest,
+  callbacks: ApiRequestCallbacks<CreateProjectResponse>,
 ): ApiRequestHandle {
-    // `cancelled` guards the async preparation phase (blob URL → FormData).
-    // Once the inner ApiClient handle exists, aborting is delegated to it.
-    let cancelled = false;
-    let innerHandle: ApiRequestHandle | null = null;
+  // `cancelled` guards the async preparation phase (blob URL → FormData).
+  // Once the inner ApiClient handle exists, aborting is delegated to it.
+  let cancelled = false;
+  let innerHandle: ApiRequestHandle | null = null;
 
-    // Signal "operation has started" before any async work so the UI can show
-    // a loading indicator immediately.
-    callbacks.onLoading?.();
+  // Signal "operation has started" before any async work so the UI can show
+  // a loading indicator immediately.
+  callbacks.onLoading?.();
 
-    void (async () => {
-        try {
-            const formData = new FormData();
-            const selected = request.images.filter((img) => img.selected);
+  void (async () => {
+    try {
+      const formData = new FormData();
+      const selected = request.images.filter((img) => img.selected);
 
-            for (const img of selected) {
-                if (cancelled) return;
+      for (const img of selected) {
+        if (cancelled) return;
 
-                // Blob URLs are created by URL.createObjectURL() in the uploader.
-                // Fetching them gives back the original file data without re-reading disk.
-                const res = await fetch(img.imageUrl);
-                if (cancelled) return;
+        // Blob URLs are created by URL.createObjectURL() in the uploader.
+        // Fetching them gives back the original file data without re-reading disk.
+        const res = await fetch(img.imageUrl);
+        if (cancelled) return;
 
-                const blob = await res.blob();
-                formData.append("images", blob, img.imageName);
-            }
+        const blob = await res.blob();
+        formData.append("images", blob, img.imageName);
+      }
 
-            if (cancelled) return;
+      if (cancelled) return;
 
-            formData.append("config", JSON.stringify(request.config));
-            if (request.model !== null) {
-                formData.append("model", request.model);
-            }
+      formData.append("config", JSON.stringify(request.config));
+      if (request.model !== null) {
+        formData.append("model", request.model);
+      }
 
-            innerHandle = apiClient.request<CreateProjectResponse>(
-                "/api/projects",
-                {
-                    method: "POST",
-                    body: formData,
-                    streaming: true,
-                    onProgress: callbacks.onProgress,
-                    onError: callbacks.onError,
-                    onComplete: callbacks.onComplete,
-                },
-            );
-        } catch (err) {
-            if (cancelled) return;
-            callbacks.onError?.({
-                message: err instanceof Error ? err.message : String(err),
-            });
-        }
-    })();
+      innerHandle = apiClient.request<CreateProjectResponse>("/api/projects", {
+        method: "POST",
+        body: formData,
+        streaming: true,
+        onProgress: callbacks.onProgress,
+        onError: callbacks.onError,
+        onComplete: callbacks.onComplete,
+      });
+    } catch (err) {
+      if (cancelled) return;
+      callbacks.onError?.({
+        message: err instanceof Error ? err.message : String(err),
+      });
+    }
+  })();
 
-    return {
-        cancel: () => {
-            cancelled = true;
-            innerHandle?.cancel();
-        },
-    };
+  return {
+    cancel: () => {
+      cancelled = true;
+      innerHandle?.cancel();
+    },
+  };
 }

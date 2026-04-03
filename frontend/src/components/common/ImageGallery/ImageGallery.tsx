@@ -1,5 +1,5 @@
 import ImageBlockWithSelection from "./ImageBlockWithSelection";
-import type { ImageSelectionData } from "../../../types/projectCreation";
+import type { ImageSelectionData } from "../../../types/ProjectCreation";
 
 interface ImageGalleryProps {
   imageDataList: ImageSelectionData[];
