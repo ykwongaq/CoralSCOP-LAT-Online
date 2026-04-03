@@ -17,8 +17,8 @@ _logger = get_logger(__name__)
 
 
 class ProjectHandler:
-    # TEMP_FOLDER = os.path.join(tempfile.gettempdir())
-    TEMP_FOLDER = "/home/davidwong/Documents/temp"
+    TEMP_FOLDER = os.path.join(tempfile.gettempdir())
+    # TEMP_FOLDER = "/home/davidwong/Documents/temp"
 
     def __init__(self, sam_model: SAM3Model):
         self.sam3_model = sam_model

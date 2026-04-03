@@ -1319,7 +1319,6 @@ button {
   left: calc(100% + 20px);
   top: 0;
   width: max-content;
-  display: none;
 }
 .nav-list__button {
   width: var(--nav-width);

@@ -21,7 +21,11 @@ function EntryPage() {
             >
               Create New Project
             </button>
-            <button className="button button--border" id="load-project-button">
+            <button
+              className="button button--border"
+              id="load-project-button"
+              onClick={() => navigate("/project-annotation")}
+            >
               Load Existing Project
             </button>
             <button className="button button--border" id="quick-start-button">
