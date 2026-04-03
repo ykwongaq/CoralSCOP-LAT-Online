@@ -1,4 +1,4 @@
-import { type ImageSelectionData } from "../../../types/projectCreation";
+import { type ImageSelectionData } from "../../../types/ProjectCreation";
 
 interface ImageBlockProps extends ImageSelectionData {
   id: number;

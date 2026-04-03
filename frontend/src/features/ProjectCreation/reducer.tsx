@@ -1,7 +1,7 @@
 import type {
   ProjectCreationState,
   ImageSelectionData,
-} from "../../types/projectCreation";
+} from "../../types/ProjectCreation";
 
 export type ProjectCreationAction =
   | { type: "ADD_IMAGE"; payload: ImageSelectionData }

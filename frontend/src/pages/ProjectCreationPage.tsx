@@ -9,7 +9,7 @@ import {
   ProjectSettingPanelID,
 } from "../components/panels";
 
-import { type ProjectCreationState } from "../types/projectCreation";
+import { type ProjectCreationState } from "../types/ProjectCreation";
 import { ProjectCreationContext } from "../features/ProjectCreation/context";
 import { projectCreationReducer } from "../features/ProjectCreation/reducer";
 

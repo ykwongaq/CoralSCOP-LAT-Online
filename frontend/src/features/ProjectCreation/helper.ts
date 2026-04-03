@@ -1,4 +1,4 @@
-import type { ProjectCreationState } from "../../types/projectCreation";
+import type { ProjectCreationState } from "../../types/ProjectCreation";
 import type { ImageData } from "../../types/ImageData";
 
 export function getSelectedImages(state: ProjectCreationState): ImageData[] {

@@ -1,5 +1,5 @@
 import { createContext, useContext } from "react";
-import type { ProjectCreationState } from "../../types/projectCreation";
+import type { ProjectCreationState } from "../../types/ProjectCreation";
 import type { ProjectCreationAction } from "./reducer";
 
 export const ProjectCreationContext = createContext<{

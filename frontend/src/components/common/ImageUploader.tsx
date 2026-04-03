@@ -1,4 +1,4 @@
-import type { ImageSelectionData } from "../../types/projectCreation";
+import type { ImageSelectionData } from "../../types/ProjectCreation";
 import { useImageUploader } from "../../hooks/useImageUploader";
 import "../../App.css";
 
