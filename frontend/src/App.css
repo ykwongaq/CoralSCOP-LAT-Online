@@ -1182,7 +1182,7 @@ button {
 
 .logo-blk {
   font-size: 24px;
-  background: var(--blue-blue500) url("../images/logo-bg.png");
+  background: var(--blue-blue500) url("assets/images/logo-bg.png");
   background-size: cover;
   height: 100%;
   display: flex;
