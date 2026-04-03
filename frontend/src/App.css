@@ -719,12 +719,8 @@ input[type="range"]:active::-moz-range-thumb {
 }
 
 .toggle-input-blk {
-    --content: "Add Label";
-    --icon: "+";
 }
 .toggle-input-blk.open {
-    --content: "Cancel";
-    --icon: "x";
 }
 .toggle-input-blk__btn {
     display: flex;
