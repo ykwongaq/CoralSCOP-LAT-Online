@@ -5,6 +5,7 @@ import numpy as np
 import torch
 
 from ..utils.logger import get_logger
+from ..utils.masks import encode_masks, decode_mask
 from .modelQueue import ModelQueue
 from .segment_anything import SamAutomaticMaskGenerator, sam_model_registry
 
@@ -61,8 +62,23 @@ class CoralSCOPModel:
         # Sort the masks by the predicted_iou in descending order
         masks.sort(key=lambda x: x["predicted_iou"], reverse=True)
 
-        print(masks.keys())
-        return {}
+        masks = self.filter(masks, min_area, min_confidence, max_iou)
+
+        annotations = {"annotations": []}
+
+        for idx, mask in enumerate(masks[: self.max_masks_num]):
+            annotation = {
+                "id": idx,
+                "segmentation": encode_masks(mask["segmentation"]),
+                "predicted_iou": mask["predicted_iou"],
+                "stability_score": mask["stability_score"],
+                "area": mask["area"],
+                "image_id": 0,
+                "bbox": mask["bbox"],
+            }
+            annotations["annotations"].append(annotation)
+
+        return annotations
 
     def filter(
         self, masks: List[Dict], min_area: float, min_confidence: float, max_iou: float
@@ -122,7 +138,7 @@ class CoralSCOPModel:
             return set()
 
         def decode_and_compute_area(annotation):
-            mask = decode_rle_mask(annotation["segmentation"])
+            mask = decode_mask(annotation["segmentation"])
             area = np.sum(mask)
             return area
 
@@ -158,9 +174,7 @@ class CoralSCOPModel:
         """
         Filter out the masks which have iou lower than the iou limit
         """
-        masks = [
-            decode_rle_mask(annotation["segmentation"]) for annotation in annotations
-        ]
+        masks = [decode_mask(annotation["segmentation"]) for annotation in annotations]
         return set(self.filter_by_iou_(masks, iou_limit))
 
     def filter_by_iou_(

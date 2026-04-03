@@ -91,11 +91,27 @@ class ProjectHandler:
                     min_area = config["min_area"]  # 0.001
                     min_confidence = config["min_confidence"]  # 0.5
                     max_overlap = config["max_overlap"]  # 0.001
-                    annotations = self.run_coral_scop(image)
+                    image_npy = np.array(image)
+                    annotations = self.coralSCOP_model.gen_annotations(
+                        image_npy, min_area, min_confidence, max_overlap
+                    )
+
+                    output_json = {
+                        "image": {
+                            "image_filename": filename,
+                            "image_width": image.width,
+                            "image_height": image.height,
+                            "id": idx,
+                        },
+                        "annotations": annotations["annotations"],
+                        "categories": [
+                            {"id": 0, "name": "coral", "sub-categories": []}
+                        ],
+                    }
                 elif config.get("model") == "CoralTank":
-                    annotations = self.run_coral_tank(image)
+                    output_json = self.run_coral_tank(image)
                 else:
-                    annotations = {
+                    output_json = {
                         "image": {
                             "image_filename": filename,
                             "image_width": image.width,
@@ -117,7 +133,7 @@ class ProjectHandler:
                     os.path.join(annotations_folder, f"{filename_without_ext}.json"),
                     "w",
                 ) as f:
-                    json.dump(annotations, f, indent=4)
+                    json.dump(output_json, f, indent=4)
 
                 # Save embeddings
                 output_embedding_path = os.path.join(
@@ -127,11 +143,11 @@ class ProjectHandler:
 
                 yield {
                     "type": "progress",
-                    "value": int((idx + 1) / n * 90),
+                    "value": int((idx + 1) / n * 80),
                     "message": f"Finished processing {filename}",
                 }
 
-            yield {"type": "progress", "value": 95, "message": "Packaging project file"}
+            yield {"type": "progress", "value": 85, "message": "Packaging project file"}
 
             project_info = {
                 "last_idx": 0,
