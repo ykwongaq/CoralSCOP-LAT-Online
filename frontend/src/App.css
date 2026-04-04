@@ -835,6 +835,12 @@ input[type="range"]:active::-moz-range-thumb {
   position: relative;
   top: 1px;
 }
+
+.float-bar__button .ico-tick {
+  font-size: 20px; /* Slightly smaller than 24px */
+  vertical-align: middle;
+}
+
 .float-bar__button:disabled,
 .float-bar__button.disabled {
   opacity: 0.6;
