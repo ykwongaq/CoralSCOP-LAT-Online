@@ -234,6 +234,7 @@ export default function AnnotationCanvas() {
 		mode,
 		canvasRef,
 		viewportRef,
+		imageSizeRef,
 		requestDraw,
 		onCanvasAction,
 	);
