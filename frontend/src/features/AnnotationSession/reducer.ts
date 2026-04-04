@@ -1,5 +1,6 @@
 import type { Annotation, Label, RLE } from "../../types/Annotation";
 import type AnnotationSessionState from "../../types/Annotation/AnnotationSession";
+import type { PointPrompt } from "../../types/Annotation/AnnotationSession";
 
 export type AnnotationSessionAction =
 	| { type: "SET_PENDING_MASK"; payload: RLE }
@@ -9,7 +10,9 @@ export type AnnotationSessionAction =
 	| { type: "DESELECT_ANNOTATION"; payload: { id: number } }
 	| { type: "CLEAR_SELECTION" }
 	| { type: "SET_ANNOTATION_MODE"; payload: "select" | "add" }
-	| { type: "SET_CURRENT_DATA_INDEX"; payload: number };
+	| { type: "SET_CURRENT_DATA_INDEX"; payload: number }
+	| { type: "ADD_POINT_PROMPT"; payload: PointPrompt }
+	| { type: "CLEAR_POINT_PROMPTS" };
 
 export const initialAnnotationSessionState: AnnotationSessionState = {
 	pendingMask: null,
@@ -18,6 +21,7 @@ export const initialAnnotationSessionState: AnnotationSessionState = {
 	annotationMode: "select",
 	currentDataIndex: 0,
 	prevsProjectState: [],
+	pointPrompts: [],
 };
 
 export function annotationSessionReducer(
@@ -49,6 +53,10 @@ export function annotationSessionReducer(
 			return { ...state, annotationMode: action.payload };
 		case "SET_CURRENT_DATA_INDEX":
 			return { ...state, currentDataIndex: action.payload };
+		case "ADD_POINT_PROMPT":
+			return { ...state, pointPrompts: [...state.pointPrompts, action.payload] };
+		case "CLEAR_POINT_PROMPTS":
+			return { ...state, pointPrompts: [] };
 		default:
 			return state;
 	}

@@ -1,5 +1,11 @@
 import { type RLE, type Label, type Annotation, type ProjectState } from ".";
 
+export type PointPrompt = {
+	x: number;
+	y: number;
+	type: "positive" | "negative";
+};
+
 // State for the annotation process
 export default interface AnnotationSessionState {
 	// Pending masks to be added to the annotation session
@@ -16,4 +22,7 @@ export default interface AnnotationSessionState {
 	currentDataIndex: number;
 
 	prevsProjectState: ProjectState[];
+
+	// Point prompts for SAM inference (add mode)
+	pointPrompts: PointPrompt[];
 }

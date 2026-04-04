@@ -1,10 +1,16 @@
 import { useRef, useEffect, useCallback, useState } from "react";
+import { useAnnotationSession } from "../../features/AnnotationSession/context";
 import { useProject } from "../../features/ProjectAnnotation/context";
 import { useVisualizationSetting } from "../../features/VisualizationSetting/context";
-import type { Data } from "../../types/Annotation/Data";
-import { decodeRleMasks } from "../../utils/cocoRle";
-import { hexToRgb } from "../../utils/color";
-import { getLabelColor, getTextColor } from "../common/LabelColorMap";
+import type { Annotation } from "../../types/Annotation";
+import {
+	buildLayers,
+	hitTestMask,
+	maskIntersectsRect,
+} from "../../utils/canvasLayers";
+import type { Layers } from "../../utils/canvasLayers";
+import { useCanvasInteraction } from "../../hooks/useCanvasInteraction";
+import type { CanvasAction } from "../../hooks/useCanvasInteraction";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -16,173 +22,49 @@ type Viewport = {
 	originY: number;
 };
 
-type Layers = {
-	mask: HTMLCanvasElement;
-	border: HTMLCanvasElement;
-	text: HTMLCanvasElement;
-};
-
-// ---------------------------------------------------------------------------
-// Layer builder — pure function, no React, called once per data change
-// ---------------------------------------------------------------------------
-
-async function buildLayers(data: Data): Promise<Layers> {
-	// Dimensions from explicit ImageData fields, or fall back to COCO RLE size
-	const width =
-		data.imageData.width ?? data.annotations[0]?.segmentation.size[1] ?? 0;
-	const height =
-		data.imageData.height ?? data.annotations[0]?.segmentation.size[0] ?? 0;
-
-	const maskCanvas = document.createElement("canvas");
-	const borderCanvas = document.createElement("canvas");
-	const textCanvas = document.createElement("canvas");
-
-	maskCanvas.width = borderCanvas.width = textCanvas.width = width;
-	maskCanvas.height = borderCanvas.height = textCanvas.height = height;
-
-	const maskCtx = maskCanvas.getContext("2d", {
-		willReadFrequently: true,
-	})!;
-	const borderCtx = borderCanvas.getContext("2d")!;
-	const textCtx = textCanvas.getContext("2d")!;
-
-	// Build mask + border via ImageData for efficiency (single putImageData each)
-	const maskImgData = maskCtx.getImageData(0, 0, width, height);
-	const borderImgData = borderCtx.getImageData(0, 0, width, height);
-	const md = maskImgData.data;
-	const bd = borderImgData.data;
-
-	const centroids: Array<{ cx: number; cy: number; labelId: number }> = [];
-
-	// Batch-decode all masks via backend in a single request
-	const pixelMasks = await decodeRleMasks(
-		data.annotations.map((ann) => ann.segmentation),
-	);
-
-	for (let annIdx = 0; annIdx < data.annotations.length; annIdx++) {
-		const ann = data.annotations[annIdx];
-		const color = getLabelColor(ann.labelId);
-		console.log(
-			`Building layer for annotation ${ann.id} with label ${ann.labelId} and color ${color}`,
-		);
-		const [r, g, b] = hexToRgb(color);
-		const pixelMask = pixelMasks[annIdx];
-
-		let sumX = 0,
-			sumY = 0,
-			count = 0;
-
-		for (let i = 0; i < pixelMask.length; i++) {
-			if (pixelMask[i] !== 1) continue;
-
-			const x = i % width;
-			const y = Math.floor(i / width);
-			const idx = i * 4;
-
-			// Fill mask area
-			md[idx] = r;
-			md[idx + 1] = g;
-			md[idx + 2] = b;
-			md[idx + 3] = 255;
-
-			// Detect boundary pixels
-			const isEdge =
-				(x > 0 && pixelMask[i - 1] === 0) ||
-				(x < width - 1 && pixelMask[i + 1] === 0) ||
-				(y > 0 && pixelMask[i - width] === 0) ||
-				(y < height - 1 && pixelMask[i + width] === 0);
-
-			if (isEdge) {
-				bd[idx] = r;
-				bd[idx + 1] = g;
-				bd[idx + 2] = b;
-				bd[idx + 3] = 255;
-			}
-
-			sumX += x;
-			sumY += y;
-			count++;
-		}
-
-		if (count > 0) {
-			centroids.push({
-				cx: Math.round(sumX / count),
-				cy: Math.round(sumY / count),
-				labelId: ann.labelId,
-			});
-		}
-	}
-
-	maskCtx.putImageData(maskImgData, 0, 0);
-	borderCtx.putImageData(borderImgData, 0, 0);
-
-	// Draw label badges on the text canvas
-	const minDim = Math.min(width, height);
-	const badgeRadius = Math.min(Math.floor(minDim * 0.025), 20);
-	const fontSize = Math.round(badgeRadius * 1.2);
-
-	textCtx.textAlign = "center";
-	textCtx.textBaseline = "middle";
-
-	for (const { cx, cy, labelId } of centroids) {
-		const color = getLabelColor(labelId);
-		const textColor = getTextColor(labelId);
-
-		const displayText = String(labelId);
-
-		// Badge circle
-		textCtx.beginPath();
-		textCtx.arc(cx, cy, badgeRadius, 0, 2 * Math.PI);
-		textCtx.fillStyle = color;
-		textCtx.strokeStyle = "#fff";
-		textCtx.lineWidth = Math.max(1, badgeRadius * 0.12);
-		textCtx.fill();
-		textCtx.stroke();
-		textCtx.closePath();
-
-		// Label number
-		const adjFontSize =
-			displayText.length > 1 ? Math.floor(fontSize * 0.75) : fontSize;
-		textCtx.font = `bold ${adjFontSize}px Arial`;
-		textCtx.fillStyle = textColor;
-		textCtx.fillText(displayText, cx, cy);
-	}
-
-	return { mask: maskCanvas, border: borderCanvas, text: textCanvas };
-}
-
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
 export default function AnnotationCanvas() {
 	const { state } = useProject();
+	const { annotationSessionState, dispatchAnnotationSession } =
+		useAnnotationSession();
 	const { visualizationSetting } = useVisualizationSetting();
 
-	// Always show the first data item (index 0) for now
-	const data = state.dataList[0] ?? null;
+	const mode = annotationSessionState.annotationMode;
+	const data = state.dataList[annotationSessionState.currentDataIndex] ?? null;
 
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const containerRef = useRef<HTMLDivElement>(null);
 
 	// -----------------------------------------------------------------------
-	// Rendering state — stored in refs so updates don't trigger re-renders
+	// Rendering refs — updates don't trigger re-renders
 	// -----------------------------------------------------------------------
 	const imageRef = useRef<HTMLImageElement | null>(null);
 	const imageSizeRef = useRef({ width: 0, height: 0 });
 	const viewportRef = useRef<Viewport>({ scale: 1, originX: 0, originY: 0 });
 	const layersRef = useRef<Layers | null>(null);
+	const pixelMasksRef = useRef<Uint8Array[] | null>(null);
 
-	// Keep a live ref to visualizationSetting so draw() always reads latest
+	// Live refs so draw() always reads the latest value without re-subscribing
 	const vizRef = useRef(visualizationSetting);
 	vizRef.current = visualizationSetting;
 
-	// Interaction refs
-	const isDraggingRef = useRef(false);
-	const lastMouseRef = useRef({ x: 0, y: 0 });
+	const modeRef = useRef(mode);
+	modeRef.current = mode;
+
+	const pointPromptsRef = useRef(annotationSessionState.pointPrompts);
+	pointPromptsRef.current = annotationSessionState.pointPrompts;
+
+	// For hit-testing we need the current selection without stale closures
+	const selectedAnnotationsRef = useRef(
+		annotationSessionState.selectedAnnotations,
+	);
+	selectedAnnotationsRef.current = annotationSessionState.selectedAnnotations;
+
 	const rafRef = useRef(0);
 
-	// React state only used to trigger effects after async image load
 	const [imageSize, setImageSize] = useState<{
 		width: number;
 		height: number;
@@ -199,22 +81,53 @@ export default function AnnotationCanvas() {
 
 		const { scale, originX, originY } = viewportRef.current;
 		const viz = vizRef.current;
+		const currentMode = modeRef.current;
 
 		ctx.clearRect(0, 0, canvas.width, canvas.height);
 		ctx.save();
-		// Transform: canvas coords = (image coords - origin) * scale
 		ctx.setTransform(scale, 0, 0, scale, -originX * scale, -originY * scale);
 
+		// Image
 		if (imageRef.current) {
 			ctx.drawImage(imageRef.current, 0, 0);
 		}
 
+		// Annotation layers
 		if (viz.showMasks && layersRef.current) {
 			ctx.globalAlpha = viz.maskOpacity;
 			ctx.drawImage(layersRef.current.mask, 0, 0);
 			ctx.globalAlpha = 1;
 			ctx.drawImage(layersRef.current.border, 0, 0);
 			ctx.drawImage(layersRef.current.text, 0, 0);
+		}
+
+		// Selection rectangle (select mode only)
+		if (currentMode === "select" && selectionRectRef.current) {
+			const { startX, startY, endX, endY } = selectionRectRef.current;
+			const x = Math.min(startX, endX);
+			const y = Math.min(startY, endY);
+			const w = Math.abs(endX - startX);
+			const h = Math.abs(endY - startY);
+			ctx.strokeStyle = "rgba(0, 120, 255, 0.9)";
+			ctx.fillStyle = "rgba(0, 120, 255, 0.15)";
+			ctx.lineWidth = 1 / scale;
+			ctx.fillRect(x, y, w, h);
+			ctx.strokeRect(x, y, w, h);
+		}
+
+		// Point prompts (add mode only)
+		if (currentMode === "add") {
+			const radius = 6 / scale;
+			for (const prompt of pointPromptsRef.current) {
+				ctx.beginPath();
+				ctx.arc(prompt.x, prompt.y, radius, 0, 2 * Math.PI);
+				ctx.fillStyle = prompt.type === "positive" ? "#00cc44" : "#ff3333";
+				ctx.fill();
+				ctx.strokeStyle = "#ffffff";
+				ctx.lineWidth = 1.5 / scale;
+				ctx.stroke();
+				ctx.closePath();
+			}
 		}
 
 		ctx.restore();
@@ -226,14 +139,113 @@ export default function AnnotationCanvas() {
 	}, [draw]);
 
 	// -----------------------------------------------------------------------
+	// Canvas action handler — translates CanvasAction into state changes
+	// -----------------------------------------------------------------------
+	const onCanvasAction = useCallback(
+		(action: CanvasAction) => {
+			const masks = pixelMasksRef.current;
+			const annotations = data?.annotations ?? [];
+			const { width, height } = imageSizeRef.current;
+
+			switch (action.type) {
+				case "hit-test":
+					if (!masks) {
+						dispatchAnnotationSession({ type: "CLEAR_SELECTION" });
+						return;
+					}
+					let hit: Annotation | null = null;
+					for (let i = 0; i < annotations.length; i++) {
+						if (hitTestMask(masks[i], width, action.imgX, action.imgY)) {
+							hit = annotations[i];
+							break;
+						}
+					}
+					if (hit) {
+						const alreadySelected = selectedAnnotationsRef.current.some(
+							(a) => a.id === hit!.id,
+						);
+						dispatchAnnotationSession({ type: "CLEAR_SELECTION" });
+						if (!alreadySelected) {
+							dispatchAnnotationSession({
+								type: "SELECT_ANNOTATION",
+								payload: hit,
+							});
+						}
+					} else {
+						dispatchAnnotationSession({ type: "CLEAR_SELECTION" });
+					}
+					break;
+				case "rect-select":
+					if (!masks) return;
+					dispatchAnnotationSession({ type: "CLEAR_SELECTION" });
+					for (let i = 0; i < annotations.length; i++) {
+						if (
+							maskIntersectsRect(
+								masks[i],
+								width,
+								height,
+								action.x0,
+								action.y0,
+								action.x1,
+								action.y1,
+							)
+						) {
+							dispatchAnnotationSession({
+								type: "SELECT_ANNOTATION",
+								payload: annotations[i],
+							});
+						}
+					}
+					break;
+				case "positive-prompt":
+					console.log("Adding positive prompt at", action.imgX, action.imgY);
+					dispatchAnnotationSession({
+						type: "ADD_POINT_PROMPT",
+						payload: { x: action.imgX, y: action.imgY, type: "positive" },
+					});
+					requestDraw();
+					break;
+				case "negative-prompt":
+					dispatchAnnotationSession({
+						type: "ADD_POINT_PROMPT",
+						payload: { x: action.imgX, y: action.imgY, type: "negative" },
+					});
+					requestDraw();
+					break;
+				default:
+					console.warn("Unknown canvas action:", action);
+					return;
+			}
+		},
+		[data, dispatchAnnotationSession, requestDraw],
+	);
+
+	// -----------------------------------------------------------------------
+	// Canvas interaction hook
+	// -----------------------------------------------------------------------
+	const {
+		selectionRectRef,
+		handleMouseDown,
+		handleMouseMove,
+		handleMouseUp,
+		handleMouseLeave,
+		handleContextMenu,
+	} = useCanvasInteraction(
+		mode,
+		canvasRef,
+		viewportRef,
+		requestDraw,
+		onCanvasAction,
+	);
+
+	// -----------------------------------------------------------------------
 	// Viewport reset — fits image into canvas with letterboxing
 	// -----------------------------------------------------------------------
 	const resetViewport = useCallback(() => {
 		const canvas = canvasRef.current;
-		const container = containerRef.current;
-		if (!canvas || !container) return;
+		if (!canvas) return;
 
-		const rect = container.getBoundingClientRect();
+		const rect = canvas.getBoundingClientRect();
 		canvas.width = rect.width;
 		canvas.height = rect.height;
 
@@ -241,7 +253,6 @@ export default function AnnotationCanvas() {
 		if (imgW === 0 || imgH === 0) return;
 
 		const scale = Math.min(rect.width / imgW, rect.height / imgH);
-		// Origin is the image-space coordinate shown at canvas (0, 0)
 		const originX = -(rect.width / scale - imgW) / 2;
 		const originY = -(rect.height / scale - imgH) / 2;
 
@@ -261,7 +272,6 @@ export default function AnnotationCanvas() {
 			setImageSize(null);
 			return;
 		}
-
 		const img = new Image();
 		img.onload = () => {
 			imageRef.current = img;
@@ -285,14 +295,16 @@ export default function AnnotationCanvas() {
 	useEffect(() => {
 		if (!data || !imageSize) {
 			layersRef.current = null;
+			pixelMasksRef.current = null;
 			requestDraw();
 			return;
 		}
 		let cancelled = false;
 		buildLayers(data)
-			.then((layers) => {
+			.then(({ layers, pixelMasks }) => {
 				if (!cancelled) {
 					layersRef.current = layers;
+					pixelMasksRef.current = pixelMasks;
 					requestDraw();
 				}
 			})
@@ -302,10 +314,18 @@ export default function AnnotationCanvas() {
 		};
 	}, [data, imageSize, requestDraw]);
 
-	// Redraw when visualization settings change (opacity, showMasks, etc.)
+	// Redraw when visualization settings, point prompts, or mode changes
 	useEffect(() => {
+		if (canvasRef.current) {
+			canvasRef.current.style.cursor = mode === "add" ? "crosshair" : "default";
+		}
 		requestDraw();
-	}, [visualizationSetting, requestDraw]);
+	}, [
+		visualizationSetting,
+		annotationSessionState.pointPrompts,
+		mode,
+		requestDraw,
+	]);
 
 	// Window resize
 	useEffect(() => {
@@ -313,8 +333,13 @@ export default function AnnotationCanvas() {
 		return () => window.removeEventListener("resize", resetViewport);
 	}, [resetViewport]);
 
+	// Cancel pending rAF on unmount
+	useEffect(() => {
+		return () => cancelAnimationFrame(rafRef.current);
+	}, []);
+
 	// -----------------------------------------------------------------------
-	// Wheel zoom — must be non-passive to call preventDefault
+	// Wheel zoom — native listener (needs passive:false for preventDefault)
 	// -----------------------------------------------------------------------
 	const handleWheel = useCallback(
 		(e: WheelEvent) => {
@@ -330,13 +355,11 @@ export default function AnnotationCanvas() {
 			const zoom = e.deltaY < 0 ? 1.1 : 0.9;
 			const newScale = Math.max(0.05, Math.min(50, scale * zoom));
 
-			// Keep the image point under the cursor fixed after zoom
 			viewportRef.current = {
 				scale: newScale,
 				originX: mouseX / scale + originX - mouseX / newScale,
 				originY: mouseY / scale + originY - mouseY / newScale,
 			};
-
 			requestDraw();
 		},
 		[requestDraw],
@@ -350,37 +373,6 @@ export default function AnnotationCanvas() {
 	}, [handleWheel]);
 
 	// -----------------------------------------------------------------------
-	// Pan — left-click drag
-	// -----------------------------------------------------------------------
-	const handleMouseDown = useCallback((e: React.MouseEvent) => {
-		isDraggingRef.current = true;
-		lastMouseRef.current = { x: e.clientX, y: e.clientY };
-		if (canvasRef.current) canvasRef.current.style.cursor = "grabbing";
-	}, []);
-
-	const handleMouseMove = useCallback(
-		(e: React.MouseEvent) => {
-			if (!isDraggingRef.current) return;
-			const dx = e.clientX - lastMouseRef.current.x;
-			const dy = e.clientY - lastMouseRef.current.y;
-			const { scale, originX, originY } = viewportRef.current;
-			viewportRef.current = {
-				scale,
-				originX: originX - dx / scale,
-				originY: originY - dy / scale,
-			};
-			lastMouseRef.current = { x: e.clientX, y: e.clientY };
-			requestDraw();
-		},
-		[requestDraw],
-	);
-
-	const handleMouseUp = useCallback(() => {
-		isDraggingRef.current = false;
-		if (canvasRef.current) canvasRef.current.style.cursor = "grab";
-	}, []);
-
-	// -----------------------------------------------------------------------
 	// Render
 	// -----------------------------------------------------------------------
 	return (
@@ -392,11 +384,15 @@ export default function AnnotationCanvas() {
 				<canvas
 					ref={canvasRef}
 					className="canvas"
-					style={{ cursor: "grab", display: "block" }}
+					style={{
+						cursor: mode === "add" ? "crosshair" : "default",
+						display: "block",
+					}}
 					onMouseDown={handleMouseDown}
 					onMouseMove={handleMouseMove}
 					onMouseUp={handleMouseUp}
-					onMouseLeave={handleMouseUp}
+					onMouseLeave={handleMouseLeave}
+					onContextMenu={handleContextMenu}
 				/>
 			</div>
 		</div>

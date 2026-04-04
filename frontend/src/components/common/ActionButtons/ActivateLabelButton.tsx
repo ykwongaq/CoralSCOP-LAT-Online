@@ -22,21 +22,27 @@ export default function ActivateLabelButton() {
 
 	const togglePopup = () => setIsOpen((prev) => !prev);
 
-	// Keyboard shortcut 'C'
+	// Keyboard shortcut 'C' to toggle, 0-9 to select label by index when open
 	useEffect(() => {
 		const handleKeyDown = (event: KeyboardEvent) => {
-			if (
-				event.key.toLowerCase() === "c" &&
-				!event.ctrlKey &&
-				!event.metaKey &&
-				!event.altKey
-			) {
+			if (event.ctrlKey || event.metaKey || event.altKey) return;
+
+			if (event.key.toLowerCase() === "c") {
 				togglePopup();
+				return;
+			}
+
+			if (isOpen) {
+				const digit = parseInt(event.key, 10);
+				if (!isNaN(digit) && digit >= 0 && digit <= 9) {
+					const label = labels[digit];
+					if (label) handleSelectLabel(label);
+				}
 			}
 		};
 		document.addEventListener("keydown", handleKeyDown);
 		return () => document.removeEventListener("keydown", handleKeyDown);
-	}, []);
+	}, [isOpen, labels, handleSelectLabel]);
 
 	// Close popup on outside click
 	useEffect(() => {
