@@ -5,7 +5,7 @@ import { AnnotationToggleBlock } from "../common/AnnotationSettings/AnnotationTo
 import LabelBar from "../common/Labels/LabelBar";
 
 export default function AnnotationSideBar() {
-	const { state, dispatch } = useProject();
+	const { state } = useProject();
 	const { visualizationSetting, updateVisualizationSetting } =
 		useVisualizationSetting();
 
@@ -14,9 +14,9 @@ export default function AnnotationSideBar() {
 			<AnnotationSiderBlock
 				name="Opacity"
 				id="opacity"
-				defaultValue={40}
+				defaultValue={Math.round(visualizationSetting.maskOpacity * 100)}
 				onChange={(value) => {
-					console.log("Opacity changed:", value);
+					updateVisualizationSetting({ maskOpacity: value / 100 });
 				}}
 				minValue={0}
 				maxValue={100}

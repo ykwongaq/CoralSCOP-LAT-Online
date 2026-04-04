@@ -3,15 +3,20 @@ import io
 import json
 import os
 import threading
-from typing import Annotated
 
-import numpy as np
 from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 from PIL import Image
 from server import server
+from server.server import (
+    DecodeMasksRequest,
+    DecodeMasksResponse,
+    EncodeMaskRequest,
+    EncodeMaskResponse,
+)
 from server.utils.logger import get_logger
+from typing import Annotated
 
 # Get the directory where this script is located
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -206,5 +211,45 @@ async def cancel_project(token: str):
         )
 
     _server.delete_project(token)
-    _server.delete_project(token)
-    _server.delete_project(token)
+
+
+# ---------------------------------------------------------------------------
+# Mask encode / decode endpoints
+# ---------------------------------------------------------------------------
+
+
+@app.post("/api/masks/decode", response_model=DecodeMasksResponse)
+async def decode_masks(request: DecodeMasksRequest):
+    """
+    Decode one or more COCO compressed RLE masks into flat row-major pixel arrays.
+
+    Each element of the response `masks` list is a base64-encoded byte string
+    where every byte is 0 (background) or 1 (foreground), in row-major (C) order:
+    index = row * width + col.
+
+    Accepts:
+        {"masks": [{"size": [height, width], "counts": "<RLE string>"}, ...]}
+
+    Returns:
+        {"masks": ["<base64>", ...]}
+    """
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(None, _server.decode_masks, request)
+
+
+@app.post("/api/masks/encode", response_model=EncodeMaskResponse)
+async def encode_mask(request: EncodeMaskRequest):
+    """
+    Encode a flat row-major pixel array into a COCO compressed RLE mask.
+
+    Accepts:
+        {
+            "mask":   "<base64>",   // flat row-major bytes (0 or 1 per pixel)
+            "height": <int>,
+            "width":  <int>
+        }
+
+    Returns:
+        {"segmentation": {"size": [height, width], "counts": "<RLE string>"}}
+    """
+    return _server.encode_mask(request)

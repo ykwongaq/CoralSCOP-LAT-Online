@@ -5,7 +5,7 @@ import numpy as np
 import torch
 
 from ..utils.logger import get_logger
-from ..utils.masks import encode_masks, decode_mask
+from ..utils.masks import encode_masks
 from .modelQueue import ModelQueue
 from .segment_anything import SamAutomaticMaskGenerator, sam_model_registry
 
@@ -45,7 +45,7 @@ class CoralSCOPModel:
     def gen_annotations(
         self,
         image: np.ndarray,
-        min_area: float = 0.0 - 1,
+        min_area: float = 0.001,
         min_confidence: float = 0.5,
         max_iou: float = 0.1,
     ) -> Dict:
@@ -62,6 +62,17 @@ class CoralSCOPModel:
         # Sort the masks by the predicted_iou in descending order
         masks.sort(key=lambda x: x["predicted_iou"], reverse=True)
 
+        """
+        masks is a list of dictionary.
+
+        each dictionary has the following keys
+        - "segmentation": the binary mask of the object (numpy array)
+        - "predicted_iou": the predicted intersection over union (float)
+        - "stability_score": the stability score of the mask (float)
+        - "area": the area of the mask (int)
+        - "bbox": the bounding box of the mask (list of int)
+        """
+
         masks = self.filter(masks, min_area, min_confidence, max_iou)
 
         annotations = {"annotations": []}
@@ -75,6 +86,7 @@ class CoralSCOPModel:
                 "area": mask["area"],
                 "image_id": 0,
                 "bbox": mask["bbox"],
+                "category_id": 0,
             }
             annotations["annotations"].append(annotation)
 
@@ -84,98 +96,73 @@ class CoralSCOPModel:
         self, masks: List[Dict], min_area: float, min_confidence: float, max_iou: float
     ) -> List[Dict]:
         """
-        Filter out the masks
+        Filter masks by area fraction, confidence, and IoU overlap.
+        Returns the surviving masks in their original order.
         """
-        self.logger.info(
-            f"Filtering masks with min_area: {min_area}, min_confidence: {min_confidence}, max_iou: {max_iou}"
+        _logger.info(
+            f"Filtering {len(masks)} masks with min_area={min_area}, "
+            f"min_confidence={min_confidence}, max_iou={max_iou}"
         )
 
-        self.logger.info(f"All indices: {list(range(len(masks)))}")
-
-        start_time = time.time()
-        filtered_index_by_area = self.filter_by_area(masks, min_area)
-        self.logger.info(f"Filter by area: {time.time() - start_time:.2f} seconds")
-        self.logger.info(
-            f"Remain {len(filtered_index_by_area)} masks after filtering by area: {filtered_index_by_area}"
+        t = time.time()
+        keep_area = self.filter_by_area(masks, min_area)
+        _logger.info(
+            f"Filter by area: {time.time() - t:.2f}s — {len(keep_area)} remain"
         )
 
-        start_time = time.time()
-        filtered_index_by_confidence = self.filter_by_confidence(masks, min_confidence)
-        self.logger.info(
-            f"Filter by confidence: {time.time() - start_time:.2f} seconds"
-        )
-        self.logger.info(
-            f"Remain {len(filtered_index_by_confidence)} masks after filtering by confidence: {filtered_index_by_confidence}"
+        t = time.time()
+        keep_conf = self.filter_by_confidence(masks, min_confidence)
+        _logger.info(
+            f"Filter by confidence: {time.time() - t:.2f}s — {len(keep_conf)} remain"
         )
 
-        start_time = time.time()
-        filtered_index_by_iou = self.filter_by_iou(masks, max_iou)
-        self.logger.info(f"Filter by iou: {time.time() - start_time:.2f} seconds")
-        self.logger.info(
-            f"Remain {len(filtered_index_by_iou)} masks after filtering by iou: {filtered_index_by_iou}"
+        # Apply area + confidence first so IoU NMS operates on fewer masks
+        pre_filtered = sorted(keep_area & keep_conf)
+
+        t = time.time()
+        keep_iou = self.filter_by_iou([masks[i] for i in pre_filtered], max_iou)
+        # keep_iou contains indices into the pre_filtered sub-list; map back
+        keep_iou_global = {pre_filtered[i] for i in keep_iou}
+        _logger.info(
+            f"Filter by IoU: {time.time() - t:.2f}s — {len(keep_iou_global)} remain"
         )
 
-        filtered_index = (
-            filtered_index_by_area
-            & filtered_index_by_confidence
-            & filtered_index_by_iou
-        )
-        self.logger.info(
-            f"Remain {len(filtered_index)} masks after all filtering: {filtered_index}"
-        )
+        return [masks[i] for i in sorted(keep_iou_global)]
 
-        filtered_indices = list(filtered_index)
-        masks = [masks[idx] for idx in filtered_indices]
-
-        return masks
-
-    def filter_by_area(self, annotations: List[Dict], area_limit: float) -> Set:
+    def filter_by_area(self, masks: List[Dict], area_limit: float) -> Set[int]:
         """
-        Filter out the masks which exceed the area limit
+        Return the 0-based indices of masks whose area is >= area_limit fraction
+        of the total image area.  Uses SAM's pre-computed 'area' field — no decode needed.
         """
-
-        if len(annotations) == 0:
+        if not masks:
             return set()
 
-        def decode_and_compute_area(annotation):
-            mask = decode_mask(annotation["segmentation"])
-            area = np.sum(mask)
-            return area
-
-        image_size = annotations[0]["segmentation"]["size"]
-        image_height = int(image_size[0])
-        image_width = int(image_size[1])
-        total_area = image_height * image_width
+        seg = masks[0]["segmentation"]
+        # Raw SAM output: numpy array with shape (H, W)
+        total_area = seg.shape[0] * seg.shape[1]
         min_area = total_area * area_limit
 
-        filtered_index = set()
-        for annotation in annotations:
-            idx = annotation["id"]
-            area = decode_and_compute_area(annotation)
-            if area >= min_area:
-                filtered_index.add(idx)
-
-        return filtered_index
+        return {i for i, m in enumerate(masks) if m["area"] >= min_area}
 
     def filter_by_confidence(
-        self, annotations: List[Dict], confidence_limit: float
-    ) -> Set:
+        self, masks: List[Dict], confidence_limit: float
+    ) -> Set[int]:
         """
-        Filter out the masks which have confidence lower than the confidence limit
+        Return the 0-based indices of masks whose predicted_iou >= confidence_limit.
         """
-        filtered_index = set()
-        for annotation in annotations:
-            if annotation["predicted_iou"] >= confidence_limit:
-                filtered_index.add(annotation["id"])
+        return {
+            i for i, m in enumerate(masks) if m["predicted_iou"] >= confidence_limit
+        }
 
-        return filtered_index
-
-    def filter_by_iou(self, annotations: List[Dict], iou_limit: float) -> Set:
+    def filter_by_iou(self, masks: List[Dict], iou_limit: float) -> Set[int]:
         """
-        Filter out the masks which have iou lower than the iou limit
+        Return the 0-based indices surviving NMS: when two masks overlap with
+        IoU >= iou_limit the smaller one is discarded.
         """
-        masks = [decode_mask(annotation["segmentation"]) for annotation in annotations]
-        return set(self.filter_by_iou_(masks, iou_limit))
+        if not masks:
+            return set()
+        raw = [m["segmentation"] for m in masks]
+        return set(self.filter_by_iou_(raw, iou_limit))
 
     def filter_by_iou_(
         self, masks: List[np.ndarray], iou_threshold: float = 0.5

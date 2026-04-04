@@ -113,6 +113,7 @@ export async function loadProject(
 
 			let annotations: Annotation[] = [];
 			const annoEntry = annotationMap.get(stem);
+
 			if (annoEntry) {
 				const annoFile = JSON.parse(
 					await annoEntry.async("text"),
@@ -135,7 +136,16 @@ export async function loadProject(
 				}));
 			}
 
-			dataList.push({ id: i, imageData: { imageUrl, imageName }, annotations });
+			// Get the image height and width
+			const { image_width: width, image_height: height } = annoEntry
+				? JSON.parse(await annoEntry.async("text")).image
+				: { image_width: 0, image_height: 0 };
+
+			dataList.push({
+				id: i,
+				imageData: { imageUrl, imageName, width, height },
+				annotations,
+			});
 		}
 
 		callbacks.onProgress?.(85);
