@@ -1,101 +1,39 @@
-import { useEffect, useRef, useState } from "react";
 import { useAnnotationSession } from "../../../features/AnnotationSession/context";
 import { useProject } from "../../../features/ProjectAnnotation/context";
 import type { Label } from "../../../types/Annotation";
-import SmallLabelButton from "./SmallLabelButton";
+import LabelPickerButton from "./LabelPickerButton";
 
-export default function AssignLabelButton() {
-	const { state, dispatch } = useProject();
+interface AssignLabelButtonProps {
+	isOpen: boolean;
+	onToggle: () => void;
+}
+
+export default function AssignLabelButton({ isOpen, onToggle }: AssignLabelButtonProps) {
+	const { dispatch } = useProject();
 	const { annotationSessionState, dispatchAnnotationSession } =
 		useAnnotationSession();
-	const [isOpen, setIsOpen] = useState(false);
-	const containerRef = useRef<HTMLDivElement>(null);
 
-	const labels = state.labels;
-
-	const handleSelectLabel = (label: Label) => {
-		// It will assign label to the selected annotations in the image
-		annotationSessionState.selectedAnnotations.forEach((annotation) => {
+	const handleAssign = (label: Label) => {
+		annotationSessionState.selectedAnnotations.forEach((annotationId) => {
 			dispatch({
 				type: "ASSIGN_LABEL_TO_ANNOTATION",
 				payload: {
 					dataId: annotationSessionState.currentDataIndex,
-					annotationId: annotation.id,
+					annotationId: annotationId,
 					labelId: label.id,
 				},
 			});
 		});
-
-		// Clear the selection after assigning label
 		dispatchAnnotationSession({ type: "CLEAR_SELECTION" });
-
-		setIsOpen(false);
+		onToggle();
 	};
 
-	const togglePopup = () => setIsOpen((prev) => !prev);
-
-	// Keyboard shortcut 'C' to toggle, 0-9 to select label by index when open
-	useEffect(() => {
-		const handleKeyDown = (event: KeyboardEvent) => {
-			if (event.ctrlKey || event.metaKey || event.altKey) return;
-
-			if (event.key.toLowerCase() === "c") {
-				togglePopup();
-				return;
-			}
-
-			if (isOpen) {
-				const digit = parseInt(event.key, 10);
-				if (!isNaN(digit) && digit >= 0 && digit <= 9) {
-					const label = labels[digit];
-					if (label) handleSelectLabel(label);
-				}
-			}
-		};
-		document.addEventListener("keydown", handleKeyDown);
-		return () => document.removeEventListener("keydown", handleKeyDown);
-	}, [isOpen, labels, handleSelectLabel]);
-
-	// Close popup on outside click
-	useEffect(() => {
-		if (!isOpen) return;
-		const handleClickOutside = (event: MouseEvent) => {
-			if (
-				containerRef.current &&
-				!containerRef.current.contains(event.target as Node)
-			) {
-				setIsOpen(false);
-			}
-		};
-		document.addEventListener("mousedown", handleClickOutside);
-		return () => document.removeEventListener("mousedown", handleClickOutside);
-	}, [isOpen]);
-
 	return (
-		<div
-			ref={containerRef}
-			className={`toggle-color-plate-popup toggle-fn${isOpen ? " open" : ""}`}
-			id="category-selector"
-		>
-			<div className="toggle-color-plate-popup__pop toggle-fn__hide">
-				<p className="toggle-color-plate-popup__label">Label</p>
-				<div className="color-plate-list toggle-color-plate-popup__list">
-					{labels.map((label) => (
-						<SmallLabelButton
-							key={label.id}
-							label={label}
-							onClick={() => handleSelectLabel(label)}
-						/>
-					))}
-				</div>
-			</div>
-			<button
-				id="assign-category-toggle-button"
-				className="toggle-fn__btn toggle-color-plate-popup__button float-bar__button toggle-button"
-				onClick={togglePopup}
-			>
-				<span>Assign Label (C)</span>
-			</button>
-		</div>
+		<LabelPickerButton
+			isOpen={isOpen}
+			onToggle={onToggle}
+			onSelectLabel={handleAssign}
+			buttonChildren={<span>Assign Label (C)</span>}
+		/>
 	);
 }

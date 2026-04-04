@@ -15,7 +15,7 @@ export default interface AnnotationSessionState {
 	activateLabelID: Label | null;
 
 	// Currently selected annotations in the images
-	selectedAnnotations: Annotation[];
+	selectedAnnotations: number[];
 
 	annotationMode: "select" | "add";
 

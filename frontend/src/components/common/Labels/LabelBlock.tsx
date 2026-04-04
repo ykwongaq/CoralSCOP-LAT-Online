@@ -219,7 +219,7 @@ export default function LabelBlock({ label }: LabelBlockProps) {
 						borderColor: labelColor,
 					}}
 				>
-					{labelID}
+					{labelID + 1}
 				</div>
 				<p
 					ref={labelTextRef}

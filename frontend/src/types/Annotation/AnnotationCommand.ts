@@ -3,6 +3,16 @@ export type AnnotationCommand =
 	| "toggle-masks"
 	| "undo"
 	| "redo"
+	| "toggle-labels"
+	| "select-label-0"
+	| "select-label-1"
+	| "select-label-2"
+	| "select-label-3"
+	| "select-label-4"
+	| "select-label-5"
+	| "select-label-6"
+	| "select-label-7"
+	| "select-label-8"
 	// Select mode
 	| "remove"
 	| "switch-to-add"
@@ -17,6 +27,18 @@ export function normalizeKey(e: KeyboardEvent): string {
 	return mods + e.key.toLowerCase();
 }
 
+const selectLabelKeys: Partial<Record<string, AnnotationCommand>> = {
+	"1": "select-label-0",
+	"2": "select-label-1",
+	"3": "select-label-2",
+	"4": "select-label-3",
+	"5": "select-label-4",
+	"6": "select-label-5",
+	"7": "select-label-6",
+	"8": "select-label-7",
+	"9": "select-label-8",
+};
+
 export const KEYMAP: Record<
 	"select" | "add",
 	Partial<Record<string, AnnotationCommand>>
@@ -27,6 +49,8 @@ export const KEYMAP: Record<
 		"ctrl+y": "redo",
 		r: "remove",
 		w: "switch-to-add",
+		c: "toggle-labels",
+		...selectLabelKeys,
 	},
 	add: {
 		tab: "toggle-masks",
@@ -34,5 +58,7 @@ export const KEYMAP: Record<
 		"ctrl+y": "redo",
 		r: "clear-prompts",
 		w: "switch-to-select",
+		c: "toggle-labels",
+		...selectLabelKeys,
 	},
 };

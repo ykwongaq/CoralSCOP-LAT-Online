@@ -21,7 +21,7 @@ export default function SmallLabelButton({
 				onClick={onClick}
 				title={label.name}
 			>
-				<span className="labelText label-sm-blk__text">{label.id}</span>
+				<span className="labelText label-sm-blk__text">{label.id + 1}</span>
 			</button>
 		</div>
 	);

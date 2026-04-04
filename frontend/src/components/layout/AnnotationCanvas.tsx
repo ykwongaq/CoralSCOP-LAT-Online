@@ -161,25 +161,18 @@ export default function AnnotationCanvas() {
 						}
 					}
 					if (hit) {
-						const alreadySelected = selectedAnnotationsRef.current.some(
-							(a) => a.id === hit!.id,
-						);
-						dispatchAnnotationSession({ type: "CLEAR_SELECTION" });
-						if (!alreadySelected) {
-							dispatchAnnotationSession({
-								type: "SELECT_ANNOTATION",
-								payload: hit,
-							});
-						}
-					} else {
-						dispatchAnnotationSession({ type: "CLEAR_SELECTION" });
+						dispatchAnnotationSession({
+							type: "TOGGLE_ANNOTATION_SELECTION",
+							payload: { annIds: [hit.id] },
+						});
 					}
 					break;
 				case "rect-select":
 					if (!masks) return;
-					dispatchAnnotationSession({ type: "CLEAR_SELECTION" });
-					for (let i = 0; i < annotations.length; i++) {
-						if (
+
+					const selectedIds = annotations
+						.map((ann) => ann.id)
+						.filter((idx, i) =>
 							maskIntersectsRect(
 								masks[i],
 								width,
@@ -188,14 +181,13 @@ export default function AnnotationCanvas() {
 								action.y0,
 								action.x1,
 								action.y1,
-							)
-						) {
-							dispatchAnnotationSession({
-								type: "SELECT_ANNOTATION",
-								payload: annotations[i],
-							});
-						}
-					}
+							),
+						);
+
+					dispatchAnnotationSession({
+						type: "TOGGLE_ANNOTATION_SELECTION",
+						payload: { annIds: selectedIds },
+					});
 					break;
 				case "positive-prompt":
 					console.log("Adding positive prompt at", action.imgX, action.imgY);
@@ -301,7 +293,7 @@ export default function AnnotationCanvas() {
 			return;
 		}
 		let cancelled = false;
-		buildLayers(data)
+		buildLayers(data, annotationSessionState)
 			.then(({ layers, pixelMasks }) => {
 				if (!cancelled) {
 					layersRef.current = layers;
@@ -313,7 +305,7 @@ export default function AnnotationCanvas() {
 		return () => {
 			cancelled = true;
 		};
-	}, [data, imageSize, requestDraw]);
+	}, [data, imageSize, annotationSessionState, requestDraw]);
 
 	// Redraw when visualization settings, point prompts, or mode changes
 	useEffect(() => {

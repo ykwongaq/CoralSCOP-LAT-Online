@@ -77,6 +77,10 @@ export function getPendingMaskColor(): string {
 	return PENDING_MASK_COLOR;
 }
 
+export function getSelectedMaskColor(): string {
+	return SELECTED_MASK_COLOR;
+}
+
 export function createLabelColorMap(colors: string[]): LabelColorMap {
 	return Object.fromEntries(colors.map((color, index) => [index, color]));
 }

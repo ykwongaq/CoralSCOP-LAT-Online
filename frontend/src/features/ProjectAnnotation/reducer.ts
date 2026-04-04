@@ -22,6 +22,10 @@ export type ProjectAnnotationAction =
 	| {
 			type: "ASSIGN_LABEL_TO_ANNOTATION";
 			payload: { dataId: number; annotationId: number; labelId: number };
+	  }
+	| {
+			type: "DELETE_ANNOTATIONS";
+			payload: { dataId: number; annotationIds: number[] };
 	  };
 
 function addLabel(state: ProjectState, labelName: string): ProjectState {
@@ -139,6 +143,27 @@ function assignLabelToAnnotation(
 	};
 }
 
+function deleteAnnotations(
+	state: ProjectState,
+	dataId: number,
+	annotationIds: number[],
+): ProjectState {
+	const idsToDelete = new Set(annotationIds);
+	return {
+		...state,
+		dataList: state.dataList.map((data) =>
+			data.id === dataId
+				? {
+						...data,
+						annotations: data.annotations
+							.filter((annotation) => !idsToDelete.has(annotation.id))
+							.map((annotation, index) => ({ ...annotation, id: index })),
+					}
+				: data,
+		),
+	};
+}
+
 export function projectAnnotationReducer(
 	state: ProjectState,
 	action: ProjectAnnotationAction,
@@ -174,6 +199,12 @@ export function projectAnnotationReducer(
 				action.payload.dataId,
 				action.payload.annotationId,
 				action.payload.labelId,
+			);
+		case "DELETE_ANNOTATIONS":
+			return deleteAnnotations(
+				state,
+				action.payload.dataId,
+				action.payload.annotationIds,
 			);
 		default:
 			return state;
