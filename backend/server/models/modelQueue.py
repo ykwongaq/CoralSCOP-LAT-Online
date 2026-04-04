@@ -18,9 +18,9 @@ class ModelQueue(Generic[T]):
     based on available VRAM — for most single-GPU setups, 1 is the right value.
     """
 
-    def __init__(self, model: T, max_concurrent: int = 1):
+    def __init__(self, model: T, max_concurrent: int = 1, semaphore: threading.Semaphore = None):
         self._model = model
-        self._semaphore = threading.Semaphore(max_concurrent)
+        self._semaphore = semaphore if semaphore is not None else threading.Semaphore(max_concurrent)
 
     def __enter__(self) -> T:
         self._semaphore.acquire()

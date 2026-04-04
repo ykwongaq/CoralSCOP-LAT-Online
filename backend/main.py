@@ -3,8 +3,18 @@ import io
 import json
 import os
 import threading
+from typing import Annotated, Optional
 
-from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, UploadFile
+import numpy as np
+from fastapi import (
+    BackgroundTasks,
+    FastAPI,
+    File,
+    Form,
+    HTTPException,
+    Response,
+    UploadFile,
+)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 from PIL import Image
@@ -14,9 +24,10 @@ from server.server import (
     DecodeMasksResponse,
     EncodeMaskRequest,
     EncodeMaskResponse,
+    PredictInstRequest,
+    PredictInstResponse,
 )
 from server.utils.logger import get_logger
-from typing import Annotated
 
 # Get the directory where this script is located
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -253,3 +264,32 @@ async def encode_mask(request: EncodeMaskRequest):
         {"segmentation": {"size": [height, width], "counts": "<RLE string>"}}
     """
     return _server.encode_mask(request)
+
+
+# ---------------------------------------------------------------------------
+# SAM interactive inference endpoints
+# ---------------------------------------------------------------------------
+@app.post("/api/sam/predict", response_model=PredictInstResponse)
+async def predict_inst(request: PredictInstRequest):
+    """
+    Run SAM interactive instance segmentation.
+
+    Accepts multipart/form-data:
+      - embeddings      : .pt blob returned by POST /api/sam/embeddings
+      - input_points    : JSON array of [x, y] pairs, e.g. [[100,200],[300,400]]
+      - input_labels    : JSON array of ints (1=foreground, 0=background)
+      - mask_input      : optional .npy file with shape [1, H, W] float32
+                          (use logits[argmax(scores)] from a prior response)
+      - multimask_output: bool, default true
+
+    Returns:
+        {
+            "masks":        ["<base64 uint8 H*W>", ...],
+            "scores":       [<float>, ...],
+            "logits":       "<base64 float32>",
+            "logits_shape": [N, H, W],
+            "height":       <int>,
+            "width":        <int>
+        }
+    """
+    return _server.predict_inst(request)

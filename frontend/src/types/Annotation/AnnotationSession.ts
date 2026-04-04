@@ -9,7 +9,7 @@ export type PointPrompt = {
 // State for the annotation process
 export default interface AnnotationSessionState {
 	// Pending masks to be added to the annotation session
-	pendingMask: RLE | null;
+	pendingMask: Annotation | null;
 
 	// Currently activate label ID
 	activateLabelID: Label | null;
