@@ -2,48 +2,54 @@ import type { Annotation, Label, RLE } from "../../types/Annotation";
 import type AnnotationSessionState from "../../types/Annotation/AnnotationSession";
 
 export type AnnotationSessionAction =
-    | { type: "SET_PENDING_MASK"; payload: RLE }
-    | { type: "CLEAR_PENDING_MASK" }
-    | { type: "SET_ACTIVE_LABEL"; payload: Label | null }
-    | { type: "SELECT_ANNOTATION"; payload: Annotation }
-    | { type: "DESELECT_ANNOTATION"; payload: { id: number } }
-    | { type: "CLEAR_SELECTION" };
+	| { type: "SET_PENDING_MASK"; payload: RLE }
+	| { type: "CLEAR_PENDING_MASK" }
+	| { type: "SET_ACTIVE_LABEL"; payload: Label | null }
+	| { type: "SELECT_ANNOTATION"; payload: Annotation }
+	| { type: "DESELECT_ANNOTATION"; payload: { id: number } }
+	| { type: "CLEAR_SELECTION" }
+	| { type: "SET_ANNOTATION_MODE"; payload: "select" | "add" }
+	| { type: "SET_CURRENT_DATA_INDEX"; payload: number };
 
 export const initialAnnotationSessionState: AnnotationSessionState = {
-    pendingMask: null,
-    activateLabelID: null,
-    selectedAnnotations: [],
+	pendingMask: null,
+	activateLabelID: null,
+	selectedAnnotations: [],
+	annotationMode: "select",
+	currentDataIndex: 0,
+	prevsProjectState: [],
 };
 
 export function annotationSessionReducer(
-    state: AnnotationSessionState,
-    action: AnnotationSessionAction,
+	state: AnnotationSessionState,
+	action: AnnotationSessionAction,
 ): AnnotationSessionState {
-    switch (action.type) {
-        case "SET_PENDING_MASK":
-            return { ...state, pendingMask: action.payload };
-        case "CLEAR_PENDING_MASK":
-            return { ...state, pendingMask: null };
-        case "SET_ACTIVE_LABEL":
-            return { ...state, activateLabelID: action.payload };
-        case "SELECT_ANNOTATION":
-            return {
-                ...state,
-                selectedAnnotations: [
-                    ...state.selectedAnnotations,
-                    action.payload,
-                ],
-            };
-        case "DESELECT_ANNOTATION":
-            return {
-                ...state,
-                selectedAnnotations: state.selectedAnnotations.filter(
-                    (a) => a.id !== action.payload.id,
-                ),
-            };
-        case "CLEAR_SELECTION":
-            return { ...state, selectedAnnotations: [] };
-        default:
-            return state;
-    }
+	switch (action.type) {
+		case "SET_PENDING_MASK":
+			return { ...state, pendingMask: action.payload };
+		case "CLEAR_PENDING_MASK":
+			return { ...state, pendingMask: null };
+		case "SET_ACTIVE_LABEL":
+			return { ...state, activateLabelID: action.payload };
+		case "SELECT_ANNOTATION":
+			return {
+				...state,
+				selectedAnnotations: [...state.selectedAnnotations, action.payload],
+			};
+		case "DESELECT_ANNOTATION":
+			return {
+				...state,
+				selectedAnnotations: state.selectedAnnotations.filter(
+					(a) => a.id !== action.payload.id,
+				),
+			};
+		case "CLEAR_SELECTION":
+			return { ...state, selectedAnnotations: [] };
+		case "SET_ANNOTATION_MODE":
+			return { ...state, annotationMode: action.payload };
+		case "SET_CURRENT_DATA_INDEX":
+			return { ...state, currentDataIndex: action.payload };
+		default:
+			return state;
+	}
 }

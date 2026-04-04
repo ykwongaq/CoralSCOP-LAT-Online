@@ -18,6 +18,10 @@ export type ProjectAnnotationAction =
 	| {
 			type: "DELETE_LABEL_STATUS";
 			payload: { labelId: number; statusIndex: number };
+	  }
+	| {
+			type: "ASSIGN_LABEL_TO_ANNOTATION";
+			payload: { dataId: number; annotationId: number; labelId: number };
 	  };
 
 function addLabel(state: ProjectState, labelName: string): ProjectState {
@@ -112,6 +116,29 @@ function updateLabelName(
 	};
 }
 
+function assignLabelToAnnotation(
+	state: ProjectState,
+	dataId: number,
+	annotationId: number,
+	labelId: number,
+): ProjectState {
+	return {
+		...state,
+		dataList: state.dataList.map((data) =>
+			data.id === dataId
+				? {
+						...data,
+						annotations: data.annotations.map((annotation) =>
+							annotation.id === annotationId
+								? { ...annotation, labelId }
+								: annotation,
+						),
+					}
+				: data,
+		),
+	};
+}
+
 export function projectAnnotationReducer(
 	state: ProjectState,
 	action: ProjectAnnotationAction,
@@ -130,12 +157,23 @@ export function projectAnnotationReducer(
 				action.payload.newName,
 			);
 		case "ADD_LABEL_STATUS":
-			return addLabelStatus(state, action.payload.labelId, action.payload.status);
+			return addLabelStatus(
+				state,
+				action.payload.labelId,
+				action.payload.status,
+			);
 		case "DELETE_LABEL_STATUS":
 			return deleteLabelStatus(
 				state,
 				action.payload.labelId,
 				action.payload.statusIndex,
+			);
+		case "ASSIGN_LABEL_TO_ANNOTATION":
+			return assignLabelToAnnotation(
+				state,
+				action.payload.dataId,
+				action.payload.annotationId,
+				action.payload.labelId,
 			);
 		default:
 			return state;

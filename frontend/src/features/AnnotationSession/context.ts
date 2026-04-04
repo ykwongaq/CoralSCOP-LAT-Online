@@ -3,16 +3,16 @@ import type AnnotationSessionState from "../../types/Annotation/AnnotationSessio
 import type { AnnotationSessionAction } from "./reducer";
 
 export const AnnotationSessionContext = createContext<{
-    state: AnnotationSessionState;
-    dispatch: React.Dispatch<AnnotationSessionAction>;
+	annotationSessionState: AnnotationSessionState;
+	dispatchAnnotationSession: React.Dispatch<AnnotationSessionAction>;
 } | null>(null);
 
 export function useAnnotationSession() {
-    const context = useContext(AnnotationSessionContext);
-    if (!context) {
-        throw new Error(
-            "useAnnotationSession must be used within an AnnotationSessionProvider",
-        );
-    }
-    return context;
+	const context = useContext(AnnotationSessionContext);
+	if (!context) {
+		throw new Error(
+			"useAnnotationSession must be used within an AnnotationSessionProvider",
+		);
+	}
+	return context;
 }

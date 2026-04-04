@@ -770,6 +770,9 @@ input[type="range"]:active::-moz-range-thumb {
   display: flex;
   align-items: center;
 }
+#annotationPage .float-bar {
+  left: calc(var(--logo-blk-width) - var(--nav-width));
+}
 .float-bar__inner {
   display: inline-flex;
   margin-inline: auto;
@@ -780,6 +783,13 @@ input[type="range"]:active::-moz-range-thumb {
   transform: translateY(-70px);
   transition: 0.2s all;
 }
+
+.float-bar.float-bar--hidden .float-bar__inner {
+  opacity: 0;
+  transform: translateY(0);
+  visibility: hidden;
+}
+
 .float-bar__item {
   padding: 0 25px;
   display: flex;

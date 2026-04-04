@@ -1,4 +1,4 @@
-import { type RLE, type Label, type Annotation } from ".";
+import { type RLE, type Label, type Annotation, type ProjectState } from ".";
 
 // State for the annotation process
 export default interface AnnotationSessionState {
@@ -10,4 +10,10 @@ export default interface AnnotationSessionState {
 
 	// Currently selected annotations in the images
 	selectedAnnotations: Annotation[];
+
+	annotationMode: "select" | "add";
+
+	currentDataIndex: number;
+
+	prevsProjectState: ProjectState[];
 }

@@ -61,7 +61,10 @@ function ProjectAnnotationPage() {
 
 	return (
 		<AnnotationSessionContext.Provider
-			value={{ state: sessionState, dispatch: sessionDispatch }}
+			value={{
+				annotationSessionState: sessionState,
+				dispatchAnnotationSession: sessionDispatch,
+			}}
 		>
 			<VisualizationSettingContext.Provider
 				value={{
