@@ -11,7 +11,6 @@ export default function AddLabelBlock({ onAddLabel }: AddLabelBlockProps) {
 
 	const handleConfirm = () => {
 		const trimmedValue = inputValue.trim();
-		console.log("Adding label with name:", trimmedValue); // Debug log
 		if (trimmedValue) {
 			onAddLabel(trimmedValue);
 			setInputValue("");
@@ -41,7 +40,10 @@ export default function AddLabelBlock({ onAddLabel }: AddLabelBlockProps) {
 	};
 
 	return (
-		<div ref={containerRef} className={`toggle-input-blk toggle-fn ${isOpen ? "open" : ""}`}>
+		<div
+			ref={containerRef}
+			className={`toggle-input-blk toggle-fn ${isOpen ? "open" : ""}`}
+		>
 			<button className="toggle-input-blk__btn" onClick={toggle}>
 				<span className="icon">{isOpen ? "×" : "+"}</span>
 				<span className="text">{isOpen ? "Cancel" : "Add Label"}</span>

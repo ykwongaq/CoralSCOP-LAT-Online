@@ -63,6 +63,9 @@ export default function LabelBlock({ label }: LabelBlockProps) {
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
 	const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
 	const [isEditing, setIsEditing] = useState(false);
+	const [isExpanded, setIsExpanded] = useState(() => subCategories.length > 0);
+	const [isAddingStatus, setIsAddingStatus] = useState(false);
+	const [newStatus, setNewStatus] = useState("");
 	const menuRef = useRef<HTMLDivElement>(null);
 	const menuButtonRef = useRef<HTMLButtonElement>(null);
 	const labelTextRef = useRef<HTMLParagraphElement>(null);
@@ -98,7 +101,25 @@ export default function LabelBlock({ label }: LabelBlockProps) {
 		setIsMenuOpen(false);
 	};
 
-	// Handle click outside to close the menu
+	const handleAddStatus = () => {
+		const trimmed = newStatus.trim();
+		if (trimmed) {
+			dispatch({
+				type: "ADD_LABEL_STATUS",
+				payload: { labelId: label.id, status: trimmed },
+			});
+		}
+		setNewStatus("");
+		setIsAddingStatus(false);
+	};
+
+	const handleDeleteStatus = (index: number) => {
+		dispatch({
+			type: "DELETE_LABEL_STATUS",
+			payload: { labelId: label.id, statusIndex: index },
+		});
+	};
+
 	useEffect(() => {
 		const handleClickOutside = (event: MouseEvent) => {
 			if (
@@ -144,7 +165,6 @@ export default function LabelBlock({ label }: LabelBlockProps) {
 		setIsEditing(false);
 	};
 
-	// Example menu items - you can customize these based on your needs
 	const menuItems = [
 		{
 			name: "Rename",
@@ -158,7 +178,9 @@ export default function LabelBlock({ label }: LabelBlockProps) {
 			onClick: () => {
 				handleCloseMenu();
 				const isLabelInUse = state.dataList.some((data) =>
-					data.annotations.some((annotation) => annotation.labelId === label.id),
+					data.annotations.some(
+						(annotation) => annotation.labelId === label.id,
+					),
 				);
 				if (isLabelInUse) {
 					showMessage({
@@ -166,14 +188,14 @@ export default function LabelBlock({ label }: LabelBlockProps) {
 						content:
 							"This label is used in some annotations. Deleting it will remove all those annotations. Are you sure?",
 						buttons: [
-							{
-								label: "Cancel",
-								onClick: closeMessage,
-							},
+							{ label: "Cancel", onClick: closeMessage },
 							{
 								label: "Delete",
 								onClick: () => {
-									dispatch({ type: "DELETE_LABEL", payload: { labelId: label.id } });
+									dispatch({
+										type: "DELETE_LABEL",
+										payload: { labelId: label.id },
+									});
 									closeMessage();
 								},
 							},
@@ -187,8 +209,8 @@ export default function LabelBlock({ label }: LabelBlockProps) {
 	];
 
 	return (
-		<>
-			<div className="label-blk labelButton color-plate-list__item">
+		<div className="color-plate-list__item">
+			<div className="label-blk labelButton">
 				<div
 					className="label-blk__color color-plate-list__color-plate colorBox"
 					style={{
@@ -222,11 +244,16 @@ export default function LabelBlock({ label }: LabelBlockProps) {
 				</p>
 				<div className="label-blk__side">
 					<button
+						className={`label-blk__btn label-blk__btn--chevron${isExpanded ? " active" : ""}`}
+						onClick={() => setIsExpanded(!isExpanded)}
+						title="Toggle sub-categories"
+					>
+						<span className="label-blk__chevron">&#9662;</span>
+					</button>
+					<button
 						className={`label-blk__btn label-hide-fn${isHidding ? " active" : ""}`}
 						value="1"
-						onClick={() => {
-							onToggleShowLabel();
-						}}
+						onClick={onToggleShowLabel}
 					>
 						<span className="ico-eye"></span>
 						<span className="ico-hide"></span>
@@ -240,6 +267,52 @@ export default function LabelBlock({ label }: LabelBlockProps) {
 					</button>
 				</div>
 			</div>
+			{isExpanded && (
+				<div className="label-subcategory">
+					{subCategories.map((status, index) => (
+						<span key={index} className="label-subcategory__tag">
+							{status}
+							<button
+								className="label-subcategory__tag-remove"
+								onClick={() => handleDeleteStatus(index)}
+							>
+								&#215;
+							</button>
+						</span>
+					))}
+					{isAddingStatus ? (
+						<input
+							autoFocus
+							type="text"
+							className="label-subcategory__input"
+							placeholder="Sub-category..."
+							value={newStatus}
+							onChange={(e) => setNewStatus(e.target.value)}
+							onKeyDown={(e) => {
+								if (e.key === "Enter") {
+									e.preventDefault();
+									handleAddStatus();
+								} else if (e.key === "Escape") {
+									setNewStatus("");
+									setIsAddingStatus(false);
+								}
+							}}
+							onBlur={() => {
+								setNewStatus("");
+								setIsAddingStatus(false);
+							}}
+						/>
+					) : (
+						<button
+							className="label-subcategory__add-btn"
+							onClick={() => setIsAddingStatus(true)}
+							title="Add sub-category"
+						>
+							+
+						</button>
+					)}
+				</div>
+			)}
 			<div ref={menuRef}>
 				<DropDownMenu isOpen={isMenuOpen} position={menuPosition}>
 					{menuItems.map((item) => (
@@ -251,6 +324,6 @@ export default function LabelBlock({ label }: LabelBlockProps) {
 					))}
 				</DropDownMenu>
 			</div>
-		</>
+		</div>
 	);
 }
