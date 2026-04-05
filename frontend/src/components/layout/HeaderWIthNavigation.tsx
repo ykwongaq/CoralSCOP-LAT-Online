@@ -6,6 +6,7 @@ export interface HeaderWithNavigationProps {
 	title: string;
 	prevImage: () => void;
 	nextImage: () => void;
+	onClick: () => void;
 }
 
 export default function HeaderWithNavigation({
@@ -13,13 +14,18 @@ export default function HeaderWithNavigation({
 	title,
 	prevImage,
 	nextImage,
+	onClick,
 }: HeaderWithNavigationProps) {
 	return (
 		<header className="header">
 			<LogoBlock />
 			<div className="header__main-side">
-				<button id="back-to-gallery" className="arrow-link arrow-link--prev">
-					<span className="ico-line-arrow-left"></span> All image
+				<button
+					id="back-to-gallery"
+					className="arrow-link arrow-link--prev"
+					onClick={onClick}
+				>
+					<span className="ico-line-arrow-left"></span> All images
 				</button>
 			</div>
 			{projectState.dataList.length > 0 && (

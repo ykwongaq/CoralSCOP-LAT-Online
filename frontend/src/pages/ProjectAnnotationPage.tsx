@@ -19,9 +19,11 @@ import { useAnnotationCommands } from "../hooks/useAnnotationCommands";
 function ConnectedHeader({
 	projectState,
 	title,
+	onClick,
 }: {
 	projectState: ProjectState;
 	title: string;
+	onClick: () => void;
 }) {
 	const { execute } = useAnnotationCommands();
 	return (
@@ -30,6 +32,7 @@ function ConnectedHeader({
 			title={title}
 			prevImage={() => execute["prev-image"]()}
 			nextImage={() => execute["next-image"]()}
+			onClick={onClick}
 		/>
 	);
 }
@@ -158,7 +161,14 @@ function ProjectAnnotationPage() {
 					<div className="wrapper">
 						<ConnectedHeader
 							projectState={state}
-							title={`${sessionState.currentDataIndex + 1}. ${state.dataList[sessionState.currentDataIndex]?.imageData.imageName || ""}`}
+							title={
+								activePanel === AnnotationPanelID
+									? `${sessionState.currentDataIndex + 1}. ${state.dataList[sessionState.currentDataIndex]?.imageData.imageName || ""}`
+									: ""
+							}
+							onClick={() => {
+								handlePanelChange(ImageGalleryPanelID);
+							}}
 						/>
 						<div className="main">
 							<SideBar>
