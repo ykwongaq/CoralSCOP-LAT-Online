@@ -2081,7 +2081,7 @@ html:has(#confirm-button:not(.hidden)) #default-bar .float-bar__inner {
     width: 100%;
     border-collapse: collapse;
     font-family: Roboto;
-    font-size: 13px;
+    font-size: 20px;
 }
 
 .stat-table th {
@@ -2090,7 +2090,7 @@ html:has(#confirm-button:not(.hidden)) #default-bar .float-bar__inner {
     background: var(--surface-surface-primary3);
     border-bottom: 2px solid var(--line-line-primary1);
     font-weight: 600;
-    font-size: 12px;
+    font-size: 20px;
     color: var(--text-text-page-heading);
     white-space: nowrap;
 }
@@ -2109,6 +2109,17 @@ html:has(#confirm-button:not(.hidden)) #default-bar .float-bar__inner {
     background: var(--blue-blue50);
 }
 
+/* Cropped image cell - max 40% width */
+.stat-cell-crop {
+    max-width: 40%;
+    width: 40%;
+}
+
+.stat-crop-wrap-row {
+    display: flex;
+    justify-content: center;
+}
+
 /* Status tags */
 .stat-tag-list {
     display: flex;
@@ -2122,7 +2133,7 @@ html:has(#confirm-button:not(.hidden)) #default-bar .float-bar__inner {
     background: var(--surface-surface-primary3);
     border: 1px solid var(--line-line-primary2);
     border-radius: 100px;
-    font-size: 11px;
+    font-size: 12px;
     color: var(--text-text-primary1);
     font-family: Roboto;
 }
