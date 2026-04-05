@@ -2014,7 +2014,7 @@ html:has(#confirm-button:not(.hidden)) #default-bar .float-bar__inner {
     min-width: 200px;
     display: flex;
     flex-direction: column;
-    min-height: 100px;
+    height: 200px;
 }
 
 .stat-chart-wrap:only-child {

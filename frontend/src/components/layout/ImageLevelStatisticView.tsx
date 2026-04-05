@@ -76,6 +76,21 @@ export default function ImageLevelStatisticView({ data, labels }: Props) {
                         <p className="stat-chart-label">Coverage Breakdown</p>
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
+                                <defs>
+                                    <pattern
+                                        id="uncoveredPattern"
+                                        patternUnits="userSpaceOnUse"
+                                        width="8"
+                                        height="8"
+                                    >
+                                        <rect width="8" height="8" fill="#9ca3af" />
+                                        <path
+                                            d="M0,8 L8,0 M-2,2 L2,-2 M6,10 L10,6"
+                                            stroke="#6b7280"
+                                            strokeWidth="1.5"
+                                        />
+                                    </pattern>
+                                </defs>
                                 <Pie
                                     data={pieData}
                                     dataKey="pct"
@@ -92,7 +107,14 @@ export default function ImageLevelStatisticView({ data, labels }: Props) {
                                     labelLine={false}
                                 >
                                     {pieData.map((entry, i) => (
-                                        <Cell key={i} fill={entry.color} />
+                                        <Cell
+                                            key={i}
+                                            fill={
+                                                entry.name === "Uncovered"
+                                                    ? "url(#uncoveredPattern)"
+                                                    : entry.color
+                                            }
+                                        />
                                     ))}
                                 </Pie>
                                 <Tooltip
@@ -153,6 +175,7 @@ export default function ImageLevelStatisticView({ data, labels }: Props) {
                                                 ? `${v}%`
                                                 : String(v)
                                         }
+                                        domain={[0, 100]}
                                     />
                                     <Tooltip
                                         formatter={(v: unknown) =>

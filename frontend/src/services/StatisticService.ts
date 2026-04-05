@@ -72,7 +72,7 @@ export function preparePieData(coverage: CoverageData): Array<{
 		{
 			name: "Uncovered",
 			pct: Math.max(0, 100 - coverage.totalPct),
-			color: "#e8ecf0",
+			color: "#9ca3af",
 		},
 	];
 }
