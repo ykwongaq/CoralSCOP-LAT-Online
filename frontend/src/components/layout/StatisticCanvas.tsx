@@ -270,7 +270,10 @@ export default function StatisticCanvas() {
 			ref={containerRef}
 			style={{ position: "relative", flex: 1, overflow: "hidden" }}
 		>
-			<div className="canvas-container">
+			<div
+				className="canvas-container"
+				style={{ backgroundColor: "var(--surface-surface-primary3)" }}
+			>
 				<canvas
 					ref={canvasRef}
 					className="canvas"

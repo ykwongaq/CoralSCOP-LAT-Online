@@ -1,6 +1,5 @@
 import { useRef, useEffect, useState, useMemo, useCallback } from "react";
 import { decodeRLE } from "../../utils/cocoRle";
-import { getLabelColor } from "../common/LabelColorMap";
 import type { Label, Data, Annotation } from "../../types/Annotation";
 
 // ---------------------------------------------------------------------------
@@ -99,31 +98,6 @@ function CroppedMaskCanvas({
 			canvas.height = cropH;
 			const ctx = canvas.getContext("2d")!;
 			ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
-
-			for (let annIdx = 0; annIdx < annotations.length; annIdx++) {
-				const mask = masks[annIdx];
-				const color = getLabelColor(annotations[annIdx].labelId);
-				const r = parseInt(color.slice(1, 3), 16);
-				const g = parseInt(color.slice(3, 5), 16);
-				const b = parseInt(color.slice(5, 7), 16);
-
-				const overlayData = ctx.createImageData(cropW, cropH);
-				const od = overlayData.data;
-				for (let py = 0; py < cropH; py++) {
-					for (let px = 0; px < cropW; px++) {
-						const imgX = cropX + px;
-						const imgY = cropY + py;
-						if (imgX >= imageWidth || imgY >= imageHeight) continue;
-						if (mask[imgY * imageWidth + imgX] !== 1) continue;
-						const i = (py * cropW + px) * 4;
-						od[i] = r;
-						od[i + 1] = g;
-						od[i + 2] = b;
-						od[i + 3] = 100;
-					}
-				}
-				ctx.putImageData(overlayData, 0, 0);
-			}
 		};
 		img.src = imageUrl;
 	}, [imageUrl, annotations, imageWidth, imageHeight]);

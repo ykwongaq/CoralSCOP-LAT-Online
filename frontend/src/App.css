@@ -1887,6 +1887,8 @@ html:has(#confirm-button:not(.hidden)) #default-bar .float-bar__inner {
 #statisticPage {
   padding: 0;
   overflow: hidden;
+  gap: var(--gap);
+  background: var(--surface-suface-bg);
 }
 
 /* Left half — select-only canvas */
@@ -1898,7 +1900,9 @@ html:has(#confirm-button:not(.hidden)) #default-bar .float-bar__inner {
   background: #fff;
   position: relative;
   overflow: hidden;
-  border-right: 1px solid var(--line-line-primary1);
+  margin: var(--gap) 0 var(--gap) var(--gap);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 /* Right half — statistics */
@@ -1908,14 +1912,18 @@ html:has(#confirm-button:not(.hidden)) #default-bar .float-bar__inner {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  gap: var(--gap);
+  margin: var(--gap) var(--gap) var(--gap) 0;
 }
 
 .stat-right__top {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  border-bottom: 1px solid var(--line-line-primary1);
   background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  padding: 20px;
 }
 
 .stat-right__bottom {
@@ -1923,6 +1931,9 @@ html:has(#confirm-button:not(.hidden)) #default-bar .float-bar__inner {
   min-height: 0;
   overflow-y: auto;
   background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  padding: 20px;
 }
 
 /* Section wrappers */
