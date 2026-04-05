@@ -28,7 +28,11 @@ function EntryPage() {
             >
               Load Existing Project
             </button>
-            <button className="button button--border" id="quick-start-button">
+            <button
+              className="button button--border"
+              id="quick-start-button"
+              onClick={() => navigate("/project-quick-start")}
+            >
               Quick Start
             </button>
           </div>

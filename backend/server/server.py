@@ -6,6 +6,7 @@ import time
 import uuid
 from typing import Dict, List, Optional, Union
 
+
 import numpy as np
 from fastapi import HTTPException
 from PIL import Image
@@ -61,6 +62,8 @@ class PredictInstRequest(BaseModel):
 class PredictInstResponse(BaseModel):
     mask: RLE
     best_mask_logit: str  # base64-encoded .npy bytes, shape [1, 256, 256] float32
+
+
 
 
 class Server:
@@ -198,3 +201,19 @@ class Server:
             mask=rle_masks[best_idx],
             best_mask_logit=best_mask_logit_b64,
         )
+
+    def quick_start(
+        self, image: Image.Image, image_filename: str, config: Dict
+    ) -> str:
+        """
+        Create a single-image project and return the path to the .coral ZIP file.
+        The caller is responsible for deleting the file after it has been sent.
+        """
+        _logger.info("Running quick_start (image_filename=%s)", image_filename)
+        token = self.gen_token()
+        # Consume the synchronous generator in-place (single image, CPU-bound)
+        for _ in self.project_handler.stream_create_project(
+            token, [image], [image_filename], config
+        ):
+            pass
+        return self.project_handler.get_zip_path(token)

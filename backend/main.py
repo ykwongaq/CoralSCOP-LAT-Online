@@ -293,6 +293,56 @@ async def delete_sam_session(session_id: str):
     return Response(status_code=204)
 
 
+@app.post("/api/projects/quick-start")
+async def quick_start_project(
+    background_tasks: BackgroundTasks,
+    image: UploadFile = File(...),
+    config: Annotated[str, Form()] = "{}",
+    model: Annotated[str | None, Form()] = None,
+):
+    """
+    Create a project from a single image and return the .coral file directly.
+
+    Accepts multipart/form-data:
+      - image  : one image file
+      - config : JSON string  { min_area, min_confidence, max_overlap }
+      - model  : optional model identifier (CoralSCOP | CoralTank)
+
+    Returns the .coral binary as application/octet-stream.
+    The frontend can pass the response blob directly to loadProject().
+    """
+    try:
+        config_data: dict = json.loads(config)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=422, detail="config must be valid JSON")
+
+    config_data["model"] = model
+
+    try:
+        contents = await image.read()
+        pil_image = Image.open(io.BytesIO(contents)).convert("RGB")
+    except Exception as exc:
+        raise HTTPException(
+            status_code=422, detail=f"Failed to read image '{image.filename}': {exc}"
+        )
+
+    filename = image.filename or "image.jpg"
+
+    loop = asyncio.get_running_loop()
+    zip_path = await loop.run_in_executor(
+        None, _server.quick_start, pil_image, filename, config_data
+    )
+
+    token = os.path.basename(zip_path).replace("project_", "").replace(".coral", "")
+    background_tasks.add_task(_server.delete_project, token)
+
+    return FileResponse(
+        path=zip_path,
+        filename=os.path.basename(zip_path),
+        media_type="application/octet-stream",
+    )
+
+
 @app.post("/api/sam/predict/", response_model=PredictInstResponse)
 async def predict_inst(request: PredictInstRequest):
     """
