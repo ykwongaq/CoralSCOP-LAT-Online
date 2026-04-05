@@ -7,12 +7,11 @@ import uuid
 from typing import Dict, List, Optional, Union
 
 import numpy as np
-import torch
 from fastapi import HTTPException
 from PIL import Image
 from pydantic import BaseModel
 
-from .embeddingStore import EmbeddingStore
+from .embeddingStore import EmbeddingStore, _to_device
 from .maskHandler import MaskHandler
 from .models.CoralSCOPModel import CoralSCOPModel
 from .models.SAM3Model import SAM3Model
@@ -52,15 +51,12 @@ class PredictInstRequest(BaseModel):
     stem: str  # image filename stem identifying which .pt to load
     input_points: List[List[float]]  # [[x1, y1], ...]
     input_labels: List[int]  # 1=foreground, 0=background per point
-    mask_input: Optional[bytes] = None  # base64-decoded .npy bytes [1, H, W] float32
+    mask_input: Optional[str] = None  # base64-encoded .npy bytes [1, H, W] float32
 
 
 class PredictInstResponse(BaseModel):
-    masks: List[
-        _RLE
-    ]  # COCO RLE per candidate mask, length N (1 if multimask_output=False, 3 if True)
+    mask: _RLE
     best_mask_logit: str  # base64-encoded .npy bytes, shape [1, 256, 256] float32
-    # = logits[argmax(scores)]; pass directly back as mask_input in the next request
 
 
 class Server:
@@ -149,24 +145,28 @@ class Server:
             request.stem,
             len(request.input_points),
         )
-        pt_path = self.embedding_store.get_path(request.session_id, request.stem)
-        if pt_path is None:
+        try:
+            state = self.embedding_store.get(request.session_id, request.stem)
+        except MemoryError:
+            raise HTTPException(
+                status_code=503,
+                detail="Server is out of memory. Please try again later.",
+            )
+
+        if state is None:
             raise HTTPException(
                 status_code=404,
                 detail=f"No embedding for session_id={request.session_id!r} stem={request.stem!r}",
             )
-        state = torch.load(
-            pt_path,
-            map_location=self.sam3.device,
-            weights_only=False,
-        )
+
+        state = _to_device(state, self.sam3.device)
 
         input_points = np.array(request.input_points, dtype=np.float32)
         input_labels = np.array(request.input_labels, dtype=np.int32)
 
         mask_input = None
         if request.mask_input is not None:
-            mask_input = np.load(io.BytesIO(request.mask_input))
+            mask_input = np.load(io.BytesIO(base64.b64decode(request.mask_input)))
 
         masks, scores, logits = self.sam3.predict_inst(
             state, input_points, input_labels, mask_input
@@ -174,8 +174,6 @@ class Server:
 
         # masks: [N, H, W] bool/uint8 — encode each candidate as COCO RLE
         rle_masks = [_RLE(**encode_masks(masks[i])) for i in range(masks.shape[0])]
-
-        scores_list = scores.tolist()
 
         # logits: [N, 256, 256] — keep the best one as [1, 256, 256] for the next mask_input
         best_idx = int(np.argmax(scores))
@@ -185,6 +183,6 @@ class Server:
         best_mask_logit_b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
 
         return PredictInstResponse(
-            masks=rle_masks,
+            mask=rle_masks[best_idx],
             best_mask_logit=best_mask_logit_b64,
         )

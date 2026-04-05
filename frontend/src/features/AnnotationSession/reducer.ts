@@ -1,9 +1,10 @@
-import type { Annotation, Label, RLE } from "../../types/Annotation";
+import type { Label } from "../../types/Annotation";
 import type AnnotationSessionState from "../../types/Annotation/AnnotationSession";
-import type { PointPrompt } from "../../types/Annotation/AnnotationSession";
+import type { PendingAnnotation } from "../../types/Annotation/PendingAnnotation";
+import type { PointPrompt } from "../../types/Annotation/PointPrompt";
 
 export type AnnotationSessionAction =
-	| { type: "SET_PENDING_MASK"; payload: RLE }
+	| { type: "SET_PENDING_MASK"; payload: PendingAnnotation }
 	| { type: "CLEAR_PENDING_MASK" }
 	| { type: "SET_ACTIVE_LABEL"; payload: Label | null }
 	| { type: "TOGGLE_ANNOTATION_SELECTION"; payload: { annIds: number[] } }

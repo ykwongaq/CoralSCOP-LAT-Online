@@ -314,7 +314,7 @@ async def delete_sam_session(session_id: str):
     return Response(status_code=204)
 
 
-@app.post("/api/sam/predict", response_model=PredictInstResponse)
+@app.post("/api/sam/predict/", response_model=PredictInstResponse)
 async def predict_inst(request: PredictInstRequest):
     """
     Run SAM interactive instance segmentation.

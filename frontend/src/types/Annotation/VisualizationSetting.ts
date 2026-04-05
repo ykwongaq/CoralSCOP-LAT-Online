@@ -8,6 +8,8 @@ export interface VisualizationSetting {
 
 	maskOpacity: number;
 
+	pendingMaskOpacity: number;
+
 	brightness: number;
 
 	contrast: number;

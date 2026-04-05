@@ -1,11 +1,6 @@
 import { type Label, type ProjectState } from ".";
 import type { PendingAnnotation } from "./PendingAnnotation";
-
-export type PointPrompt = {
-	x: number;
-	y: number;
-	type: "positive" | "negative";
-};
+import type { PointPrompt } from "./PointPrompt";
 
 // State for the annotation process
 export default interface AnnotationSessionState {

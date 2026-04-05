@@ -1,5 +1,7 @@
 import { apiClient, API_BASE } from "./ApiClient";
 import type { ApiRequestCallbacks, ApiRequestHandle } from "../types/api";
+import type { PointPrompt } from "../types/Annotation/PointPrompt";
+import type { RLE } from "../types/Annotation";
 
 // ---------------------------------------------------------------------------
 // Request / Response types
@@ -13,6 +15,18 @@ export interface UploadEmbeddingRequest {
 	sessionId: string;
 	stem: string;
 	data: ArrayBuffer;
+}
+
+export interface PredictInstanceRequest {
+	sessionId: string;
+	stem: string;
+	inputPrompts: PointPrompt[];
+	maskInput?: string; // base64-encoded .npy bytes, shape [1, 256, 256] float32; optional mask input from a previous prediction
+}
+
+export interface PredictInstanceResponse {
+	mask: RLE;
+	bestMaskLogit: string; // base64-encoded .npy bytes, shape [1, 256, 256] float32
 }
 
 // ---------------------------------------------------------------------------
@@ -63,16 +77,43 @@ export function uploadEmbedding(
 	);
 }
 
+export function predictInstance(
+	request: PredictInstanceRequest,
+	callbacks: ApiRequestCallbacks<PredictInstanceResponse>,
+): ApiRequestHandle {
+	const body: Record<string, unknown> = {
+		session_id: request.sessionId,
+		stem: request.stem,
+		input_points: request.inputPrompts.map((p) => [p.x, p.y]),
+		input_labels: request.inputPrompts.map((p) =>
+			p.type === "positive" ? 1 : 0,
+		),
+	};
+	if (request.maskInput !== undefined) {
+		body.mask_input = request.maskInput;
+	}
+
+	return apiClient.request<PredictInstanceResponse>("/api/sam/predict/", {
+		method: "POST",
+		body,
+		onError: callbacks.onError,
+		onComplete: (data) =>
+			callbacks.onComplete?.({
+				mask: data.mask,
+				bestMaskLogit: data.bestMaskLogit,
+			}),
+	});
+}
+
 /**
  * Deletes a SAM session and all its stored embeddings immediately.
  * Fire-and-forget — errors are silently ignored.
  * Should be called when the user closes a project or loads a new one.
  */
 export function releaseSession(sessionId: string): void {
-	apiClient.request(
-		`/api/sam/sessions/${encodeURIComponent(sessionId)}`,
-		{ method: "DELETE" },
-	);
+	apiClient.request(`/api/sam/sessions/${encodeURIComponent(sessionId)}`, {
+		method: "DELETE",
+	});
 }
 
 /**
@@ -81,8 +122,8 @@ export function releaseSession(sessionId: string): void {
  * `apiClient` wraps an AbortController and is not safe to use in `beforeunload`.
  */
 export function releaseSessionOnUnload(sessionId: string): void {
-	void fetch(
-		`${API_BASE}/api/sam/sessions/${encodeURIComponent(sessionId)}`,
-		{ method: "DELETE", keepalive: true },
-	);
+	void fetch(`${API_BASE}/api/sam/sessions/${encodeURIComponent(sessionId)}`, {
+		method: "DELETE",
+		keepalive: true,
+	});
 }

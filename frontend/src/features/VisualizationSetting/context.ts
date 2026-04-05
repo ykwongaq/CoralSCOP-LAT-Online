@@ -8,6 +8,7 @@ export const initialVisualizationSetting: VisualizationSetting = {
 	brightness: 100,
 	contrast: 100,
 	saturation: 100,
+	pendingMaskOpacity: 0.7,
 };
 
 export const VisualizationSettingContext = createContext<{
