@@ -13,6 +13,8 @@ import { deleteProject } from "../../../services/DeleteProjectService";
 import { downloadProject } from "../../../services/DownloadProjectService";
 import { useNavigate } from "react-router-dom";
 
+const MAX_IMAGES = 50;
+
 export default function UploadImagePanel() {
   const navigate = useNavigate();
   const { state, dispatch } = useProjectCreation();
@@ -33,9 +35,34 @@ export default function UploadImagePanel() {
 
   const handleImages = useCallback(
     (images: ImageSelectionData[]) => {
+      const currentCount = state.imageDataList.length;
+      const newCount = images.length;
+      const totalCount = currentCount + newCount;
+
+      if (currentCount >= MAX_IMAGES) {
+        showError({
+          title: "Image Limit Reached",
+          content: `You can only upload up to ${MAX_IMAGES} images per project.`,
+          buttons: [{ label: "Close", onClick: closeMessage }],
+        });
+        return;
+      }
+
+      if (totalCount > MAX_IMAGES) {
+        const allowedCount = MAX_IMAGES - currentCount;
+        showError({
+          title: "Image Limit Exceeded",
+          content: `You can only upload ${allowedCount} more image${allowedCount !== 1 ? "s" : ""}. The maximum limit is ${MAX_IMAGES} images per project.`,
+          buttons: [{ label: "Close", onClick: closeMessage }],
+        });
+        // Only add the allowed number of images
+        dispatch({ type: "ADD_IMAGES", payload: images.slice(0, allowedCount) });
+        return;
+      }
+
       dispatch({ type: "ADD_IMAGES", payload: images });
     },
-    [dispatch],
+    [dispatch, state.imageDataList.length, showError, closeMessage],
   );
 
   const handleToggleSelection = useCallback(
@@ -156,7 +183,9 @@ export default function UploadImagePanel() {
 
   return (
     <div className="main-section__inner">
-      <p className="main-section__title">Upload Images</p>
+      <p className="main-section__title">
+        Upload Images ({state.imageDataList.length}/{MAX_IMAGES})
+      </p>
       <div className="main-section__content">
         <ImageUploader onImages={handleImages} />
         <ImageGallery

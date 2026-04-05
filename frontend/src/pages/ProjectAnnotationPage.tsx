@@ -86,8 +86,6 @@ function ProjectAnnotationPage() {
         initialVisualizationSetting,
     );
 
-    const { dispatchAnnotationSession } = useAnnotationSession();
-
     const projectLoaded = isProjectLoaded(state);
 
     // Keep a ref so beforeunload always sees the latest sessionId without a stale closure.
@@ -156,12 +154,12 @@ function ProjectAnnotationPage() {
     const handlePanelChange = useCallback(
         (panelId: string) => {
             // When ever the panel changes, clear all the selected annotations, pending masks, point prompts
-            dispatchAnnotationSession({ type: "CLEAR_PENDING_MASK" });
-            dispatchAnnotationSession({ type: "CLEAR_SELECTION" });
-            dispatchAnnotationSession({ type: "CLEAR_POINT_PROMPTS" });
+            sessionDispatch({ type: "CLEAR_PENDING_MASK" });
+            sessionDispatch({ type: "CLEAR_SELECTION" });
+            sessionDispatch({ type: "CLEAR_POINT_PROMPTS" });
             setActivePanel(panelId);
         },
-        [dispatchAnnotationSession],
+        [sessionDispatch],
     );
 
     return (
