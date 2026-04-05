@@ -1,16 +1,13 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import BottomBar from "../../layout/BottomBar";
 import Button from "../../common/Button";
+import ImageDisplayBlock from "./ImageDisplayBlock";
 import { useProject } from "../../../features/ProjectAnnotation/context";
 import { usePopMessage } from "../../common/PopUpMessages/PopMessageContext";
 import { loadProject } from "../../../services/LoadProjectService";
 import { quickStart } from "../../../services/QuickStartService";
 import type { ApiRequestHandle } from "../../../types/api";
 import type { ProjectConfig } from "../../../types/ProjectCreation";
-import {
-	SettingGroups,
-	SettingSliderBlock,
-} from "../../common/Settings";
 
 export const QuickStartUploadImagePanelID = "quick-start-upload-image-panel";
 
@@ -29,9 +26,12 @@ export default function QuickStartUploadImagePanel() {
 
 	const [isDragging, setIsDragging] = useState(false);
 	const [selectedImage, setSelectedImage] = useState<File | null>(null);
-	const [config, setConfig] = useState<ProjectConfig>(DEFAULT_CONFIG);
+	const [imagePreview, setImagePreview] = useState<string | null>(null);
+	const [isProcessing, setIsProcessing] = useState(false);
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const requestHandleRef = useRef<ApiRequestHandle | null>(null);
+
+	const config = DEFAULT_CONFIG;
 
 	const isImageFile = (file: File) => ACCEPTED_IMAGE_TYPES.includes(file.type);
 
@@ -53,6 +53,13 @@ export default function QuickStartUploadImagePanel() {
 		}
 	}, []);
 
+	const handleClearImage = useCallback(() => {
+		setSelectedImage(null);
+		if (fileInputRef.current) {
+			fileInputRef.current.value = "";
+		}
+	}, []);
+
 	const handleFileInputChange = useCallback(
 		(e: React.ChangeEvent<HTMLInputElement>) => {
 			const file = e.target.files?.[0];
@@ -68,8 +75,9 @@ export default function QuickStartUploadImagePanel() {
 	}, []);
 
 	const handleStartAnnotation = useCallback(() => {
-		if (!selectedImage) return;
+		if (!selectedImage || isProcessing) return;
 
+		setIsProcessing(true);
 		requestHandleRef.current = quickStart(
 			{ image: selectedImage, config },
 			{
@@ -84,6 +92,7 @@ export default function QuickStartUploadImagePanel() {
 								onClick: () => {
 									requestHandleRef.current?.cancel();
 									requestHandleRef.current = null;
+									setIsProcessing(false);
 									closeMessage();
 								},
 							},
@@ -91,6 +100,7 @@ export default function QuickStartUploadImagePanel() {
 					});
 				},
 				onError: (err) => {
+					setIsProcessing(false);
 					showError({
 						title: "Quick Start Failed",
 						content: "An error occurred while processing the image.",
@@ -110,6 +120,7 @@ export default function QuickStartUploadImagePanel() {
 							updateLoadingProgress(pct);
 						},
 						onError: (err) => {
+							setIsProcessing(false);
 							showError({
 								title: "Failed to Load Project",
 								content: "An error occurred while loading the project.",
@@ -119,6 +130,7 @@ export default function QuickStartUploadImagePanel() {
 						},
 						onComplete: (state) => {
 							closeMessage();
+							setIsProcessing(false);
 							dispatch({ type: "LOAD_PROJECT", payload: state });
 						},
 					});
@@ -127,13 +139,23 @@ export default function QuickStartUploadImagePanel() {
 		);
 	}, [
 		selectedImage,
-		config,
+		isProcessing,
 		showLoading,
 		showError,
 		updateLoadingProgress,
 		closeMessage,
 		dispatch,
 	]);
+
+	useEffect(() => {
+		if (selectedImage) {
+			const url = URL.createObjectURL(selectedImage);
+			setImagePreview(url);
+			return () => URL.revokeObjectURL(url);
+		} else {
+			setImagePreview(null);
+		}
+	}, [selectedImage]);
 
 	return (
 		<div className="main-section__inner">
@@ -143,78 +165,47 @@ export default function QuickStartUploadImagePanel() {
 				process your image and open it for annotation.
 			</p>
 			<div className="main-section__content">
-				<div
-					className={`drop-container drop-container--large${isDragging ? " drop-container--active" : ""}`}
-					onDragOver={handleDragOver}
-					onDragLeave={handleDragLeave}
-					onDrop={handleDrop}
-				>
-					<div className="drop-text">
-						{selectedImage ? (
-							<span>{selectedImage.name}</span>
-						) : (
-							<>
-								Drop an image here. Or{" "}
-								<button className="button select-link" onClick={openFileSelect}>
-									browse
-								</button>{" "}
-								to select a file.
-							</>
-						)}
+				{imagePreview ? (
+					<ImageDisplayBlock imagePreview={imagePreview} />
+				) : (
+					<div
+						className={`drop-container drop-container--large${isDragging ? " drop-container--active" : ""}`}
+						onDragOver={handleDragOver}
+						onDragLeave={handleDragLeave}
+						onDrop={handleDrop}
+					>
+						<div className="drop-text">
+							Drop an image here. Or{" "}
+							<button className="button select-link" onClick={openFileSelect}>
+								browse
+							</button>{" "}
+							to select a file.
+						</div>
+						<input
+							ref={fileInputRef}
+							type="file"
+							accept={ACCEPTED_IMAGE_TYPES.join(",")}
+							style={{ display: "none" }}
+							onChange={handleFileInputChange}
+						/>
 					</div>
-					<input
-						ref={fileInputRef}
-						type="file"
-						accept={ACCEPTED_IMAGE_TYPES.join(",")}
-						style={{ display: "none" }}
-						onChange={handleFileInputChange}
-					/>
-				</div>
-
-				<SettingGroups>
-					<SettingSliderBlock
-						title="Min Area:"
-						description="Filter out masks that are too small. (in % of pixel area of the image). Range (0-20)"
-						id="qs-min-area"
-						defaultValue={config.min_area * 100}
-						minValue={0}
-						maxValue={20}
-						step={0.1}
-						onChange={(v) =>
-							setConfig((c) => ({ ...c, min_area: v / 100 }))
-						}
-					/>
-					<SettingSliderBlock
-						title="Min Confidence:"
-						description="Filter out masks with low confidence. (in %)"
-						id="qs-min-confidence"
-						defaultValue={config.min_confidence * 100}
-						minValue={0}
-						maxValue={100}
-						step={1}
-						onChange={(v) =>
-							setConfig((c) => ({ ...c, min_confidence: v / 100 }))
-						}
-					/>
-					<SettingSliderBlock
-						title="Max Overlap:"
-						description="Filter out masks that overlap too much with other masks. Overlap measured by IoU. (in %)"
-						id="qs-max-overlap"
-						defaultValue={config.max_overlap * 100}
-						minValue={0}
-						maxValue={50}
-						step={0.1}
-						onChange={(v) =>
-							setConfig((c) => ({ ...c, max_overlap: v / 100 }))
-						}
-					/>
-				</SettingGroups>
+				)}
 			</div>
 
 			<BottomBar>
-				<Button onClick={handleStartAnnotation} disabled={!selectedImage}>
-					Start Annotation
-				</Button>
+				<div className="quick-start-upload-image-panel__buttons">
+					{selectedImage && (
+						<Button onClick={handleClearImage} disabled={isProcessing}>
+							Clear
+						</Button>
+					)}
+					<Button
+						onClick={handleStartAnnotation}
+						disabled={!selectedImage || isProcessing}
+					>
+						{isProcessing ? "Processing..." : "Start Annotation"}
+					</Button>
+				</div>
 			</BottomBar>
 		</div>
 	);

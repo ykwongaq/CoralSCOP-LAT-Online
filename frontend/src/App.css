@@ -2125,3 +2125,30 @@ html:has(#confirm-button:not(.hidden)) #default-bar .float-bar__inner {
   background: #fce4ec;
   color: #c62828;
 }
+
+/* QuickStartUploadImagePanel - button styles */
+.quick-start-upload-image-panel__buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.quick-start-upload-image-panel__buttons .button {
+  --width: 240px;
+}
+
+/* Image Display Block - for QuickStartUploadImagePanel */
+.image-display-block {
+  height: 90%;
+  min-height: calc(100vh * 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 20px;
+}
+
+.image-display-block__img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+}
