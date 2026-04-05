@@ -1,8 +1,6 @@
 export type AnnotationCommand =
 	// Shared (both modes)
 	| "toggle-masks"
-	| "undo"
-	| "redo"
 	| "toggle-labels"
 	| "select-label-0"
 	| "select-label-1"
@@ -45,8 +43,6 @@ export const KEYMAP: Record<
 > = {
 	select: {
 		tab: "toggle-masks",
-		"ctrl+z": "undo",
-		"ctrl+y": "redo",
 		r: "remove",
 		w: "switch-to-add",
 		c: "toggle-labels",
@@ -54,9 +50,8 @@ export const KEYMAP: Record<
 	},
 	add: {
 		tab: "toggle-masks",
-		"ctrl+z": "undo",
-		"ctrl+y": "redo",
-		r: "clear-prompts",
+		" ": "confirm-mask",
+		"ctrl+z": "clear-prompts",
 		w: "switch-to-select",
 		c: "toggle-labels",
 		...selectLabelKeys,

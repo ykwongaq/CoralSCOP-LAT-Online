@@ -66,8 +66,8 @@ export default function AnnotationCanvas() {
 	const projectStateRef = useRef(state);
 	projectStateRef.current = state;
 
-	const activateLabelIDRef = useRef(annotationSessionState.activateLabelID);
-	activateLabelIDRef.current = annotationSessionState.activateLabelID;
+	const activateLabelIDRef = useRef(annotationSessionState.activateLabel);
+	activateLabelIDRef.current = annotationSessionState.activateLabel;
 
 	// For hit-testing we need the current selection without stale closures
 	const selectedAnnotationsRef = useRef(

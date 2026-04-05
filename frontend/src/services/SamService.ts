@@ -93,16 +93,22 @@ export function predictInstance(
 		body.mask_input = request.maskInput;
 	}
 
-	return apiClient.request<PredictInstanceResponse>("/api/sam/predict/", {
-		method: "POST",
-		body,
-		onError: callbacks.onError,
-		onComplete: (data) =>
-			callbacks.onComplete?.({
-				mask: data.mask,
-				bestMaskLogit: data.bestMaskLogit,
-			}),
-	});
+	console.log(request.maskInput);
+
+	return apiClient.request<{ mask: RLE; best_mask_logit: string }>(
+		"/api/sam/predict/",
+		{
+			method: "POST",
+			body,
+			onError: callbacks.onError,
+			onComplete: (data) => {
+				callbacks.onComplete?.({
+					mask: data.mask,
+					bestMaskLogit: data.best_mask_logit,
+				});
+			},
+		},
+	);
 }
 
 /**

@@ -137,6 +137,9 @@ export async function buildLayers(
 	textCtx.textBaseline = "middle";
 
 	for (const { cx, cy, labelId } of centroids) {
+		// If the labelId < 0, it means the annotation has no label assigned, so we skip drawing the badge
+		if (labelId < 0) continue;
+
 		const color = getLabelColor(labelId);
 		const textColor = getTextColor(labelId);
 		const displayText = String(labelId + 1);

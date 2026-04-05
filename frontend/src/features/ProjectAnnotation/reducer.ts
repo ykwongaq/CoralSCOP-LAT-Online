@@ -1,4 +1,5 @@
-import type { Label } from "../../types/Annotation";
+import type { Label, RLE } from "../../types/Annotation";
+import type AnnotationSessionState from "../../types/Annotation/AnnotationSession";
 import { type ProjectState } from "../../types/Annotation/Project";
 
 export type ProjectAnnotationAction =
@@ -9,7 +10,10 @@ export type ProjectAnnotationAction =
 				labelName: string;
 			};
 	  }
-	| { type: "DELETE_LABEL"; payload: { labelId: number } }
+	| {
+			type: "DELETE_LABEL";
+			payload: { labelId: number };
+	  }
 	| {
 			type: "UPDATE_LABEL_NAME";
 			payload: { labelId: number; newName: string };
@@ -26,8 +30,42 @@ export type ProjectAnnotationAction =
 	| {
 			type: "DELETE_ANNOTATIONS";
 			payload: { dataId: number; annotationIds: number[] };
-	  };
+	  }
+	| {
+			type: "ADD_ANNOTATION";
+			payload: { dataId: number; segmentation: RLE; labelId: number };
+	  }
+	;
 
+function addAnnotation(
+	state: ProjectState,
+	dataId: number,
+	segmentation: RLE,
+	labelId: number,
+): ProjectState {
+	const newAnnotationId =
+		Math.max(
+			0,
+			...(state.dataList
+				.find((data) => data.id === dataId)
+				?.annotations.map((ann) => ann.id) ?? []),
+		) + 1;
+
+	const newAnnotation = {
+		id: newAnnotationId,
+		segmentation,
+		labelId,
+	};
+
+	return {
+		...state,
+		dataList: state.dataList.map((data) =>
+			data.id === dataId
+				? { ...data, annotations: [...data.annotations, newAnnotation] }
+				: data,
+		),
+	};
+}
 function addLabel(state: ProjectState, labelName: string): ProjectState {
 	const newLabelId = state.labels.length;
 	const newLabel: Label = {
@@ -205,6 +243,13 @@ export function projectAnnotationReducer(
 				state,
 				action.payload.dataId,
 				action.payload.annotationIds,
+			);
+		case "ADD_ANNOTATION":
+			return addAnnotation(
+				state,
+				action.payload.dataId,
+				action.payload.segmentation,
+				action.payload.labelId,
 			);
 		default:
 			return state;

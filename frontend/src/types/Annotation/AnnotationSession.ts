@@ -1,4 +1,4 @@
-import { type Label, type ProjectState } from ".";
+import { type Label } from ".";
 import type { PendingAnnotation } from "./PendingAnnotation";
 import type { PointPrompt } from "./PointPrompt";
 
@@ -8,7 +8,7 @@ export default interface AnnotationSessionState {
 	pendingMask: PendingAnnotation | null;
 
 	// Currently activate label ID
-	activateLabelID: Label | null;
+	activateLabel: Label | null;
 
 	// Currently selected annotations in the images
 	selectedAnnotations: number[];
@@ -16,8 +16,6 @@ export default interface AnnotationSessionState {
 	annotationMode: "select" | "add";
 
 	currentDataIndex: number;
-
-	prevsProjectState: ProjectState[];
 
 	// Point prompts for SAM inference (add mode)
 	pointPrompts: PointPrompt[];

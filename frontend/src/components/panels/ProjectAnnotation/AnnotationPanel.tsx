@@ -31,14 +31,6 @@ export function AnnotationPanel() {
 		updateVisualizationSetting({ showMasks: !visualizationSetting.showMasks });
 	}, [visualizationSetting.showMasks, updateVisualizationSetting]);
 
-	const handleUndo = useCallback(() => {
-		// TODO: implement undo
-	}, []);
-
-	const handleRedo = useCallback(() => {
-		// TODO: implement redo
-	}, []);
-
 	const handleRemove = useCallback(() => {
 		projectDispatch({
 			type: "DELETE_ANNOTATIONS",
@@ -57,17 +49,42 @@ export function AnnotationPanel() {
 
 	const handleClearPrompts = useCallback(() => {
 		dispatchAnnotationSession({ type: "CLEAR_POINT_PROMPTS" });
+		dispatchAnnotationSession({ type: "CLEAR_PENDING_MASK" });
 	}, [dispatchAnnotationSession]);
 
 	const handleConfirmMask = useCallback(() => {
-		// TODO: accept pending mask and add it as an annotation
-	}, []);
+		// First check is there any activated label, if no, then the label id will be -1
+		const labelId = annotationSessionState.activateLabel
+			? annotationSessionState.activateLabel.id
+			: -1;
+
+		projectDispatch({
+			type: "ADD_ANNOTATION",
+			payload: {
+				dataId: annotationSessionState.currentDataIndex,
+				segmentation: annotationSessionState.pendingMask!.segmentation,
+				labelId,
+			},
+		});
+		dispatchAnnotationSession({ type: "CLEAR_PENDING_MASK" });
+		dispatchAnnotationSession({ type: "CLEAR_POINT_PROMPTS" });
+	}, [
+		annotationSessionState.activateLabel,
+		annotationSessionState.currentDataIndex,
+		annotationSessionState.pendingMask,
+		projectDispatch,
+		dispatchAnnotationSession,
+	]);
 
 	const handleSwitchToAdd = useCallback(() => {
 		dispatchAnnotationSession({ type: "SET_ANNOTATION_MODE", payload: "add" });
 	}, [dispatchAnnotationSession]);
 
 	const handleSwitchToSelect = useCallback(() => {
+		// First clear the pending mask and the point prompts, to avoid confusion when switching back to add mode
+		dispatchAnnotationSession({ type: "CLEAR_PENDING_MASK" });
+		dispatchAnnotationSession({ type: "CLEAR_POINT_PROMPTS" });
+		// Then switch mode
 		dispatchAnnotationSession({
 			type: "SET_ANNOTATION_MODE",
 			payload: "select",
@@ -77,7 +94,7 @@ export function AnnotationPanel() {
 	const handleToggleLabels = useCallback(() => {
 		if (mode === "select") setIsLabelPanelOpen((prev) => !prev);
 		else setIsActivateLabelOpen((prev) => !prev);
-	}, [mode]);
+	}, [mode, setIsLabelPanelOpen, setIsActivateLabelOpen]);
 
 	// select-label-0..9: delegate to whichever picker is open
 	const handleSelectLabelByIndex = useCallback(
@@ -107,9 +124,12 @@ export function AnnotationPanel() {
 			projectState.labels,
 			isLabelPanelOpen,
 			isActivateLabelOpen,
-			annotationSessionState,
+			annotationSessionState.selectedAnnotations,
+			annotationSessionState.currentDataIndex,
 			projectDispatch,
 			dispatchAnnotationSession,
+			setIsLabelPanelOpen,
+			setIsActivateLabelOpen,
 		],
 	);
 
@@ -119,8 +139,6 @@ export function AnnotationPanel() {
 	const execute = useMemo(
 		(): Record<AnnotationCommand, () => void> => ({
 			"toggle-masks": handleToggleMasks,
-			undo: handleUndo,
-			redo: handleRedo,
 			remove: handleRemove,
 			"clear-prompts": handleClearPrompts,
 			"confirm-mask": handleConfirmMask,
@@ -139,8 +157,6 @@ export function AnnotationPanel() {
 		}),
 		[
 			handleToggleMasks,
-			handleUndo,
-			handleRedo,
 			handleRemove,
 			handleClearPrompts,
 			handleConfirmMask,
@@ -176,16 +192,6 @@ export function AnnotationPanel() {
 					icon="ico-shape icon"
 					onClick={() => execute["switch-to-add"]()}
 				/>
-				<ActionButton
-					name=""
-					icon="ico-undo icon"
-					onClick={() => execute["undo"]()}
-				/>
-				<ActionButton
-					name=""
-					icon="ico-redo icon"
-					onClick={() => execute["redo"]()}
-				/>
 			</ActionBar>
 			<ActionBar hidden={mode !== "add"}>
 				<ActivateLabelButton
@@ -194,10 +200,9 @@ export function AnnotationPanel() {
 				/>
 				<ActionButton
 					name=""
-					icon="ico-undo icon"
-					onClick={() => execute["undo"]()}
+					icon="ico-rotate icon"
+					onClick={() => execute["clear-prompts"]()}
 				/>
-				<ActionButton name="" icon="ico-rotate icon" onClick={() => {}} />
 				<ActionButton
 					name=""
 					icon="ico-tick icon"

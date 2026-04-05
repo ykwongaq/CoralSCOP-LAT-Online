@@ -7,20 +7,21 @@ export type AnnotationSessionAction =
 	| { type: "SET_PENDING_MASK"; payload: PendingAnnotation }
 	| { type: "CLEAR_PENDING_MASK" }
 	| { type: "SET_ACTIVE_LABEL"; payload: Label | null }
+	| { type: "CLEAR_ACTIVE_LABEL" }
 	| { type: "TOGGLE_ANNOTATION_SELECTION"; payload: { annIds: number[] } }
 	| { type: "CLEAR_SELECTION" }
 	| { type: "SET_ANNOTATION_MODE"; payload: "select" | "add" }
 	| { type: "SET_CURRENT_DATA_INDEX"; payload: number }
 	| { type: "ADD_POINT_PROMPT"; payload: PointPrompt }
-	| { type: "CLEAR_POINT_PROMPTS" };
+	| { type: "CLEAR_POINT_PROMPTS" }
+	| { type: "UNDO_POINT_PROMPT" };
 
 export const initialAnnotationSessionState: AnnotationSessionState = {
 	pendingMask: null,
-	activateLabelID: null,
+	activateLabel: null,
 	selectedAnnotations: [],
 	annotationMode: "select",
 	currentDataIndex: 0,
-	prevsProjectState: [],
 	pointPrompts: [],
 };
 
@@ -51,7 +52,9 @@ export function annotationSessionReducer(
 		case "CLEAR_PENDING_MASK":
 			return { ...state, pendingMask: null };
 		case "SET_ACTIVE_LABEL":
-			return { ...state, activateLabelID: action.payload };
+			return { ...state, activateLabel: action.payload };
+		case "CLEAR_ACTIVE_LABEL":
+			return { ...state, activateLabel: null };
 		case "TOGGLE_ANNOTATION_SELECTION":
 			return toggleMaskSelection(state, action.payload.annIds);
 		case "CLEAR_SELECTION":
@@ -67,6 +70,8 @@ export function annotationSessionReducer(
 			};
 		case "CLEAR_POINT_PROMPTS":
 			return { ...state, pointPrompts: [] };
+		case "UNDO_POINT_PROMPT":
+			return { ...state, pointPrompts: state.pointPrompts.slice(0, -1) };
 		default:
 			return state;
 	}

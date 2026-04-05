@@ -8,10 +8,13 @@ interface ActivateLabelButtonProps {
 	onToggle: () => void;
 }
 
-export default function ActivateLabelButton({ isOpen, onToggle }: ActivateLabelButtonProps) {
+export default function ActivateLabelButton({
+	isOpen,
+	onToggle,
+}: ActivateLabelButtonProps) {
 	const { dispatchAnnotationSession, annotationSessionState } =
 		useAnnotationSession();
-	const activeLabel = annotationSessionState.activateLabelID;
+	const activeLabel = annotationSessionState.activateLabel;
 
 	const handleActivate = (label: Label) => {
 		dispatchAnnotationSession({ type: "SET_ACTIVE_LABEL", payload: label });
@@ -36,7 +39,7 @@ export default function ActivateLabelButton({ isOpen, onToggle }: ActivateLabelB
 					>
 						{activeLabel && (
 							<span className="label-sm-blk__text selected-category-text">
-								{activeLabel.id}
+								{activeLabel.id + 1}
 							</span>
 						)}
 					</span>

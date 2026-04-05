@@ -4,6 +4,7 @@ import type { Label } from "../../../types/Annotation";
 import { getLabelColor, getTextColor } from "../LabelColorMap";
 import { useProject } from "../../../features/ProjectAnnotation/context";
 import { usePopMessage } from "../PopUpMessages/PopMessageContext";
+import { useAnnotationSession } from "../../../features/AnnotationSession/context";
 
 interface LabelBlockProps {
 	label: Label;
@@ -55,6 +56,8 @@ export default function LabelBlock({ label }: LabelBlockProps) {
 	const textColor = getTextColor(labelID);
 
 	const { state, dispatch } = useProject();
+	const { annotationSessionState, dispatchAnnotationSession } =
+		useAnnotationSession();
 	const { showMessage, closeMessage } = usePopMessage();
 
 	const { visualizationSetting, updateVisualizationSetting } =
@@ -196,6 +199,7 @@ export default function LabelBlock({ label }: LabelBlockProps) {
 										type: "DELETE_LABEL",
 										payload: { labelId: label.id },
 									});
+									dispatchAnnotationSession({ type: "CLEAR_ACTIVE_LABEL" });
 									closeMessage();
 								},
 							},
@@ -203,6 +207,7 @@ export default function LabelBlock({ label }: LabelBlockProps) {
 					});
 				} else {
 					dispatch({ type: "DELETE_LABEL", payload: { labelId: label.id } });
+					dispatchAnnotationSession({ type: "CLEAR_ACTIVE_LABEL" });
 				}
 			},
 		},

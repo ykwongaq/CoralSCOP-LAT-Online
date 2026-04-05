@@ -168,8 +168,12 @@ class Server:
         if request.mask_input is not None:
             mask_input = np.load(io.BytesIO(base64.b64decode(request.mask_input)))
 
+        # Use multimask_output=True when there is no prior mask (first click):
+        # SAM generates 3 candidates and we pick the highest-scoring one.
+        # Once a mask_input is available (subsequent clicks), a single output suffices.
+        multimask = mask_input is None
         masks, scores, logits = self.sam3.predict_inst(
-            state, input_points, input_labels, mask_input
+            state, input_points, input_labels, mask_input, multimask_output=multimask
         )
 
         # masks: [N, H, W] bool/uint8 — encode each candidate as COCO RLE
@@ -182,6 +186,9 @@ class Server:
         np.save(buf, best_logit.astype(np.float32))
         best_mask_logit_b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
 
+        _logger.info(
+            f"best_mask_logit b64: {best_mask_logit_b64[:50]}... (length={len(best_mask_logit_b64)})"
+        )
         return PredictInstResponse(
             mask=rle_masks[best_idx],
             best_mask_logit=best_mask_logit_b64,
