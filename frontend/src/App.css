@@ -1186,7 +1186,10 @@ button {
 }
 .wrapper.wrapper:has(#annotationPage.active-page) .header__main-side,
 .wrapper.wrapper:has(#annotationPage.active-page) .header #prev-image-button,
-.wrapper.wrapper:has(#annotationPage.active-page) .header #next-image-button {
+.wrapper.wrapper:has(#annotationPage.active-page) .header #next-image-button,
+.wrapper.wrapper:has(#statisticPage.active-page) .header__main-side,
+.wrapper.wrapper:has(#statisticPage.active-page) .header #prev-image-button,
+.wrapper.wrapper:has(#statisticPage.active-page) .header #next-image-button {
   display: flex;
 }
 .wrapper.wrapper:has(#annotationPage.active-page) .header__main,
@@ -1874,3 +1877,251 @@ html:has(#confirm-button:not(.hidden)) #default-bar .float-bar__inner {
 }
 
 /*# sourceMappingURL=styles.css.map */
+
+/* ============================================================
+   Statistic Panel — rendered directly inside #statisticPage
+   ============================================================ */
+
+/* Strip the main-section padding so the panel fills edge-to-edge,
+   matching the annotation canvas page behaviour. */
+#statisticPage {
+  padding: 0;
+  overflow: hidden;
+}
+
+/* Left half — select-only canvas */
+.stat-left {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  position: relative;
+  overflow: hidden;
+  border-right: 1px solid var(--line-line-primary1);
+}
+
+/* Right half — statistics */
+.stat-right {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.stat-right__top {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  border-bottom: 1px solid var(--line-line-primary1);
+  background: #fff;
+}
+
+.stat-right__bottom {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  background: #fff;
+}
+
+/* Section wrappers */
+.stat-section {
+  padding: 18px 22px;
+}
+
+.stat-section--instance {
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.stat-section__title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-text-page-heading);
+  margin-bottom: 14px;
+}
+
+.stat-section__count {
+  font-weight: 400;
+  font-size: 13px;
+  color: var(--text-text-secondary1);
+  font-family: Roboto;
+}
+
+/* Summary cards row */
+.stat-summary-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.stat-summary-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 8px;
+  background: var(--surface-surface-primary3);
+  border-radius: 10px;
+  border: 1px solid var(--line-line-primary1);
+}
+
+.stat-summary-card__value {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-text-primary2);
+  line-height: 1.1;
+}
+
+.stat-summary-card__label {
+  font-size: 11px;
+  color: var(--text-text-secondary1);
+  margin-top: 4px;
+  font-family: Roboto;
+  text-align: center;
+}
+
+/* Charts row */
+.stat-charts-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.stat-chart-wrap {
+  flex: 1;
+  min-width: 200px;
+}
+
+.stat-chart-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-text-secondary1);
+  margin-bottom: 6px;
+  font-family: Roboto;
+}
+
+/* Instance section */
+.stat-empty-hint {
+  font-family: Roboto;
+  font-size: 14px;
+  color: var(--text-text-secondary1);
+  text-align: center;
+  margin-top: 30px;
+}
+
+.stat-instance-body {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.stat-crop-wrap {
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-start;
+  background: var(--surface-surface-primary3);
+  border: 1px solid var(--line-line-primary1);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.stat-crop-canvas {
+  display: block;
+  max-width: 260px;
+  max-height: 220px;
+  object-fit: contain;
+}
+
+.stat-table-wrap {
+  flex: 1;
+  overflow-x: auto;
+  min-width: 0;
+}
+
+/* Table */
+.stat-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: Roboto;
+  font-size: 13px;
+}
+
+.stat-table th {
+  text-align: left;
+  padding: 8px 12px;
+  background: var(--surface-surface-primary3);
+  border-bottom: 2px solid var(--line-line-primary1);
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--text-text-page-heading);
+  white-space: nowrap;
+}
+
+.stat-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line-line-primary1);
+  vertical-align: middle;
+}
+
+.stat-table tr:last-child td {
+  border-bottom: none;
+}
+
+.stat-table tr:hover td {
+  background: var(--blue-blue50);
+}
+
+/* Status tags */
+.stat-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.stat-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  background: var(--surface-surface-primary3);
+  border: 1px solid var(--line-line-primary2);
+  border-radius: 100px;
+  font-size: 11px;
+  color: var(--text-text-primary1);
+  font-family: Roboto;
+}
+
+.stat-no-status {
+  color: var(--text-text-secondary1);
+}
+
+.stat-loading {
+  color: var(--text-text-secondary1);
+  font-style: italic;
+}
+
+/* Condition badges */
+.stat-condition {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: Roboto;
+}
+
+.stat-condition--healthy {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.stat-condition--partially-bleached {
+  background: #fff8e1;
+  color: #f57f17;
+}
+
+.stat-condition--bleached {
+  background: #fce4ec;
+  color: #c62828;
+}

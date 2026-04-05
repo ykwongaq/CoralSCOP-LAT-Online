@@ -166,7 +166,8 @@ function ProjectAnnotationPage() {
 						<ConnectedHeader
 							projectState={state}
 							title={
-								activePanel === AnnotationPanelID
+								activePanel === AnnotationPanelID ||
+								activePanel === StatisticPanelID
 									? `${sessionState.currentDataIndex + 1}. ${state.dataList[sessionState.currentDataIndex]?.imageData.imageName || ""}`
 									: ""
 							}
