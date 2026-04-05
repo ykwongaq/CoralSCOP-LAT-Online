@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import type { ProjectState, Data, Label } from "../types/Annotation/";
 import { projectAnnotationReducer } from "../features/ProjectAnnotation/reducer";
-import { useCallback, useReducer, useState } from "react";
+import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { ProjectContext } from "../features/ProjectAnnotation/context";
 import { AnnotationSessionContext } from "../features/AnnotationSession/context";
 import {
@@ -17,6 +17,7 @@ import SideBar from "../components/layout/SideBar";
 import { SideBarButton } from "../components/common/SideBarButtons";
 import SideBarDropDownList from "../components/common/SideBarButtons/SideBarDropDownList";
 import SideBarDropDownButton from "../components/common/SideBarButtons/SideBarDropDownButton";
+import { releaseSession, releaseSessionOnUnload } from "../services/SamService";
 import {
 	UploadProjectPanel,
 	StatisticPanel,
@@ -26,6 +27,7 @@ import {
 	AnnotationPanel,
 	AnnotationPanelID,
 } from "../components/panels/ProjectAnnotation";
+import { usePopMessage } from "../components/common/PopUpMessages/PopMessageContext";
 
 function isProjectLoaded(state: ProjectState): boolean {
 	return state.dataList.length > 0;
@@ -39,6 +41,7 @@ function ProjectAnnotationPage() {
 		projectName: "" as string,
 	};
 
+	const { showMessage, closeMessage } = usePopMessage();
 	const [state, dispatch] = useReducer(projectAnnotationReducer, initialState);
 	const [activePanel, setActivePanel] = useState<string>(AnnotationPanelID);
 	const [sessionState, sessionDispatch] = useReducer(
@@ -51,9 +54,67 @@ function ProjectAnnotationPage() {
 
 	const projectLoaded = isProjectLoaded(state);
 
+	// Keep a ref so beforeunload always sees the latest sessionId without a stale closure.
+	const sessionIdRef = useRef<string | undefined>(state.sessionId);
+	useEffect(() => {
+		sessionIdRef.current = state.sessionId;
+	}, [state.sessionId]);
+
+	// Warn the user before closing/refreshing the tab when a project is loaded.
+	useEffect(() => {
+		if (!projectLoaded) return;
+		const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+			event.preventDefault();
+			// Required for Chrome/Safari to show the leave-page dialog.
+			// @ts-ignore — returnValue is deprecated in typings but still needed cross-browser
+			event.returnValue = "";
+		};
+		window.addEventListener("beforeunload", handleBeforeUnload);
+		return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+	}, [projectLoaded]);
+
+	// Release the SAM session when the page is actually unloaded (tab close /
+	// refresh confirmed).  `pagehide` fires only after the user confirms leaving,
+	// unlike `beforeunload` which fires before the dialog is shown.
+	useEffect(() => {
+		const handlePageHide = () => {
+			const sid = sessionIdRef.current;
+			if (sid) releaseSessionOnUnload(sid);
+		};
+		window.addEventListener("pagehide", handlePageHide);
+		return () => {
+			window.removeEventListener("pagehide", handlePageHide);
+			const sid = sessionIdRef.current;
+			if (sid) releaseSession(sid);
+		};
+	}, []);
+
 	const handleBackToHome = useCallback(() => {
-		navigate("/");
-	}, [navigate]);
+		// Ask user to confirm if they want to leave without saving when a project is loaded
+		if (projectLoaded) {
+			showMessage({
+				title: "Leave without saving?",
+				content:
+					"Your changes will be lost if you leave without saving. Are you sure you want to go back to the home page?",
+				buttons: [
+					{
+						label: "Cancel",
+						onClick: () => closeMessage(),
+					},
+					{
+						label: "Leave",
+						onClick: () => {
+							closeMessage();
+							navigate("/");
+						},
+					},
+				],
+			});
+			return;
+		} else {
+			navigate("/");
+		}
+	}, [navigate, projectLoaded, showMessage, closeMessage]);
 
 	const handlePanelChange = useCallback((panelId: string) => {
 		setActivePanel(panelId);

@@ -1,4 +1,5 @@
-import { type RLE, type Label, type Annotation, type ProjectState } from ".";
+import { type Label, type ProjectState } from ".";
+import type { PendingAnnotation } from "./PendingAnnotation";
 
 export type PointPrompt = {
 	x: number;
@@ -9,7 +10,7 @@ export type PointPrompt = {
 // State for the annotation process
 export default interface AnnotationSessionState {
 	// Pending masks to be added to the annotation session
-	pendingMask: Annotation | null;
+	pendingMask: PendingAnnotation | null;
 
 	// Currently activate label ID
 	activateLabelID: Label | null;

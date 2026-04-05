@@ -1,25 +1,15 @@
 import JSZip from "jszip";
-import { openDB } from "idb";
 import type { ProjectState } from "../types/Annotation/Project";
 import type { Data } from "../types/Annotation/Data";
 import type { Annotation } from "../types/Annotation/Annotation";
 import type { Label } from "../types/Annotation/Label";
 import type { RLE } from "../types/Annotation/RLE";
-
-// IndexedDB used to persist embeddings so they can be sent to the backend
-// for SAM inference without re-reading the file.
-const DB_NAME = "coral-embeddings";
-const EMBEDDINGS_STORE = "embeddings";
-
-function getEmbeddingsDB() {
-	return openDB(DB_NAME, 1, {
-		upgrade(db) {
-			if (!db.objectStoreNames.contains(EMBEDDINGS_STORE)) {
-				db.createObjectStore(EMBEDDINGS_STORE);
-			}
-		},
-	});
-}
+import type { ApiRequestCallbacks } from "../types/api";
+import {
+	createSamSession,
+	uploadEmbedding,
+	type CreateSamSessionResponse,
+} from "./SamService";
 
 // Raw shapes from the per-image annotation JSON files inside the .coral zip.
 // The backend writes one file per image at annotations/<stem>.json.
@@ -56,12 +46,29 @@ export interface LoadProjectCallbacks {
 }
 
 /**
+ * Wrap a callback-based service function in a Promise so it can be awaited
+ * inside the async loadProject flow.
+ */
+function toPromise<T>(
+	fn: (
+		callbacks: Pick<ApiRequestCallbacks<T>, "onError" | "onComplete">,
+	) => void,
+): Promise<T> {
+	return new Promise<T>((resolve, reject) => {
+		fn({
+			onError: (err) => reject(new Error(err.message)),
+			onComplete: (data) => resolve(data),
+		});
+	});
+}
+
+/**
  * Unzips a .coral project file (ZIP archive) in the browser and:
  *  - Creates object URLs for images (in-memory, current session only)
  *  - Parses annotation JSON files into the ProjectState shape
- *  - Stores embedding .pt files as ArrayBuffers in IndexedDB, keyed by
- *    `<projectName>/<stem>`, so they can later be fetched and sent to the
- *    backend for SAM inference.
+ *  - Uploads embedding .pt files to a backend SAM session so they can be
+ *    used for interactive inference without re-sending 100 MB each request.
+ *    The `sessionId` in the returned ProjectState identifies that session.
  *
  * Progress is reported from 0–100 via onProgress.
  */
@@ -101,12 +108,13 @@ export async function loadProject(
 		const labelsMap = new Map<number, Label>();
 		const dataList: Data[] = [];
 
+		// Phase 1 (10–70 %): parse images and annotations
 		for (let i = 0; i < n; i++) {
 			const imageEntry = imageEntries[i];
 			const imageName = imageEntry.name.replace("images/", "");
 			const stem = imageName.replace(/\.[^.]+$/, "");
 
-			callbacks.onProgress?.(10 + Math.round((i / n) * 70));
+			callbacks.onProgress?.(10 + Math.round((i / n) * 60));
 
 			const imageBlob = await imageEntry.async("blob");
 			const imageUrl = URL.createObjectURL(imageBlob);
@@ -148,15 +156,29 @@ export async function loadProject(
 			});
 		}
 
-		callbacks.onProgress?.(85);
+		callbacks.onProgress?.(70);
 
-		// Store embeddings in IndexedDB so they are available for backend SAM calls
+		// Phase 2 (70–95 %): upload embeddings to backend SAM session
+		let sessionId: string | undefined;
 		if (embeddingEntries.length > 0) {
-			const db = await getEmbeddingsDB();
-			for (const entry of embeddingEntries) {
-				const stem = entry.name.replace("embeddings/", "").replace(/\.pt$/, "");
-				const buf = await entry.async("arraybuffer");
-				await db.put(EMBEDDINGS_STORE, buf, `${projectName}/${stem}`);
+			const { session_id } = await toPromise<CreateSamSessionResponse>((cb) =>
+			createSamSession(cb),
+		);
+			sessionId = session_id;
+
+			const m = embeddingEntries.length;
+			for (let j = 0; j < m; j++) {
+				const entry = embeddingEntries[j];
+				const stem = entry.name
+					.replace("embeddings/", "")
+					.replace(/\.pt$/, "");
+
+				callbacks.onProgress?.(70 + Math.round(((j + 1) / m) * 25));
+
+				const data = await entry.async("arraybuffer");
+				await toPromise<void>((cb) =>
+					uploadEmbedding({ sessionId: session_id, stem, data }, cb),
+				);
 			}
 		}
 
@@ -165,26 +187,11 @@ export async function loadProject(
 			dataList,
 			labels: Array.from(labelsMap.values()),
 			projectName,
+			sessionId,
 		});
 	} catch (err) {
 		callbacks.onError?.({
 			message: err instanceof Error ? err.message : String(err),
 		});
 	}
-}
-
-/**
- * Retrieves a stored embedding ArrayBuffer from IndexedDB.
- * Returns null if not found.
- */
-export async function getEmbedding(
-	projectName: string,
-	stem: string,
-): Promise<ArrayBuffer | null> {
-	const db = await getEmbeddingsDB();
-	return (
-		((await db.get(EMBEDDINGS_STORE, `${projectName}/${stem}`)) as
-			| ArrayBuffer
-			| undefined) ?? null
-	);
 }

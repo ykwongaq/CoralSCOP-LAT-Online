@@ -191,7 +191,8 @@ export class ApiClient {
  * Singleton API client. The base URL is read from the VITE_API_BASE_URL
  * environment variable, falling back to localhost:8000 for local development.
  */
-export const apiClient = new ApiClient(
+export const API_BASE =
   (import.meta.env.VITE_API_BASE_URL as string | undefined) ??
-    "http://localhost:8000",
-);
+  "http://localhost:8000";
+
+export const apiClient = new ApiClient(API_BASE);

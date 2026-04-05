@@ -1,14 +1,18 @@
 import base64
 import io
+import os
+import tempfile
 import time
 import uuid
 from typing import Dict, List, Optional, Union
 
 import numpy as np
 import torch
+from fastapi import HTTPException
 from PIL import Image
 from pydantic import BaseModel
 
+from .embeddingStore import EmbeddingStore
 from .maskHandler import MaskHandler
 from .models.CoralSCOPModel import CoralSCOPModel
 from .models.SAM3Model import SAM3Model
@@ -44,10 +48,11 @@ class EncodeMaskResponse(BaseModel):
 
 
 class PredictInstRequest(BaseModel):
-    embeddings: bytes  # raw bytes from torch.save(state), i.e. a .pt blob
+    session_id: str  # UUID returned by POST /api/sam/sessions
+    stem: str  # image filename stem identifying which .pt to load
     input_points: List[List[float]]  # [[x1, y1], ...]
     input_labels: List[int]  # 1=foreground, 0=background per point
-    mask_input: Optional[bytes] = None  # raw bytes of a [1, H, W] float32 .npy file
+    mask_input: Optional[bytes] = None  # base64-decoded .npy bytes [1, H, W] float32
 
 
 class PredictInstResponse(BaseModel):
@@ -64,6 +69,14 @@ class Server:
         self.config = config
         _logger.info("Initializing Server")
 
+        # self.temp_folder = os.path.join(
+        #     tempfile.gettempdir(), "coralscop-lat-online-temp"
+        # )
+        self.temp_folder = os.path.join(
+            "/home/davidwong/Documents/temp", "coralscop-lat-online-temp"
+        )
+        os.makedirs(self.temp_folder, exist_ok=True)
+
         self.sam3 = SAM3Model(resolve_path(config["sam_model_path"]))
         coralSCOP = CoralSCOPModel(
             model_path=resolve_path(config["CoralSCOP"]["coralSCOP_model_path"]),
@@ -73,12 +86,29 @@ class Server:
             max_masks_num=config["CoralSCOP"]["max_masks_num"],
             point_number=config["CoralSCOP"]["point_number"],
         )
-        self.project_handler = ProjectHandler(self.sam3, coralSCOP)
-
+        self.project_handler = ProjectHandler(
+            os.path.join(self.temp_folder, "projects"), self.sam3, coralSCOP
+        )
         self.mask_handler = MaskHandler()
+        self.embedding_store = EmbeddingStore(
+            base_dir=os.path.join(self.temp_folder, "embeddings")
+        )
 
     def get_zip_path(self, token: str) -> str:
         return self.project_handler.get_zip_path(token)
+
+    # ------------------------------------------------------------------
+    # Embedding session management
+    # ------------------------------------------------------------------
+
+    def create_embedding_session(self) -> str:
+        return self.embedding_store.create_session()
+
+    def save_embedding(self, session_id: str, stem: str, data: bytes) -> None:
+        self.embedding_store.save(session_id, stem, data)
+
+    def delete_embedding_session(self, session_id: str) -> None:
+        self.embedding_store.delete_session(session_id)
 
     def gen_token(self) -> str:
         return str(uuid.uuid4())
@@ -114,11 +144,19 @@ class Server:
 
     def predict_inst(self, request: PredictInstRequest) -> PredictInstResponse:
         _logger.info(
-            "Running predict_inst (points=%d)",
+            "Running predict_inst (session=%s stem=%s points=%d)",
+            request.session_id,
+            request.stem,
             len(request.input_points),
         )
+        pt_path = self.embedding_store.get_path(request.session_id, request.stem)
+        if pt_path is None:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No embedding for session_id={request.session_id!r} stem={request.stem!r}",
+            )
         state = torch.load(
-            io.BytesIO(request.embeddings),
+            pt_path,
             map_location=self.sam3.device,
             weights_only=False,
         )

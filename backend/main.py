@@ -269,27 +269,70 @@ async def encode_mask(request: EncodeMaskRequest):
 # ---------------------------------------------------------------------------
 # SAM interactive inference endpoints
 # ---------------------------------------------------------------------------
+
+
+@app.post("/api/sam/sessions")
+async def create_sam_session():
+    """
+    Create a new SAM embedding session.
+
+    Returns:
+        {"session_id": "<uuid>"}
+
+    The returned session_id must be passed to subsequent embedding uploads
+    and to POST /api/sam/predict.  Sessions are evicted automatically after
+    3 hours of inactivity, or immediately via DELETE /api/sam/sessions/{session_id}.
+    """
+    session_id = _server.create_embedding_session()
+    return {"session_id": session_id}
+
+
+@app.post("/api/sam/sessions/{session_id}/embeddings/{stem}", status_code=204)
+async def upload_embedding(session_id: str, stem: str, file: UploadFile = File(...)):
+    """
+    Upload a single .pt embedding file into an existing session.
+
+    Path parameters:
+      - session_id : UUID returned by POST /api/sam/sessions
+      - stem       : image filename without extension (e.g. "DSC_0001")
+
+    Body: multipart/form-data with a single field ``file`` containing the
+    raw .pt bytes produced by ``torch.save(state)``.
+    """
+    data = await file.read()
+    _server.save_embedding(session_id, stem, data)
+    return Response(status_code=204)
+
+
+@app.delete("/api/sam/sessions/{session_id}", status_code=204)
+async def delete_sam_session(session_id: str):
+    """
+    Delete a SAM session and all its stored embeddings immediately.
+    Safe to call even if the session has already been evicted.
+    """
+    _server.delete_embedding_session(session_id)
+    return Response(status_code=204)
+
+
 @app.post("/api/sam/predict", response_model=PredictInstResponse)
 async def predict_inst(request: PredictInstRequest):
     """
     Run SAM interactive instance segmentation.
 
-    Accepts multipart/form-data:
-      - embeddings      : .pt blob returned by POST /api/sam/embeddings
-      - input_points    : JSON array of [x, y] pairs, e.g. [[100,200],[300,400]]
-      - input_labels    : JSON array of ints (1=foreground, 0=background)
-      - mask_input      : optional .npy file with shape [1, H, W] float32
-                          (use logits[argmax(scores)] from a prior response)
-      - multimask_output: bool, default true
+    Accepts JSON body:
+      - session_id   : UUID returned by POST /api/sam/sessions
+      - stem         : image filename stem (must have been uploaded via
+                       POST /api/sam/sessions/{session_id}/embeddings/{stem})
+      - input_points : array of [x, y] pairs, e.g. [[100,200],[300,400]]
+      - input_labels : array of ints (1=foreground, 0=background per point)
+      - mask_input   : optional base64-encoded .npy bytes [1, 256, 256] float32
+                       (pass best_mask_logit from the previous response)
 
     Returns:
         {
-            "masks":        ["<base64 uint8 H*W>", ...],
-            "scores":       [<float>, ...],
-            "logits":       "<base64 float32>",
-            "logits_shape": [N, H, W],
-            "height":       <int>,
-            "width":        <int>
+            "masks":          [{"size": [H, W], "counts": "<RLE>"}, ...],
+            "best_mask_logit": "<base64 .npy bytes [1, 256, 256] float32>"
         }
     """
-    return _server.predict_inst(request)
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(None, _server.predict_inst, request)

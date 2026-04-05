@@ -18,19 +18,23 @@ _logger = get_logger(__name__)
 
 
 class ProjectHandler:
-    TEMP_FOLDER = os.path.join(tempfile.gettempdir())
-    # TEMP_FOLDER = "/home/davidwong/Documents/temp"
 
-    def __init__(self, sam_model: SAM3Model, coralSCOP_model: CoralSCOPModel = None):
+    def __init__(
+        self,
+        temp_folder: str,
+        sam_model: SAM3Model,
+        coralSCOP_model: CoralSCOPModel = None,
+    ):
+        self.temp_folder = temp_folder
         self.sam3_model = sam_model
         self.coralSCOP_model = coralSCOP_model
 
     def clean_up(self, token: str) -> None:
-        zip_path = os.path.join(self.TEMP_FOLDER, f"project_{token}.coral")
+        zip_path = os.path.join(self.temp_folder, f"project_{token}.coral")
         if os.path.exists(zip_path):
             os.remove(zip_path)
 
-        temp_dir = os.path.join(self.TEMP_FOLDER, f"project_{token}")
+        temp_dir = os.path.join(self.temp_folder, f"project_{token}")
         if os.path.exists(temp_dir):
             shutil.rmtree(temp_dir, ignore_errors=True)
 
@@ -38,7 +42,7 @@ class ProjectHandler:
         self.clean_up(token)
 
     def get_zip_path(self, token: str) -> str:
-        return os.path.join(self.TEMP_FOLDER, f"project_{token}.coral")
+        return os.path.join(self.temp_folder, f"project_{token}.coral")
 
     def stream_create_project(
         self,
@@ -59,8 +63,8 @@ class ProjectHandler:
 
         Raises the original exception (after cleaning up temp files) on failure.
         """
-        temp_dir = os.path.join(self.TEMP_FOLDER, f"project_{token}")
-        zip_output_path = os.path.join(self.TEMP_FOLDER, f"project_{token}.coral")
+        temp_dir = os.path.join(self.temp_folder, f"project_{token}")
+        zip_output_path = os.path.join(self.temp_folder, f"project_{token}.coral")
 
         os.makedirs(temp_dir, exist_ok=True)
         image_folder = os.path.join(temp_dir, "images")
