@@ -133,7 +133,14 @@ class Server:
 
     def encode_masks(self, request: EncodeMaskRequest) -> EncodeMaskResponse:
         _logger.info("Encoding masks (batch size=%d)", len(request.inputs))
-        rle_list = self.mask_handler.encode_masks(request.inputs)
+
+        # Convert the input into list of dictionary
+        rle_list = []
+        for rle in request.inputs:
+            rle_dict = {"size": rle.size, "counts": rle.counts}
+            rle_list.append(rle_dict)
+        rle_list = self.mask_handler.encode_masks(rle_list)
+
         return EncodeMaskResponse(segmentation=rle_list)
 
     def predict_inst(self, request: PredictInstRequest) -> PredictInstResponse:
@@ -175,9 +182,7 @@ class Server:
         )
 
         # masks: [N, H, W] bool/uint8 — encode each candidate as COCO RLE
-        rle_masks = [
-            RLE(**encode_masks(masks[i])) for i in range(masks.shape[0])
-        ]
+        rle_masks = [RLE(**encode_masks(masks[i])) for i in range(masks.shape[0])]
 
         # logits: [N, 256, 256] — keep the best one as [1, 256, 256] for the next mask_input
         best_idx = int(np.argmax(scores))

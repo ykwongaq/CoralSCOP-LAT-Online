@@ -12,7 +12,7 @@ export default function AnnotationSideBar() {
 	return (
 		<div className="side-bar__sub">
 			<AnnotationSiderBlock
-				name="Opacity"
+				name="Mask Opacity"
 				id="opacity"
 				defaultValue={Math.round(visualizationSetting.maskOpacity * 100)}
 				onChange={(value) => {

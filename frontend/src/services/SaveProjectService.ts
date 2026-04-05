@@ -2,12 +2,8 @@ import JSZip from "jszip";
 import type { ProjectState } from "../types/Annotation/Project";
 import type { Data } from "../types/Annotation/Data";
 import type { Label } from "../types/Annotation/Label";
-import type { RLE } from "../types/RLE";
-import {
-	type CocoAnnotation,
-	type CocoCategory,
-	type AnnotationFile,
-} from "../types/ProjectCreation";
+import { type AnnotationFile } from "../types/ProjectCreation";
+import triggerDownload from "../utils/download";
 
 function buildAnnotationFile(data: Data, labels: Label[]): AnnotationFile {
 	return {
@@ -30,15 +26,6 @@ function buildAnnotationFile(data: Data, labels: Label[]): AnnotationFile {
 			status: l.status,
 		})),
 	};
-}
-
-function triggerDownload(blob: Blob, filename: string): void {
-	const url = URL.createObjectURL(blob);
-	const a = document.createElement("a");
-	a.href = url;
-	a.download = filename;
-	a.click();
-	URL.revokeObjectURL(url);
 }
 
 /**

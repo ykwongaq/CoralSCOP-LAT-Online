@@ -5,7 +5,10 @@ from typing import Dict, List
 import numpy as np
 from pycocotools import mask as maskUtils
 
+from .utils.logger import get_logger
 from .utils.masks import decode_mask
+
+_logger = get_logger(__name__)
 
 
 def _encode_single_rle(rle: Dict) -> Dict:
@@ -14,8 +17,8 @@ def _encode_single_rle(rle: Dict) -> Dict:
     (string counts) using pycocotools directly — no numpy decode/encode roundtrip.
     Module-level so it is picklable by ProcessPoolExecutor.
     """
-    h, w = rle["size"]
-    compressed = maskUtils.frPyObjects(rle, h, w)
+    h, w = rle["size"][0], rle["size"][1]
+    compressed = maskUtils.frPyObjects([rle], h, w)[0]
     counts = compressed["counts"]
     if isinstance(counts, bytes):
         counts = counts.decode("utf-8")
