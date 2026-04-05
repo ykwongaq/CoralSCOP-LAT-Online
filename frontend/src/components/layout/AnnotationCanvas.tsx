@@ -64,6 +64,12 @@ export default function AnnotationCanvas() {
 	selectedAnnotationsRef.current = annotationSessionState.selectedAnnotations;
 
 	const rafRef = useRef(0);
+	const drawTimerIdRef = useRef(0);
+	const actionTimerIdRef = useRef(0);
+	const viewportTimerIdRef = useRef(0);
+	const imageLoadTimerIdRef = useRef(0);
+	const buildEffectTimerIdRef = useRef(0);
+	const wheelTimerIdRef = useRef(0);
 
 	const [imageSize, setImageSize] = useState<{
 		width: number;
@@ -74,10 +80,21 @@ export default function AnnotationCanvas() {
 	// Core draw — reads everything from refs, safe to call from rAF
 	// -----------------------------------------------------------------------
 	const draw = useCallback(() => {
+		const drawLabel = `canvas.draw#${++drawTimerIdRef.current}`;
+		console.time(drawLabel);
+		console.time(`${drawLabel}:transform`);
 		const canvas = canvasRef.current;
-		if (!canvas) return;
+		if (!canvas) {
+			console.timeEnd(`${drawLabel}:transform`);
+			console.timeEnd(drawLabel);
+			return;
+		}
 		const ctx = canvas.getContext("2d");
-		if (!ctx) return;
+		if (!ctx) {
+			console.timeEnd(`${drawLabel}:transform`);
+			console.timeEnd(drawLabel);
+			return;
+		}
 
 		const { scale, originX, originY } = viewportRef.current;
 		const viz = vizRef.current;
@@ -86,13 +103,17 @@ export default function AnnotationCanvas() {
 		ctx.clearRect(0, 0, canvas.width, canvas.height);
 		ctx.save();
 		ctx.setTransform(scale, 0, 0, scale, -originX * scale, -originY * scale);
+		console.timeEnd(`${drawLabel}:transform`);
 
 		// Image
+		console.time(`${drawLabel}:image`);
 		if (imageRef.current) {
 			ctx.drawImage(imageRef.current, 0, 0);
 		}
+		console.timeEnd(`${drawLabel}:image`);
 
 		// Annotation layers
+		console.time(`${drawLabel}:layers`);
 		if (viz.showMasks && layersRef.current) {
 			ctx.globalAlpha = viz.maskOpacity;
 			ctx.drawImage(layersRef.current.mask, 0, 0);
@@ -100,8 +121,10 @@ export default function AnnotationCanvas() {
 			ctx.drawImage(layersRef.current.border, 0, 0);
 			ctx.drawImage(layersRef.current.text, 0, 0);
 		}
+		console.timeEnd(`${drawLabel}:layers`);
 
 		// Selection rectangle (select mode only)
+		console.time(`${drawLabel}:selection-rect`);
 		if (currentMode === "select" && selectionRectRef.current) {
 			const { startX, startY, endX, endY } = selectionRectRef.current;
 			const x = Math.min(startX, endX);
@@ -114,8 +137,10 @@ export default function AnnotationCanvas() {
 			ctx.fillRect(x, y, w, h);
 			ctx.strokeRect(x, y, w, h);
 		}
+		console.timeEnd(`${drawLabel}:selection-rect`);
 
 		// Point prompts (add mode only)
+		console.time(`${drawLabel}:prompts`);
 		if (currentMode === "add") {
 			const radius = 6 / scale;
 			for (const prompt of pointPromptsRef.current) {
@@ -129,8 +154,10 @@ export default function AnnotationCanvas() {
 				ctx.closePath();
 			}
 		}
+		console.timeEnd(`${drawLabel}:prompts`);
 
 		ctx.restore();
+		console.timeEnd(drawLabel);
 	}, []);
 
 	const requestDraw = useCallback(() => {
@@ -143,6 +170,8 @@ export default function AnnotationCanvas() {
 	// -----------------------------------------------------------------------
 	const onCanvasAction = useCallback(
 		(action: CanvasAction) => {
+			const actionLabel = `canvas.action.${action.type}#${++actionTimerIdRef.current}`;
+			console.time(actionLabel);
 			const masks = pixelMasksRef.current;
 			const annotations = data?.annotations ?? [];
 			const { width, height } = imageSizeRef.current;
@@ -151,6 +180,7 @@ export default function AnnotationCanvas() {
 				case "hit-test":
 					if (!masks) {
 						dispatchAnnotationSession({ type: "CLEAR_SELECTION" });
+						console.timeEnd(actionLabel);
 						return;
 					}
 					let hit: Annotation | null = null;
@@ -166,13 +196,17 @@ export default function AnnotationCanvas() {
 							payload: { annIds: [hit.id] },
 						});
 					}
+					console.timeEnd(actionLabel);
 					break;
 				case "rect-select":
-					if (!masks) return;
+					if (!masks) {
+						console.timeEnd(actionLabel);
+						return;
+					}
 
 					const selectedIds = annotations
 						.map((ann) => ann.id)
-						.filter((idx, i) =>
+						.filter((_, i) =>
 							maskIntersectsRect(
 								masks[i],
 								width,
@@ -188,6 +222,7 @@ export default function AnnotationCanvas() {
 						type: "TOGGLE_ANNOTATION_SELECTION",
 						payload: { annIds: selectedIds },
 					});
+					console.timeEnd(actionLabel);
 					break;
 				case "positive-prompt":
 					console.log("Adding positive prompt at", action.imgX, action.imgY);
@@ -196,6 +231,7 @@ export default function AnnotationCanvas() {
 						payload: { x: action.imgX, y: action.imgY, type: "positive" },
 					});
 					requestDraw();
+					console.timeEnd(actionLabel);
 					break;
 				case "negative-prompt":
 					dispatchAnnotationSession({
@@ -203,9 +239,11 @@ export default function AnnotationCanvas() {
 						payload: { x: action.imgX, y: action.imgY, type: "negative" },
 					});
 					requestDraw();
+					console.timeEnd(actionLabel);
 					break;
 				default:
 					console.warn("Unknown canvas action:", action);
+					console.timeEnd(actionLabel);
 					return;
 			}
 		},
@@ -235,15 +273,23 @@ export default function AnnotationCanvas() {
 	// Viewport reset — fits image into canvas with letterboxing
 	// -----------------------------------------------------------------------
 	const resetViewport = useCallback(() => {
+		const label = `canvas.resetViewport#${++viewportTimerIdRef.current}`;
+		console.time(label);
 		const canvas = canvasRef.current;
-		if (!canvas) return;
+		if (!canvas) {
+			console.timeEnd(label);
+			return;
+		}
 
 		const rect = canvas.getBoundingClientRect();
 		canvas.width = rect.width;
 		canvas.height = rect.height;
 
 		const { width: imgW, height: imgH } = imageSizeRef.current;
-		if (imgW === 0 || imgH === 0) return;
+		if (imgW === 0 || imgH === 0) {
+			console.timeEnd(label);
+			return;
+		}
 
 		const scale = Math.min(rect.width / imgW, rect.height / imgH);
 		const originX = -(rect.width / scale - imgW) / 2;
@@ -251,6 +297,7 @@ export default function AnnotationCanvas() {
 
 		viewportRef.current = { scale, originX, originY };
 		requestDraw();
+		console.timeEnd(label);
 	}, [requestDraw]);
 
 	// -----------------------------------------------------------------------
@@ -260,9 +307,12 @@ export default function AnnotationCanvas() {
 	// Load image when URL changes
 	const imageUrl = data?.imageData.imageUrl ?? null;
 	useEffect(() => {
+		const label = `canvas.loadImage#${++imageLoadTimerIdRef.current}`;
+		console.time(label);
 		if (!imageUrl) {
 			imageRef.current = null;
 			setImageSize(null);
+			console.timeEnd(label);
 			return;
 		}
 		const img = new Image();
@@ -271,6 +321,10 @@ export default function AnnotationCanvas() {
 			const size = { width: img.naturalWidth, height: img.naturalHeight };
 			imageSizeRef.current = size;
 			setImageSize(size);
+			console.timeEnd(label);
+		};
+		img.onerror = () => {
+			console.timeEnd(label);
 		};
 		img.src = imageUrl;
 	}, [imageUrl]);
@@ -286,10 +340,13 @@ export default function AnnotationCanvas() {
 
 	// Rebuild layers when data or image size changes
 	useEffect(() => {
+		const label = `canvas.buildLayersEffect#${++buildEffectTimerIdRef.current}`;
+		console.time(label);
 		if (!data || !imageSize) {
 			layersRef.current = null;
 			pixelMasksRef.current = null;
 			requestDraw();
+			console.timeEnd(label);
 			return;
 		}
 		let cancelled = false;
@@ -300,8 +357,12 @@ export default function AnnotationCanvas() {
 					pixelMasksRef.current = pixelMasks;
 					requestDraw();
 				}
+				console.timeEnd(label);
 			})
-			.catch((err) => console.error("Failed to build layers:", err));
+			.catch((err) => {
+				console.timeEnd(label);
+				console.error("Failed to build layers:", err);
+			});
 		return () => {
 			cancelled = true;
 		};
@@ -336,9 +397,14 @@ export default function AnnotationCanvas() {
 	// -----------------------------------------------------------------------
 	const handleWheel = useCallback(
 		(e: WheelEvent) => {
+			const label = `canvas.wheel#${++wheelTimerIdRef.current}`;
+			console.time(label);
 			e.preventDefault();
 			const canvas = canvasRef.current;
-			if (!canvas) return;
+			if (!canvas) {
+				console.timeEnd(label);
+				return;
+			}
 
 			const rect = canvas.getBoundingClientRect();
 			const mouseX = e.clientX - rect.left;
@@ -354,6 +420,7 @@ export default function AnnotationCanvas() {
 				originY: mouseY / scale + originY - mouseY / newScale,
 			};
 			requestDraw();
+			console.timeEnd(label);
 		},
 		[requestDraw],
 	);

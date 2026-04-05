@@ -2,7 +2,7 @@ import base64
 import io
 import time
 import uuid
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 import numpy as np
 import torch
@@ -22,7 +22,7 @@ _logger = get_logger(__name__)
 
 class _RLE(BaseModel):
     size: List[int]  # [height, width]
-    counts: str
+    counts: Union[str, List[int]]
 
 
 class DecodeMasksRequest(BaseModel):

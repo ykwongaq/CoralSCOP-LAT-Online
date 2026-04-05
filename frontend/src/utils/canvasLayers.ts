@@ -6,8 +6,11 @@ import {
 	getSelectedMaskColor,
 	getTextColor,
 } from "../components/common/LabelColorMap";
-import { useAnnotationSession } from "../features/AnnotationSession/context";
 import type AnnotationSessionState from "../types/Annotation/AnnotationSession";
+
+let buildLayersTimerId = 0;
+let hitTestMaskTimerId = 0;
+let rectIntersectTimerId = 0;
 
 // ---------------------------------------------------------------------------
 // Types
@@ -32,6 +35,9 @@ export async function buildLayers(
 	data: Data,
 	annotationSessionState: AnnotationSessionState,
 ): Promise<LayersResult> {
+	const buildLabel = `buildLayers.total#${++buildLayersTimerId}`;
+	console.time(buildLabel);
+	console.time(`${buildLabel}:setup`);
 	const width =
 		data.imageData.width ?? data.annotations[0]?.segmentation.size[1] ?? 0;
 	const height =
@@ -52,12 +58,15 @@ export async function buildLayers(
 	const borderImgData = borderCtx.getImageData(0, 0, width, height);
 	const md = maskImgData.data;
 	const bd = borderImgData.data;
+	console.timeEnd(`${buildLabel}:setup`);
 
 	const centroids: Array<{ cx: number; cy: number; labelId: number }> = [];
 
+	console.time(`${buildLabel}:decodeRleMasks`);
 	const pixelMasks = await decodeRleMasks(
 		data.annotations.map((ann) => ann.segmentation),
 	);
+	console.timeEnd(`${buildLabel}:decodeRleMasks`);
 
 	function isMaskSelected(annotation: Annotation): boolean {
 		return annotationSessionState.selectedAnnotations.some(
@@ -65,6 +74,7 @@ export async function buildLayers(
 		);
 	}
 
+	console.time(`${buildLabel}:paintMasksAndBorders`);
 	for (let annIdx = 0; annIdx < data.annotations.length; annIdx++) {
 		const ann = data.annotations[annIdx];
 		const color = isMaskSelected(ann)
@@ -115,9 +125,12 @@ export async function buildLayers(
 			});
 		}
 	}
+	console.timeEnd(`${buildLabel}:paintMasksAndBorders`);
 
+	console.time(`${buildLabel}:putImageData`);
 	maskCtx.putImageData(maskImgData, 0, 0);
 	borderCtx.putImageData(borderImgData, 0, 0);
+	console.timeEnd(`${buildLabel}:putImageData`);
 
 	const minDim = Math.min(width, height);
 	const badgeRadius = Math.min(Math.floor(minDim * 0.015), 20);
@@ -126,6 +139,7 @@ export async function buildLayers(
 	textCtx.textAlign = "center";
 	textCtx.textBaseline = "middle";
 
+	console.time(`${buildLabel}:drawLabels`);
 	for (const { cx, cy, labelId } of centroids) {
 		const color = getLabelColor(labelId);
 		const textColor = getTextColor(labelId);
@@ -146,6 +160,8 @@ export async function buildLayers(
 		textCtx.fillStyle = textColor;
 		textCtx.fillText(displayText, cx, cy);
 	}
+	console.timeEnd(`${buildLabel}:drawLabels`);
+	console.timeEnd(buildLabel);
 
 	return {
 		layers: { mask: maskCanvas, border: borderCanvas, text: textCanvas },
@@ -163,11 +179,17 @@ export function hitTestMask(
 	imgX: number,
 	imgY: number,
 ): boolean {
+	const label = `hitTestMask#${++hitTestMaskTimerId}`;
+	console.time(label);
 	const px = Math.floor(imgX);
 	const py = Math.floor(imgY);
-	if (px < 0 || py < 0 || px >= width || py >= mask.length / width)
+	if (px < 0 || py < 0 || px >= width || py >= mask.length / width) {
+		console.timeEnd(label);
 		return false;
-	return mask[py * width + px] === 1;
+	}
+	const hit = mask[py * width + px] === 1;
+	console.timeEnd(label);
+	return hit;
 }
 
 export function maskIntersectsRect(
@@ -179,6 +201,8 @@ export function maskIntersectsRect(
 	x1: number,
 	y1: number,
 ): boolean {
+	const label = `maskIntersectsRect#${++rectIntersectTimerId}`;
+	console.time(label);
 	const minX = Math.max(0, Math.floor(Math.min(x0, x1)));
 	const maxX = Math.min(width - 1, Math.ceil(Math.max(x0, x1)));
 	const minY = Math.max(0, Math.floor(Math.min(y0, y1)));
@@ -186,8 +210,12 @@ export function maskIntersectsRect(
 
 	for (let y = minY; y <= maxY; y++) {
 		for (let x = minX; x <= maxX; x++) {
-			if (mask[y * width + x] === 1) return true;
+			if (mask[y * width + x] === 1) {
+				console.timeEnd(label);
+				return true;
+			}
 		}
 	}
+	console.timeEnd(label);
 	return false;
 }
