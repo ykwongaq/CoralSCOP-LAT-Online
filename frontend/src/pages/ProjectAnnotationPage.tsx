@@ -259,7 +259,7 @@ function ProjectAnnotationPage() {
 							)}
 							{projectLoaded && activePanel === ImageGalleryPanelID && (
 								<div className="main-section page active-page" id="galleryPage">
-									<ImageGalleryPanel />
+									<ImageGalleryPanel onImageClick={() => handlePanelChange(AnnotationPanelID)} />
 								</div>
 							)}
 							{projectLoaded && activePanel === AnnotationPanelID && (
