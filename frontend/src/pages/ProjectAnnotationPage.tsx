@@ -13,6 +13,26 @@ import {
 	initialVisualizationSetting,
 } from "../features/VisualizationSetting/context";
 import HeaderWithNavigation from "../components/layout/HeaderWIthNavigation";
+import { useAnnotationCommands } from "../hooks/useAnnotationCommands";
+
+// Rendered inside the context providers so useAnnotationCommands can reach them.
+function ConnectedHeader({
+	projectState,
+	title,
+}: {
+	projectState: ProjectState;
+	title: string;
+}) {
+	const { execute } = useAnnotationCommands();
+	return (
+		<HeaderWithNavigation
+			projectState={projectState}
+			title={title}
+			prevImage={() => execute["prev-image"]()}
+			nextImage={() => execute["next-image"]()}
+		/>
+	);
+}
 import SideBar from "../components/layout/SideBar";
 import { SideBarButton } from "../components/common/SideBarButtons";
 import SideBarDropDownList from "../components/common/SideBarButtons/SideBarDropDownList";
@@ -136,10 +156,9 @@ function ProjectAnnotationPage() {
 			>
 				<ProjectContext.Provider value={{ state, dispatch }}>
 					<div className="wrapper">
-						<HeaderWithNavigation
+						<ConnectedHeader
 							projectState={state}
-							prevImage={() => {}}
-							nextImage={() => {}}
+							title={`${sessionState.currentDataIndex + 1}. ${state.dataList[sessionState.currentDataIndex]?.imageData.imageName || ""}`}
 						/>
 						<div className="main">
 							<SideBar>

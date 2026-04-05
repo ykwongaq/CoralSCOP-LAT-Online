@@ -11,6 +11,8 @@ export type AnnotationCommand =
 	| "select-label-6"
 	| "select-label-7"
 	| "select-label-8"
+	| "prev-image"
+	| "next-image"
 	// Select mode
 	| "remove"
 	| "switch-to-add"
@@ -25,7 +27,7 @@ export function normalizeKey(e: KeyboardEvent): string {
 	return mods + e.key.toLowerCase();
 }
 
-const selectLabelKeys: Partial<Record<string, AnnotationCommand>> = {
+const sharedCommands: Partial<Record<string, AnnotationCommand>> = {
 	"1": "select-label-0",
 	"2": "select-label-1",
 	"3": "select-label-2",
@@ -35,6 +37,9 @@ const selectLabelKeys: Partial<Record<string, AnnotationCommand>> = {
 	"7": "select-label-6",
 	"8": "select-label-7",
 	"9": "select-label-8",
+	a: "prev-image",
+	d: "next-image",
+	c: "toggle-labels",
 };
 
 export const KEYMAP: Record<
@@ -45,15 +50,13 @@ export const KEYMAP: Record<
 		tab: "toggle-masks",
 		r: "remove",
 		w: "switch-to-add",
-		c: "toggle-labels",
-		...selectLabelKeys,
+		...sharedCommands,
 	},
 	add: {
 		tab: "toggle-masks",
 		" ": "confirm-mask",
 		"ctrl+z": "clear-prompts",
 		w: "switch-to-select",
-		c: "toggle-labels",
-		...selectLabelKeys,
+		...sharedCommands,
 	},
 };

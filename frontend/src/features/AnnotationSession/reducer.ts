@@ -42,6 +42,20 @@ function toggleMaskSelection(
 	return { ...state, selectedAnnotations: Array.from(newSelected) };
 }
 
+function setCurrentDataIndex(
+	state: AnnotationSessionState,
+	index: number,
+): AnnotationSessionState {
+	// Clear point prompts and pending mask when switching data
+	return {
+		...state,
+		currentDataIndex: index,
+		pointPrompts: [],
+		pendingMask: null,
+		selectedAnnotations: [],
+	};
+}
+
 export function annotationSessionReducer(
 	state: AnnotationSessionState,
 	action: AnnotationSessionAction,
@@ -62,7 +76,7 @@ export function annotationSessionReducer(
 		case "SET_ANNOTATION_MODE":
 			return { ...state, annotationMode: action.payload };
 		case "SET_CURRENT_DATA_INDEX":
-			return { ...state, currentDataIndex: action.payload };
+			return setCurrentDataIndex(state, action.payload);
 		case "ADD_POINT_PROMPT":
 			return {
 				...state,
