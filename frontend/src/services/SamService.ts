@@ -1,7 +1,7 @@
 import { apiClient, API_BASE } from "./ApiClient";
 import type { ApiRequestCallbacks, ApiRequestHandle } from "../types/api";
 import type { PointPrompt } from "../types/Annotation/PointPrompt";
-import type { RLE } from "../types/Annotation";
+import type { RLE } from "../types/RLE";
 
 // ---------------------------------------------------------------------------
 // Request / Response types

@@ -23,27 +23,31 @@ from .utils.path import resolve_path
 _logger = get_logger(__name__)
 
 
-class _RLE(BaseModel):
+class CompressedRLE(BaseModel):
     size: List[int]  # [height, width]
-    counts: Union[str, List[int]]
+    counts: str
 
 
-class DecodeMasksRequest(BaseModel):
-    masks: List[_RLE]
-
-
-class DecodeMasksResponse(BaseModel):
-    masks: List[str]  # base64-encoded flat row-major arrays (1 byte per pixel, 0 or 1)
+class RLE(BaseModel):
+    size: List[int]  # [height, width]
+    counts: List[int]  # RLE counts as list of integers
 
 
 class EncodeMaskRequest(BaseModel):
-    mask: str  # base64-encoded flat row-major array (1 byte per pixel, 0 or 1)
-    height: int
-    width: int
+    """
+    The input should be a list of mask information
+
+    inputs: List[Dict] where each dict has:
+    - mask: List[int] (RLE counts)
+    - height: int
+    - width: int
+    """
+
+    inputs: List[RLE]
 
 
 class EncodeMaskResponse(BaseModel):
-    segmentation: dict  # {"size": [h, w], "counts": "<RLE string>"}
+    segmentation: List[CompressedRLE]  # {"size": [h, w], "counts": "<RLE string>"}
 
 
 class PredictInstRequest(BaseModel):
@@ -55,7 +59,7 @@ class PredictInstRequest(BaseModel):
 
 
 class PredictInstResponse(BaseModel):
-    mask: _RLE
+    mask: RLE
     best_mask_logit: str  # base64-encoded .npy bytes, shape [1, 256, 256] float32
 
 
@@ -127,16 +131,10 @@ class Server:
         _logger.info("Deleting project (token=%s)", token)
         self.project_handler.delete_project(token)
 
-    def decode_masks(self, request: DecodeMasksRequest) -> DecodeMasksResponse:
-        _logger.info(f"Decoding {len(request.masks)} masks")
-        rle_dicts = [{"size": rle.size, "counts": rle.counts} for rle in request.masks]
-        result = self.mask_handler.decode_masks(rle_dicts)
-        return DecodeMasksResponse(masks=result)
-
-    def encode_mask(self, request: EncodeMaskRequest) -> EncodeMaskResponse:
-        _logger.info("Encoding mask")
-        rle = self.mask_handler.encode_mask(request.mask, request.height, request.width)
-        return EncodeMaskResponse(segmentation=rle)
+    def encode_masks(self, request: EncodeMaskRequest) -> EncodeMaskResponse:
+        _logger.info("Encoding masks (batch size=%d)", len(request.inputs))
+        rle_list = self.mask_handler.encode_masks(request.inputs)
+        return EncodeMaskResponse(segmentation=rle_list)
 
     def predict_inst(self, request: PredictInstRequest) -> PredictInstResponse:
         _logger.info(
@@ -177,7 +175,9 @@ class Server:
         )
 
         # masks: [N, H, W] bool/uint8 — encode each candidate as COCO RLE
-        rle_masks = [_RLE(**encode_masks(masks[i])) for i in range(masks.shape[0])]
+        rle_masks = [
+            RLE(**encode_masks(masks[i])) for i in range(masks.shape[0])
+        ]
 
         # logits: [N, 256, 256] — keep the best one as [1, 256, 256] for the next mask_input
         best_idx = int(np.argmax(scores))

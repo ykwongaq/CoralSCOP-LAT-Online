@@ -1,45 +1,27 @@
 import { apiClient } from "./ApiClient";
 import type { ApiRequestCallbacks, ApiRequestHandle } from "../types/api";
 import type { RLE } from "../types/Annotation/RLE";
+import type { CompressedRLE } from "../types/Annotation/CompressedRLE";
 
 export interface EncodeMaskRequest {
-  /** Flat row-major pixel array: index = row * width + col, values 0 or 1. */
-  mask: Uint8Array;
-  height: number;
-  width: number;
+	inputs: RLE[]; // List of RLE dicts with "size" and "counts" as list of ints
 }
 
 export interface EncodeMaskResponse {
-  segmentation: RLE;
+	segmentation: CompressedRLE[];
 }
 
 export function encodeMask(
-  request: EncodeMaskRequest,
-  callbacks: ApiRequestCallbacks<EncodeMaskResponse>,
+	request: EncodeMaskRequest,
+	callbacks: ApiRequestCallbacks<EncodeMaskResponse>,
 ): ApiRequestHandle {
-  callbacks.onLoading?.();
+	callbacks.onLoading?.();
 
-  return apiClient.request<EncodeMaskResponse>("/api/masks/encode", {
-    method: "POST",
-    body: {
-      mask: pixelMaskToBase64(request.mask),
-      height: request.height,
-      width: request.width,
-    },
-    onProgress: callbacks.onProgress,
-    onError: callbacks.onError,
-    onComplete: callbacks.onComplete,
-  });
-}
-
-/**
- * Convert a flat row-major Uint8Array into a base64 string for the
- * EncodeMaskRequest body.
- */
-export function pixelMaskToBase64(mask: Uint8Array): string {
-  let binary = "";
-  for (let i = 0; i < mask.length; i++) {
-    binary += String.fromCharCode(mask[i]);
-  }
-  return btoa(binary);
+	return apiClient.request<EncodeMaskResponse>("/api/masks/encode", {
+		method: "POST",
+		body: request as unknown as Record<string, unknown>,
+		onProgress: callbacks.onProgress,
+		onError: callbacks.onError,
+		onComplete: callbacks.onComplete,
+	});
 }

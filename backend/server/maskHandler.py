@@ -3,8 +3,23 @@ from concurrent.futures import ProcessPoolExecutor
 from typing import Dict, List
 
 import numpy as np
+from pycocotools import mask as maskUtils
 
-from .utils.masks import decode_mask, encode_masks
+from .utils.masks import decode_mask
+
+
+def _encode_single_rle(rle: Dict) -> Dict:
+    """
+    Convert an uncompressed COCO RLE dict (list counts) to a compressed COCO RLE dict
+    (string counts) using pycocotools directly — no numpy decode/encode roundtrip.
+    Module-level so it is picklable by ProcessPoolExecutor.
+    """
+    h, w = rle["size"]
+    compressed = maskUtils.frPyObjects(rle, h, w)
+    counts = compressed["counts"]
+    if isinstance(counts, bytes):
+        counts = counts.decode("utf-8")
+    return {"size": [h, w], "counts": counts}
 
 
 def _decode_single_rle(rle: Dict) -> str:
@@ -38,11 +53,13 @@ class MaskHandler:
         with ProcessPoolExecutor() as executor:
             return list(executor.map(_decode_single_rle, masks))
 
-    def encode_mask(self, mask_b64: str, height: int, width: int) -> Dict:
+    def encode_masks(self, masks: List[Dict]) -> List[Dict]:
         """
-        Encode a base64 flat row-major byte string into a COCO RLE dict.
+        Encode a list of RLE dicts (with "size" and "counts" as list of ints) into COCO RLE dicts with compressed counts string.
+        Uses pycocotools directly (no numpy roundtrip) and multiprocessing for large batches.
         """
-        raw = base64.b64decode(mask_b64)
-        mask_flat = np.frombuffer(raw, dtype=np.uint8)
-        mask_arr = mask_flat.reshape(height, width)  # C order (row-major)
-        return encode_masks(mask_arr)  # applies np.asfortranarray internally
+        if len(masks) < self._MULTIPROCESS_THRESHOLD:
+            return [_encode_single_rle(m) for m in masks]
+
+        with ProcessPoolExecutor() as executor:
+            return list(executor.map(_encode_single_rle, masks))

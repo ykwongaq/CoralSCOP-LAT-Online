@@ -20,8 +20,6 @@ from fastapi.responses import FileResponse, StreamingResponse
 from PIL import Image
 from server import server
 from server.server import (
-    DecodeMasksRequest,
-    DecodeMasksResponse,
     EncodeMaskRequest,
     EncodeMaskResponse,
     PredictInstRequest,
@@ -225,31 +223,12 @@ async def cancel_project(token: str):
 
 
 # ---------------------------------------------------------------------------
-# Mask encode / decode endpoints
+# Mask encode endpoints
 # ---------------------------------------------------------------------------
 
 
-@app.post("/api/masks/decode", response_model=DecodeMasksResponse)
-async def decode_masks(request: DecodeMasksRequest):
-    """
-    Decode one or more COCO compressed RLE masks into flat row-major pixel arrays.
-
-    Each element of the response `masks` list is a base64-encoded byte string
-    where every byte is 0 (background) or 1 (foreground), in row-major (C) order:
-    index = row * width + col.
-
-    Accepts:
-        {"masks": [{"size": [height, width], "counts": "<RLE string>"}, ...]}
-
-    Returns:
-        {"masks": ["<base64>", ...]}
-    """
-    loop = asyncio.get_running_loop()
-    return await loop.run_in_executor(None, _server.decode_masks, request)
-
-
 @app.post("/api/masks/encode", response_model=EncodeMaskResponse)
-async def encode_mask(request: EncodeMaskRequest):
+async def encode_masks(request: EncodeMaskRequest):
     """
     Encode a flat row-major pixel array into a COCO compressed RLE mask.
 
@@ -263,7 +242,7 @@ async def encode_mask(request: EncodeMaskRequest):
     Returns:
         {"segmentation": {"size": [height, width], "counts": "<RLE string>"}}
     """
-    return _server.encode_mask(request)
+    return _server.encode_masks(request)
 
 
 # ---------------------------------------------------------------------------

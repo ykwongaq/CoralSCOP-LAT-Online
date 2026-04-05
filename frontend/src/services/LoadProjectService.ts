@@ -3,40 +3,17 @@ import type { ProjectState } from "../types/Annotation/Project";
 import type { Data } from "../types/Annotation/Data";
 import type { Annotation } from "../types/Annotation/Annotation";
 import type { Label } from "../types/Annotation/Label";
-import type { RLE } from "../types/Annotation/RLE";
 import type { ApiRequestCallbacks } from "../types/api";
 import {
 	createSamSession,
 	uploadEmbedding,
 	type CreateSamSessionResponse,
 } from "./SamService";
-
-// Raw shapes from the per-image annotation JSON files inside the .coral zip.
-// The backend writes one file per image at annotations/<stem>.json.
-interface CocoAnnotation {
-	id: number;
-	image_id: number;
-	category_id: number;
-	segmentation: RLE;
-}
-
-interface CocoCategory {
-	id: number;
-	name: string;
-	color: string;
-	status: string[];
-}
-
-interface AnnotationFile {
-	image: {
-		image_filename: string;
-		image_width: number;
-		image_height: number;
-		id: number;
-	};
-	annotations: CocoAnnotation[];
-	categories: CocoCategory[];
-}
+import {
+	type CocoAnnotation,
+	type CocoCategory,
+	type AnnotationFile,
+} from "../types/ProjectCreation";
 
 export interface LoadProjectCallbacks {
 	onLoading?: () => void;
@@ -162,16 +139,14 @@ export async function loadProject(
 		let sessionId: string | undefined;
 		if (embeddingEntries.length > 0) {
 			const { session_id } = await toPromise<CreateSamSessionResponse>((cb) =>
-			createSamSession(cb),
-		);
+				createSamSession(cb),
+			);
 			sessionId = session_id;
 
 			const m = embeddingEntries.length;
 			for (let j = 0; j < m; j++) {
 				const entry = embeddingEntries[j];
-				const stem = entry.name
-					.replace("embeddings/", "")
-					.replace(/\.pt$/, "");
+				const stem = entry.name.replace("embeddings/", "").replace(/\.pt$/, "");
 
 				callbacks.onProgress?.(70 + Math.round(((j + 1) / m) * 25));
 
@@ -188,6 +163,7 @@ export async function loadProject(
 			labels: Array.from(labelsMap.values()),
 			projectName,
 			sessionId,
+			sourceFile: file,
 		});
 	} catch (err) {
 		callbacks.onError?.({

@@ -41,6 +41,7 @@ import { SideBarButton } from "../components/common/SideBarButtons";
 import SideBarDropDownList from "../components/common/SideBarButtons/SideBarDropDownList";
 import SideBarDropDownButton from "../components/common/SideBarButtons/SideBarDropDownButton";
 import { releaseSession, releaseSessionOnUnload } from "../services/SamService";
+import { saveProject } from "../services/SaveProjectService";
 import {
 	UploadProjectPanel,
 	StatisticPanel,
@@ -208,7 +209,7 @@ function ProjectAnnotationPage() {
 									id="save-button"
 									icon="ico-save"
 									label="Save"
-									onClick={() => {}}
+									onClick={() => saveProject(state)}
 									disabled={!projectLoaded}
 								/>
 								<SideBarDropDownList
