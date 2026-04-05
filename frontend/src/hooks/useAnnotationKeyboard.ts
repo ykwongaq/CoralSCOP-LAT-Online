@@ -18,9 +18,10 @@ export function useAnnotationKeyboard(
 ) {
 	useEffect(() => {
 		const onKeyDown = (e: KeyboardEvent) => {
-			// Skip when the user is typing in an input field
-			const tag = (e.target as HTMLElement).tagName;
-			if (tag === "INPUT" || tag === "TEXTAREA") return;
+			// Skip when the user is typing in an input field or contentEditable element
+			const target = e.target as HTMLElement;
+			const tag = target.tagName;
+			if (tag === "INPUT" || tag === "TEXTAREA" || target.isContentEditable) return;
 
 			const key = normalizeKey(e);
 			const cmd = KEYMAP[mode][key];
