@@ -59,8 +59,7 @@ import {
 	ProjectSettingPanelID,
 } from "../components/panels/ProjectCreation";
 import { ProjectCreationContext } from "../features/ProjectCreation/context";
-import { projectCreationReducer } from "../features/ProjectCreation/reducer";
-import type { ProjectCreationState } from "../types/ProjectCreation";
+import { projectCreationReducer, initialProjectCreationState } from "../features/ProjectCreation/reducer";
 import { usePopMessage } from "../components/common/PopUpMessages/PopMessageContext";
 
 function isProjectLoaded(state: ProjectState): boolean {
@@ -75,21 +74,11 @@ function ProjectQuickStartPage() {
 		projectName: "" as string,
 	};
 
-	const initialCreationState: ProjectCreationState = {
-		imageDataList: [],
-		config: {
-			min_area: 0.001,
-			min_confidence: 0.5,
-			max_overlap: 0.001,
-		},
-		model_selection: null,
-	};
-
 	const { showMessage, closeMessage, showLoading, showError } = usePopMessage();
 	const [state, dispatch] = useReducer(projectAnnotationReducer, initialState);
 	const [creationState, creationDispatch] = useReducer(
 		projectCreationReducer,
-		initialCreationState,
+		initialProjectCreationState,
 	);
 	const [activePanel, setActivePanel] = useState<string>(AnnotationPanelID);
 	const [sessionState, sessionDispatch] = useReducer(

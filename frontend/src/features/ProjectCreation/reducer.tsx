@@ -116,6 +116,16 @@ function update_model_selection(
   };
 }
 
+export const initialProjectCreationState: ProjectCreationState = {
+  imageDataList: [],
+  config: {
+    min_area: 0.001,
+    min_confidence: 0.5,
+    max_overlap: 0.001,
+  },
+  model_selection: null,
+};
+
 export function projectCreationReducer(
   state: ProjectCreationState,
   action: ProjectCreationAction,

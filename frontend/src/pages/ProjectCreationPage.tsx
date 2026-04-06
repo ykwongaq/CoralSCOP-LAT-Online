@@ -10,25 +10,14 @@ import {
   ProjectSettingPanelID,
 } from "../components/panels/ProjectCreation";
 
-import { type ProjectCreationState } from "../types/ProjectCreation";
 import { ProjectCreationContext } from "../features/ProjectCreation/context";
-import { projectCreationReducer } from "../features/ProjectCreation/reducer";
+import { projectCreationReducer, initialProjectCreationState } from "../features/ProjectCreation/reducer";
 
 function ProjectCreationPage() {
   const navigate = useNavigate();
   const [activePanel, setActivePanel] = useState<string>(UploadImagePanelID);
 
-  const initialState: ProjectCreationState = {
-    imageDataList: [],
-    config: {
-      min_area: 0.001,
-      min_confidence: 0.5,
-      max_overlap: 0.001,
-    },
-    model_selection: null,
-  };
-
-  const [state, dispatch] = useReducer(projectCreationReducer, initialState);
+  const [state, dispatch] = useReducer(projectCreationReducer, initialProjectCreationState);
 
   const handleBackToHome = useCallback(() => {
     navigate("/");
