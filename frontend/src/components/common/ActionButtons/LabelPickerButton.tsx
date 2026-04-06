@@ -44,7 +44,7 @@ export default function LabelPickerButton({
 			<div className="toggle-color-plate-popup__pop toggle-fn__hide">
 				<p className="toggle-color-plate-popup__label">Label</p>
 				<div className="color-plate-list toggle-color-plate-popup__list">
-					{labels.map((label, index) => (
+					{labels.map((label) => (
 						<SmallLabelButton
 							key={label.id}
 							label={label}

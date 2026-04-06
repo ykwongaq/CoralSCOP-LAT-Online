@@ -31,7 +31,7 @@ export default function CroppedCanvas({
 		img.crossOrigin = "anonymous";
 		img.onload = () => {
 			// Decode the RLE mask and get bounding box for single annotation
-			const mask = decodeRLE(annotation.segmentation, imageWidth, imageHeight);
+			const mask = decodeRLE(annotation.segmentation);
 			const bb = getMaskBoundingBox(mask, imageWidth);
 			if (!bb) return;
 

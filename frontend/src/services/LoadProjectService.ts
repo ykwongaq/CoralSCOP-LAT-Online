@@ -9,11 +9,7 @@ import {
 	uploadEmbedding,
 	type CreateSamSessionResponse,
 } from "./SamService";
-import {
-	type CocoAnnotation,
-	type CocoCategory,
-	type AnnotationFile,
-} from "../types/ProjectCreation";
+import { type AnnotationFile } from "../types/ProjectCreation";
 
 export interface LoadProjectCallbacks {
 	onLoading?: () => void;

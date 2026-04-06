@@ -1,5 +1,4 @@
 import type { ApiRequestCallbacks, ApiRequestHandle } from "../types/api";
-import type { CompressedRLE } from "../types/CompressedRLE";
 import type { RLE } from "../types/RLE";
 import { apiClient } from "./ApiClient";
 

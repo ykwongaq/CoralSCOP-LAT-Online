@@ -10,7 +10,7 @@ interface LabelBarProps {
 }
 
 export default function LabelBar({ labels }: LabelBarProps) {
-	const { state, dispatch } = useProject();
+	const { dispatch } = useProject();
 	const [searchQuery, setSearchQuery] = useState("");
 
 	const filteredLabels = searchQuery.trim()

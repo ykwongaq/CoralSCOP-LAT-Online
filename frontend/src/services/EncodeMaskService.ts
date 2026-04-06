@@ -1,8 +1,8 @@
 import { apiClient } from "./ApiClient";
 import type { ApiRequestCallbacks, ApiRequestHandle } from "../types/api";
-import type { RLE } from "../types/Annotation/RLE";
-import type { CompressedRLE } from "../types/Annotation/CompressedRLE";
 
+import type { RLE } from "../types/RLE";
+import type { CompressedRLE } from "../types/CompressedRLE";
 export interface EncodeMaskRequest {
 	inputs: RLE[]; // List of RLE dicts with "size" and "counts" as list of ints
 }
