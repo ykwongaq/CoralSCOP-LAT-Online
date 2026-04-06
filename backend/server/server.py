@@ -13,6 +13,7 @@ from PIL import Image
 from .embeddingStore import EmbeddingStore, _to_device
 from .maskHandler import MaskHandler
 from .models.CoralSCOPModel import CoralSCOPModel
+from .models.CoralTankModel import CoralTankModel
 from .models.SAM3Model import SAM3Model
 from .projectHandler import ProjectHandler
 from .utils.logger import get_logger
@@ -45,8 +46,15 @@ class Server:
             max_masks_num=config["CoralSCOP"]["max_masks_num"],
             point_number=config["CoralSCOP"]["point_number"],
         )
+
+        coral_tank_path = resolve_path(config["coral_tank_model_path"])
+        coral_tank_model = CoralTankModel(coral_tank_path)
+
         self.project_handler = ProjectHandler(
-            os.path.join(self.temp_folder, "projects"), self.sam3, coralSCOP
+            os.path.join(self.temp_folder, "projects"),
+            self.sam3,
+            coralSCOP,
+            coral_tank_model,
         )
         self.mask_handler = MaskHandler()
         self.embedding_store = EmbeddingStore(
@@ -90,9 +98,7 @@ class Server:
         _logger.info("Deleting project (token=%s)", token)
         self.project_handler.delete_project(token)
 
-    def encode_masks(
-        self, inputs: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
+    def encode_masks(self, inputs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
         Encode a list of RLE masks into compressed RLE format.
 
@@ -175,7 +181,11 @@ class Server:
         # Once a mask_input is available (subsequent clicks), a single output suffices.
         multimask = mask_input_np is None
         masks, scores, logits = self.sam3.predict_inst(
-            state, input_points_np, input_labels_np, mask_input_np, multimask_output=multimask
+            state,
+            input_points_np,
+            input_labels_np,
+            mask_input_np,
+            multimask_output=multimask,
         )
 
         # masks: [N, H, W] bool/uint8 — encode each candidate as COCO RLE
@@ -214,7 +224,7 @@ class Server:
         if config.get("model") == "CoralSCOP":
             return self.project_handler.run_coral_scop(image, config)
         elif config.get("model") == "CoralTank":
-            return self.project_handler.run_coral_tank(image)
+            return self.project_handler.run_coral_tank(image, config)
         else:
             return {
                 "image": {

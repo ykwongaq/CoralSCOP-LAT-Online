@@ -1,5 +1,4 @@
-import type { RLE } from "../types/Annotation/RLE";
-
+import type { RLE } from "../types/RLE";
 // ---------------------------------------------------------------------------
 // Inline Web Worker source — runs decoding off the main thread.
 // Must be self-contained (no imports).
@@ -50,6 +49,9 @@ self.onmessage = function(e) {
 `;
 
 // Lazily create a single blob URL for the worker so it is reused across calls.
+// Configurable number of threads for parallel decoding.
+export const numThreads: number = 8;
+
 let _workerUrl: string | null = null;
 
 function getWorkerUrl(): string {
@@ -114,7 +116,7 @@ export function decodeRLE(rle: RLE): Uint8Array {
 /**
  * Decode a batch of COCO uncompressed RLE masks (counts as number[]) in parallel.
  *
- * Work is split evenly across up to navigator.hardwareConcurrency Web Workers,
+ * Work is split evenly across up to numThreads Web Workers,
  * so all CPU cores decode concurrently. ArrayBuffers are transferred (not
  * copied) back from workers to eliminate serialisation overhead.
  *
@@ -128,9 +130,7 @@ export async function decodeRleMasks(rles: RLE[]): Promise<Uint8Array[]> {
 	if (rles.length === 0) return [];
 	if (rles.length === 1) return [decodeRLE(rles[0])];
 
-	const cores =
-		typeof navigator !== "undefined" ? (navigator.hardwareConcurrency ?? 4) : 4;
-	const numWorkers = Math.min(rles.length, cores);
+	const numWorkers = Math.min(rles.length, numThreads);
 	const chunkSize = Math.ceil(rles.length / numWorkers);
 	const url = getWorkerUrl();
 

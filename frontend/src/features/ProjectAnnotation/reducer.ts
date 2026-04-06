@@ -1,6 +1,16 @@
-import type { Label, RLE } from "../../types/Annotation";
-import type AnnotationSessionState from "../../types/Annotation/AnnotationSession";
+import type { Label } from "../../types/Annotation";
 import { type ProjectState } from "../../types/Annotation/Project";
+import type { RLE } from "../../types/RLE";
+
+export type ModelOutputAnnotation = {
+	category_id: number;
+	segmentation: RLE;
+};
+
+export type ModelOutputCategory = {
+	id: number;
+	name: string;
+};
 
 export type ProjectAnnotationAction =
 	| { type: "LOAD_PROJECT"; payload: ProjectState }
@@ -35,7 +45,62 @@ export type ProjectAnnotationAction =
 			type: "ADD_ANNOTATION";
 			payload: { dataId: number; segmentation: RLE; labelId: number };
 	  }
+	| {
+			type: "ADD_MODEL_OUTPUT";
+			payload: {
+				dataId: number;
+				annotations: ModelOutputAnnotation[];
+				categories: ModelOutputCategory[];
+			};
+	  }
 	;
+
+function addModelOutput(
+	state: ProjectState,
+	dataId: number,
+	annotations: ModelOutputAnnotation[],
+	categories: ModelOutputCategory[],
+): ProjectState {
+	// Build a mapping from model category_id → local label id.
+	// Reuse an existing label when the name matches; otherwise create a new one.
+	const categoryIdToLabelId = new Map<number, number>();
+	let workingLabels: Label[] = [...state.labels];
+
+	for (const category of categories) {
+		const existing = workingLabels.find((l) => l.name === category.name);
+		if (existing) {
+			categoryIdToLabelId.set(category.id, existing.id);
+		} else {
+			const newId = workingLabels.length;
+			workingLabels = [
+				...workingLabels,
+				{ id: newId, name: category.name, status: [] },
+			];
+			categoryIdToLabelId.set(category.id, newId);
+		}
+	}
+
+	// Append all annotations to the target data item, assigning fresh IDs.
+	const targetData = state.dataList.find((d) => d.id === dataId);
+	let nextAnnotationId =
+		Math.max(0, ...(targetData?.annotations.map((a) => a.id) ?? [])) + 1;
+
+	const newAnnotations = annotations.flatMap((annotation) => {
+		const labelId = categoryIdToLabelId.get(annotation.category_id);
+		if (labelId === undefined) return [];
+		return [{ id: nextAnnotationId++, segmentation: annotation.segmentation, labelId }];
+	});
+
+	return {
+		...state,
+		labels: workingLabels,
+		dataList: state.dataList.map((data) =>
+			data.id === dataId
+				? { ...data, annotations: [...data.annotations, ...newAnnotations] }
+				: data,
+		),
+	};
+}
 
 function addAnnotation(
 	state: ProjectState,
@@ -250,6 +315,13 @@ export function projectAnnotationReducer(
 				action.payload.dataId,
 				action.payload.segmentation,
 				action.payload.labelId,
+			);
+		case "ADD_MODEL_OUTPUT":
+			return addModelOutput(
+				state,
+				action.payload.dataId,
+				action.payload.annotations,
+				action.payload.categories,
 			);
 		default:
 			return state;

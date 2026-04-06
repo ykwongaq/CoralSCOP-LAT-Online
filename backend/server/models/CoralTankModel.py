@@ -8,7 +8,7 @@ from .modelQueue import ModelQueue
 
 _logger = get_logger(__name__)
 
-from typing import Dict, List
+from typing import Any, Dict, List, Tuple
 
 
 class CoralTankModel:
@@ -18,13 +18,17 @@ class CoralTankModel:
         self._model_queue = ModelQueue(self.model)
         _logger.info("CoralTankModel loaded")
 
-    def predict(self, image: Image.Image) -> List[Dict]:
+    def predict(self, image: Image.Image) -> Tuple[List[Dict[str, Any]], List[int]]:
         with self._model_queue as model:
-            result = model.predict(image, retina_masks=True)[0]
+            result = model.predict(image, retina_masks=True, classes=[0, 3])[0]
             result = result.cpu().numpy()
 
             masks = []
             for mask in result.masks.data:
                 masks.append(encode_masks(mask))
 
-            return masks
+            class_list = result.boxes.cls.astype(int).tolist()
+
+            # Convert the class id 3 to 1
+            class_list = [1 if cls == 3 else cls for cls in class_list]
+            return masks, class_list

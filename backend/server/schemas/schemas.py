@@ -6,7 +6,6 @@ from typing import Any, List, Optional
 
 from pydantic import BaseModel
 
-
 # ============================================================================
 # Base Models (Pure Python Types)
 # ============================================================================
@@ -161,3 +160,53 @@ class PredictInstResponse(BaseModel):
 
     mask: RLE
     best_mask_logit: str  # base64-encoded .npy bytes, shape [1, 256, 256] float32
+
+
+# ============================================================================
+# /api/model/run - Run Model Inference
+# ============================================================================
+
+
+class RunModelConfig(BaseModel):
+    """Configuration for model inference."""
+
+    model: Optional[str] = None  # "CoralSCOP" | "CoralTank"
+    min_area: Optional[float] = None
+    min_confidence: Optional[float] = None
+    max_overlap: Optional[float] = None
+
+
+class Annotation(BaseModel):
+    """Annotation result from model inference."""
+
+    id: int
+    category_id: int
+    segmentation: RLE
+    area: float
+    bbox: List[float]  # [x, y, width, height]
+    score: Optional[float] = None
+
+
+class Category(BaseModel):
+    """Category definition for annotations."""
+
+    id: int
+    name: str
+    sub_categories: List[str] = []  # snake_case alias for "sub-categories"
+
+
+class ImageInfo(BaseModel):
+    """Image metadata in the response."""
+
+    image_filename: str
+    image_width: int
+    image_height: int
+    id: int
+
+
+class RunModelResponse(BaseModel):
+    """Response for model inference."""
+
+    image: ImageInfo
+    annotations: List[Annotation]
+    categories: List[Category]

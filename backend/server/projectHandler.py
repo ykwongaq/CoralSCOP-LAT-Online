@@ -67,8 +67,26 @@ class ProjectHandler:
         }
         return output_json
 
-    def run_coral_tank(self, image: Image.Image) -> Dict:
-        masks = self.coralTank_model.predict(image)
+    def run_coral_tank(self, image: Image.Image, config: Dict) -> Dict:
+        masks, class_list = self.coralTank_model.predict(image)
+
+        min_area = config.get("min_area", 0.001)
+        image_area = image.width * image.height
+        min_area_pixels = int(min_area * image_area)
+
+        # Filter out masks that are smaller than the minimum area
+        filtered_masks = []
+        filtered_class_list = []
+        for mask, cls in zip(masks, class_list):
+            mask_area = mask["size"][0] * mask["size"][1]
+            if mask_area >= min_area_pixels:
+                filtered_masks.append(mask)
+                filtered_class_list.append(cls)
+
+        masks = filtered_masks
+        class_list = filtered_class_list
+
+        # Mask are the dictionary with keys "size" and "counts" for RLE
         output_json = {
             "image": {
                 "image_filename": "",
@@ -79,17 +97,17 @@ class ProjectHandler:
             "annotations": [
                 {
                     "id": idx,
-                    "category_id": 0,
+                    "category_id": class_list[idx],
                     "segmentation": mask,
-                    "area": int(np.sum(mask)),
+                    "area": mask["size"][0] * mask["size"][1],
+                    # Compute the bounding box
                     "bbox": [
-                        int(np.min(np.where(mask)[1])),  # x_min
-                        int(np.min(np.where(mask)[0])),  # y_min
-                        int(np.max(np.where(mask)[1]))
-                        - int(np.min(np.where(mask)[1])),  # width
-                        int(np.max(np.where(mask)[0]))
-                        - int(np.min(np.where(mask)[0])),  # height
-                    ],
+                        0,
+                        0,
+                        mask["size"][1],
+                        mask["size"][0],
+                    ],  # [x, y, width, height]
+                    "image_id": 0,
                 }
                 for idx, mask in enumerate(masks)
             ],
@@ -220,9 +238,3 @@ class ProjectHandler:
             _logger.exception("Project creation failed (token=%s)", token)
             self.clean_up(token)
             raise
-
-    def run_coral_scop(self, image: Image.Image) -> Dict:
-        return {}
-
-    def run_coral_tank(self, image: Image.Image) -> Dict:
-        return {}

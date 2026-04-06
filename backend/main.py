@@ -26,6 +26,8 @@ from server.schemas import (
     PredictInstRequest,
     PredictInstResponse,
     QuickStartConfig,
+    RunModelConfig,
+    RunModelResponse,
 )
 from server.utils.image import read_uploaded_image
 from server.utils.logger import get_logger
@@ -381,4 +383,62 @@ async def predict_inst(request: PredictInstRequest):
     return PredictInstResponse(
         mask=result["mask"],
         best_mask_logit=result["best_mask_logit"],
+    )
+
+
+@app.post("/api/model/run", response_model=RunModelResponse)
+async def run_model(
+    image: UploadFile = File(...),
+    config: Annotated[str, Form()] = "{}",
+):
+    """
+    Run model inference on a single image and return annotations directly.
+
+    Accepts multipart/form-data:
+      - image  : one image file
+      - config : JSON string  { model, min_area, min_confidence, max_overlap }
+                 model can be "CoralSCOP" or "CoralTank"
+
+    Returns:
+        {
+            "image": {
+                "image_filename": "",
+                "image_width": <int>,
+                "image_height": <int>,
+                "id": 0
+            },
+            "annotations": [
+                {
+                    "id": <int>,
+                    "category_id": <int>,
+                    "segmentation": {"size": [H, W], "counts": "<RLE string>"},
+                    "area": <float>,
+                    "bbox": [x, y, width, height],
+                    "score": <float>  // optional
+                }
+            ],
+            "categories": [
+                {"id": <int>, "name": "...", "sub_categories": []}
+            ]
+        }
+    """
+    try:
+        config_obj = RunModelConfig.model_validate_json(config)
+        config_data = config_obj.model_dump(exclude_none=True)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=422, detail="config must be valid JSON")
+
+    try:
+        pil_image = await read_uploaded_image(image, mode="RGB")
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+
+    loop = asyncio.get_running_loop()
+    result = await loop.run_in_executor(None, _server.run_model, pil_image, config_data)
+
+    # Convert result to Pydantic model response
+    return RunModelResponse(
+        image=result["image"],
+        annotations=result["annotations"],
+        categories=result["categories"],
     )
