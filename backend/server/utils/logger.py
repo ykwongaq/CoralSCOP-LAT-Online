@@ -1,9 +1,17 @@
 import logging
 import os
 from logging.handlers import RotatingFileHandler
+import tempfile
 
 # Logs are written to backend/logs/
-_BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_BACKEND_DIR = None
+
+if _BACKEND_DIR is None:
+    # Force people to define the log folder
+    raise RuntimeError(
+        "BACKEND_DIR environment variable is not set. Please set it to the backend directory path."
+    )
+
 _LOG_DIR = os.path.join(_BACKEND_DIR, "logs")
 _LOG_FILE = os.path.join(_LOG_DIR, "app.log")
 
