@@ -29,12 +29,12 @@ class Server:
         self.config = config
         _logger.info("Initializing Server")
 
-        # self.temp_folder = os.path.join(
-        #     tempfile.gettempdir(), "coralscop-lat-online-temp"
-        # )
         self.temp_folder = os.path.join(
-            "/home/davidwong/Documents/temp", "coralscop-lat-online-temp"
+            tempfile.gettempdir(), "coralscop-lat-online-temp"
         )
+        # self.temp_folder = os.path.join(
+        #     "/home/davidwong/Documents/temp", "coralscop-lat-online-temp"
+        # )
         os.makedirs(self.temp_folder, exist_ok=True)
 
         self.sam3 = SAM3Model(resolve_path(config["sam_model_path"]))
