@@ -53,7 +53,7 @@ class ProjectHandler:
             image_npy,
             min_area=config.get("min_area", 0.001),
             min_confidence=config.get("min_confidence", 0.5),
-            max_overlap=config.get("max_overlap", 0.001),
+            max_iou=config.get("max_overlap", 0.001),
         )
         output_json = {
             "image": {
@@ -168,7 +168,7 @@ class ProjectHandler:
                 if config.get("model") == "CoralSCOP":
                     output_json = self.run_coral_scop(image, config)
                 elif config.get("model") == "CoralTank":
-                    output_json = self.run_coral_tank(image)
+                    output_json = self.run_coral_tank(image, config)
                 else:
                     output_json = {
                         "image": {
