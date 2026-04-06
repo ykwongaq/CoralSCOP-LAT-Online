@@ -4,13 +4,11 @@ import os
 import tempfile
 import time
 import uuid
-from typing import Dict, List, Optional, Union
-
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 from fastapi import HTTPException
 from PIL import Image
-from pydantic import BaseModel
 
 from .embeddingStore import EmbeddingStore, _to_device
 from .maskHandler import MaskHandler
@@ -22,48 +20,6 @@ from .utils.masks import encode_masks
 from .utils.path import resolve_path
 
 _logger = get_logger(__name__)
-
-
-class CompressedRLE(BaseModel):
-    size: List[int]  # [height, width]
-    counts: str
-
-
-class RLE(BaseModel):
-    size: List[int]  # [height, width]
-    counts: List[int]  # RLE counts as list of integers
-
-
-class EncodeMaskRequest(BaseModel):
-    """
-    The input should be a list of mask information
-
-    inputs: List[Dict] where each dict has:
-    - mask: List[int] (RLE counts)
-    - height: int
-    - width: int
-    """
-
-    inputs: List[RLE]
-
-
-class EncodeMaskResponse(BaseModel):
-    segmentation: List[CompressedRLE]  # {"size": [h, w], "counts": "<RLE string>"}
-
-
-class PredictInstRequest(BaseModel):
-    session_id: str  # UUID returned by POST /api/sam/sessions
-    stem: str  # image filename stem identifying which .pt to load
-    input_points: List[List[float]]  # [[x1, y1], ...]
-    input_labels: List[int]  # 1=foreground, 0=background per point
-    mask_input: Optional[str] = None  # base64-encoded .npy bytes [1, H, W] float32
-
-
-class PredictInstResponse(BaseModel):
-    mask: RLE
-    best_mask_logit: str  # base64-encoded .npy bytes, shape [1, 256, 256] float32
-
-
 
 
 class Server:
@@ -134,27 +90,65 @@ class Server:
         _logger.info("Deleting project (token=%s)", token)
         self.project_handler.delete_project(token)
 
-    def encode_masks(self, request: EncodeMaskRequest) -> EncodeMaskResponse:
-        _logger.info("Encoding masks (batch size=%d)", len(request.inputs))
+    def encode_masks(
+        self, inputs: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+        """
+        Encode a list of RLE masks into compressed RLE format.
+
+        Args:
+            inputs: List of dicts with keys:
+                - size: List[int] [height, width]
+                - counts: List[int] (RLE counts)
+
+        Returns:
+            List of dicts with keys:
+                - size: List[int] [height, width]
+                - counts: str (compressed RLE string)
+        """
+        _logger.info("Encoding masks (batch size=%d)", len(inputs))
 
         # Convert the input into list of dictionary
         rle_list = []
-        for rle in request.inputs:
-            rle_dict = {"size": rle.size, "counts": rle.counts}
+        for rle in inputs:
+            rle_dict = {"size": rle["size"], "counts": rle["counts"]}
             rle_list.append(rle_dict)
         rle_list = self.mask_handler.encode_masks(rle_list)
 
-        return EncodeMaskResponse(segmentation=rle_list)
+        return rle_list
 
-    def predict_inst(self, request: PredictInstRequest) -> PredictInstResponse:
+    def predict_inst(
+        self,
+        session_id: str,
+        stem: str,
+        input_points: List[List[float]],
+        input_labels: List[int],
+        mask_input: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Run SAM interactive instance segmentation.
+
+        Args:
+            session_id: UUID string returned by create_embedding_session
+            stem: image filename stem identifying which .pt to load
+            input_points: array of [x, y] pairs, e.g. [[100,200],[300,400]]
+            input_labels: array of ints (1=foreground, 0=background per point)
+            mask_input: optional base64-encoded .npy bytes [1, 256, 256] float32
+                       (pass best_mask_logit from the previous response)
+
+        Returns:
+            dict with keys:
+                - mask: dict with "size" (List[int]) and "counts" (List[int]) for RLE
+                - best_mask_logit: base64-encoded .npy bytes [1, 256, 256] float32
+        """
         _logger.info(
             "Running predict_inst (session=%s stem=%s points=%d)",
-            request.session_id,
-            request.stem,
-            len(request.input_points),
+            session_id,
+            stem,
+            len(input_points),
         )
         try:
-            state = self.embedding_store.get(request.session_id, request.stem)
+            state = self.embedding_store.get(session_id, stem)
         except MemoryError:
             raise HTTPException(
                 status_code=503,
@@ -164,28 +158,28 @@ class Server:
         if state is None:
             raise HTTPException(
                 status_code=404,
-                detail=f"No embedding for session_id={request.session_id!r} stem={request.stem!r}",
+                detail=f"No embedding for session_id={session_id!r} stem={stem!r}",
             )
 
         state = _to_device(state, self.sam3.device)
 
-        input_points = np.array(request.input_points, dtype=np.float32)
-        input_labels = np.array(request.input_labels, dtype=np.int32)
+        input_points_np = np.array(input_points, dtype=np.float32)
+        input_labels_np = np.array(input_labels, dtype=np.int32)
 
-        mask_input = None
-        if request.mask_input is not None:
-            mask_input = np.load(io.BytesIO(base64.b64decode(request.mask_input)))
+        mask_input_np = None
+        if mask_input is not None:
+            mask_input_np = np.load(io.BytesIO(base64.b64decode(mask_input)))
 
         # Use multimask_output=True when there is no prior mask (first click):
         # SAM generates 3 candidates and we pick the highest-scoring one.
         # Once a mask_input is available (subsequent clicks), a single output suffices.
-        multimask = mask_input is None
+        multimask = mask_input_np is None
         masks, scores, logits = self.sam3.predict_inst(
-            state, input_points, input_labels, mask_input, multimask_output=multimask
+            state, input_points_np, input_labels_np, mask_input_np, multimask_output=multimask
         )
 
         # masks: [N, H, W] bool/uint8 — encode each candidate as COCO RLE
-        rle_masks = [RLE(**encode_masks(masks[i])) for i in range(masks.shape[0])]
+        rle_masks = [encode_masks(masks[i]) for i in range(masks.shape[0])]
 
         # logits: [N, 256, 256] — keep the best one as [1, 256, 256] for the next mask_input
         best_idx = int(np.argmax(scores))
@@ -197,14 +191,12 @@ class Server:
         _logger.info(
             f"best_mask_logit b64: {best_mask_logit_b64[:50]}... (length={len(best_mask_logit_b64)})"
         )
-        return PredictInstResponse(
-            mask=rle_masks[best_idx],
-            best_mask_logit=best_mask_logit_b64,
-        )
+        return {
+            "mask": rle_masks[best_idx],
+            "best_mask_logit": best_mask_logit_b64,
+        }
 
-    def quick_start(
-        self, image: Image.Image, image_filename: str, config: Dict
-    ) -> str:
+    def quick_start(self, image: Image.Image, image_filename: str, config: Dict) -> str:
         """
         Create a single-image project and return the path to the .coral ZIP file.
         The caller is responsible for deleting the file after it has been sent.
@@ -217,3 +209,20 @@ class Server:
         ):
             pass
         return self.project_handler.get_zip_path(token)
+
+    def run_model(self, image: Image.Image, config: Dict) -> Dict:
+        if config.get("model") == "CoralSCOP":
+            return self.project_handler.run_coral_scop(image, config)
+        elif config.get("model") == "CoralTank":
+            return self.project_handler.run_coral_tank(image)
+        else:
+            return {
+                "image": {
+                    "image_filename": "",
+                    "image_width": image.width,
+                    "image_height": image.height,
+                    "id": 0,
+                },
+                "annotations": [],
+                "categories": [],
+            }

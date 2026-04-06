@@ -1,9 +1,8 @@
 import asyncio
-import io
 import json
 import os
 import threading
-from typing import Annotated, Optional
+from typing import Annotated, Any, List, Optional
 
 import numpy as np
 from fastapi import (
@@ -19,12 +18,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 from PIL import Image
 from server import server
-from server.server import (
+from server.schemas import (
+    CreateProjectConfig,
+    CreateSamSessionResponse,
     EncodeMaskRequest,
     EncodeMaskResponse,
     PredictInstRequest,
     PredictInstResponse,
+    QuickStartConfig,
 )
+from server.utils.image import read_uploaded_image
 from server.utils.logger import get_logger
 
 # Get the directory where this script is located
@@ -49,9 +52,9 @@ app.add_middleware(
 )
 
 
-# ---------------------------------------------------------------------------
+# ============================================================================
 # Streaming helpers (private to this module)
-# ---------------------------------------------------------------------------
+# ============================================================================
 
 
 def _sse_line(payload: dict) -> str:
@@ -131,9 +134,9 @@ async def _stream_project(
             loop.create_task(_drain_and_cleanup(q))
 
 
-# ---------------------------------------------------------------------------
+# ============================================================================
 # Routes
-# ---------------------------------------------------------------------------
+# ============================================================================
 
 
 @app.post("/api/projects")
@@ -157,7 +160,8 @@ async def create_project(
       data: {"type":"error","message":"<reason>"}   (on failure)
     """
     try:
-        config_data: dict = json.loads(config)
+        config_obj = CreateProjectConfig.model_validate_json(config)
+        config_data = config_obj.model_dump(exclude_none=True)
     except json.JSONDecodeError:
         raise HTTPException(status_code=422, detail="config must be valid JSON")
 
@@ -165,15 +169,11 @@ async def create_project(
     filenames: list[str] = []
     for idx, upload in enumerate(images):
         try:
-            contents = await upload.read()
-            image = Image.open(io.BytesIO(contents)).convert("RGB")
+            image = await read_uploaded_image(upload, mode="RGB")
             pil_images.append(image)
             filenames.append(upload.filename or f"image_{idx}.jpg")
-        except Exception as exc:
-            raise HTTPException(
-                status_code=422,
-                detail=f"Failed to read image '{upload.filename}': {exc}",
-            )
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc))
 
     config_data["model"] = model
 
@@ -234,15 +234,21 @@ async def encode_masks(request: EncodeMaskRequest):
 
     Accepts:
         {
-            "mask":   "<base64>",   // flat row-major bytes (0 or 1 per pixel)
-            "height": <int>,
-            "width":  <int>
+            "inputs": [
+                {
+                    "size": [height, width],
+                    "counts": [rle_count1, rle_count2, ...]
+                }
+            ]
         }
 
     Returns:
-        {"segmentation": {"size": [height, width], "counts": "<RLE string>"}}
+        {"segmentation": [{"size": [height, width], "counts": "<RLE string>"}, ...]}
     """
-    return _server.encode_masks(request)
+    # Convert Pydantic models to pure Python types for server.py
+    inputs = [rle.model_dump() for rle in request.inputs]
+    result = _server.encode_masks(inputs)
+    return EncodeMaskResponse(segmentation=result)
 
 
 # ---------------------------------------------------------------------------
@@ -250,7 +256,7 @@ async def encode_masks(request: EncodeMaskRequest):
 # ---------------------------------------------------------------------------
 
 
-@app.post("/api/sam/sessions")
+@app.post("/api/sam/sessions", response_model=CreateSamSessionResponse)
 async def create_sam_session():
     """
     Create a new SAM embedding session.
@@ -263,7 +269,7 @@ async def create_sam_session():
     3 hours of inactivity, or immediately via DELETE /api/sam/sessions/{session_id}.
     """
     session_id = _server.create_embedding_session()
-    return {"session_id": session_id}
+    return CreateSamSessionResponse(session_id=session_id)
 
 
 @app.post("/api/sam/sessions/{session_id}/embeddings/{stem}", status_code=204)
@@ -312,19 +318,17 @@ async def quick_start_project(
     The frontend can pass the response blob directly to loadProject().
     """
     try:
-        config_data: dict = json.loads(config)
+        config_obj = QuickStartConfig.model_validate_json(config)
+        config_data = config_obj.model_dump(exclude_none=True)
     except json.JSONDecodeError:
         raise HTTPException(status_code=422, detail="config must be valid JSON")
 
     config_data["model"] = model
 
     try:
-        contents = await image.read()
-        pil_image = Image.open(io.BytesIO(contents)).convert("RGB")
-    except Exception as exc:
-        raise HTTPException(
-            status_code=422, detail=f"Failed to read image '{image.filename}': {exc}"
-        )
+        pil_image = await read_uploaded_image(image, mode="RGB")
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
 
     filename = image.filename or "image.jpg"
 
@@ -359,9 +363,22 @@ async def predict_inst(request: PredictInstRequest):
 
     Returns:
         {
-            "masks":          [{"size": [H, W], "counts": "<RLE>"}, ...],
+            "mask": {"size": [H, W], "counts": [...]},
             "best_mask_logit": "<base64 .npy bytes [1, 256, 256] float32>"
         }
     """
     loop = asyncio.get_running_loop()
-    return await loop.run_in_executor(None, _server.predict_inst, request)
+    result = await loop.run_in_executor(
+        None,
+        _server.predict_inst,
+        request.session_id,
+        request.stem,
+        request.input_points,
+        request.input_labels,
+        request.mask_input,
+    )
+    # Convert result dict to Pydantic model
+    return PredictInstResponse(
+        mask=result["mask"],
+        best_mask_logit=result["best_mask_logit"],
+    )

@@ -7,5 +7,6 @@
          "sta_threshold": 0.62,
          "point_number": 32,
          "max_masks_num": 100
-    }
+    },
+    "coral_tank_model_path": "checkpoints/CoralTank/best.pt"
 }

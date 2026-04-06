@@ -10,6 +10,7 @@ import torch
 from PIL import Image
 
 from .models.CoralSCOPModel import CoralSCOPModel
+from .models.CoralTankModel import CoralTankModel
 from .models.SAM3Model import SAM3Model
 from .utils.logger import get_logger
 from .utils.path import resolve_path
@@ -24,10 +25,12 @@ class ProjectHandler:
         temp_folder: str,
         sam_model: SAM3Model,
         coralSCOP_model: CoralSCOPModel = None,
+        coralTank_model: CoralTankModel = None,
     ):
         self.temp_folder = temp_folder
         self.sam3_model = sam_model
         self.coralSCOP_model = coralSCOP_model
+        self.coralTank_model = coralTank_model
 
     def clean_up(self, token: str) -> None:
         zip_path = os.path.join(self.temp_folder, f"project_{token}.coral")
@@ -43,6 +46,59 @@ class ProjectHandler:
 
     def get_zip_path(self, token: str) -> str:
         return os.path.join(self.temp_folder, f"project_{token}.coral")
+
+    def run_coral_scop(self, image: Image.Image, config: Dict) -> Dict:
+        image_npy = np.array(image)
+        annotations = self.coralSCOP_model.gen_annotations(
+            image_npy,
+            min_area=config.get("min_area", 0.001),
+            min_confidence=config.get("min_confidence", 0.5),
+            max_overlap=config.get("max_overlap", 0.001),
+        )
+        output_json = {
+            "image": {
+                "image_filename": "",
+                "image_width": image.width,
+                "image_height": image.height,
+                "id": 0,
+            },
+            "annotations": annotations["annotations"],
+            "categories": [{"id": 0, "name": "coral", "sub-categories": []}],
+        }
+        return output_json
+
+    def run_coral_tank(self, image: Image.Image) -> Dict:
+        masks = self.coralTank_model.predict(image)
+        output_json = {
+            "image": {
+                "image_filename": "",
+                "image_width": image.width,
+                "image_height": image.height,
+                "id": 0,
+            },
+            "annotations": [
+                {
+                    "id": idx,
+                    "category_id": 0,
+                    "segmentation": mask,
+                    "area": int(np.sum(mask)),
+                    "bbox": [
+                        int(np.min(np.where(mask)[1])),  # x_min
+                        int(np.min(np.where(mask)[0])),  # y_min
+                        int(np.max(np.where(mask)[1]))
+                        - int(np.min(np.where(mask)[1])),  # width
+                        int(np.max(np.where(mask)[0]))
+                        - int(np.min(np.where(mask)[0])),  # height
+                    ],
+                }
+                for idx, mask in enumerate(masks)
+            ],
+            "categories": [
+                {"id": 0, "name": "coral", "sub-categories": []},
+                {"id": 1, "name": "base", "sub-categories": []},
+            ],
+        }
+        return output_json
 
     def stream_create_project(
         self,
@@ -92,26 +148,7 @@ class ProjectHandler:
                 state = self.sam3_model.gen_embeddings(image)
 
                 if config.get("model") == "CoralSCOP":
-                    min_area = config["min_area"]  # 0.001
-                    min_confidence = config["min_confidence"]  # 0.5
-                    max_overlap = config["max_overlap"]  # 0.001
-                    image_npy = np.array(image)
-                    annotations = self.coralSCOP_model.gen_annotations(
-                        image_npy, min_area, min_confidence, max_overlap
-                    )
-
-                    output_json = {
-                        "image": {
-                            "image_filename": filename,
-                            "image_width": image.width,
-                            "image_height": image.height,
-                            "id": idx,
-                        },
-                        "annotations": annotations["annotations"],
-                        "categories": [
-                            {"id": 0, "name": "coral", "sub-categories": []}
-                        ],
-                    }
+                    output_json = self.run_coral_scop(image, config)
                 elif config.get("model") == "CoralTank":
                     output_json = self.run_coral_tank(image)
                 else:
