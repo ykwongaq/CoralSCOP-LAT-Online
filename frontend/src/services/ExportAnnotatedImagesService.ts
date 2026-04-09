@@ -20,6 +20,7 @@ const EXPORT_SESSION = {
 	annotationMode: "select" as const,
 	currentDataIndex: 0,
 	pointPrompts: [],
+	selectedScaledLineId: null,
 };
 
 function loadImage(url: string): Promise<HTMLImageElement> {

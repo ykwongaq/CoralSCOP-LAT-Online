@@ -1,5 +1,6 @@
 import type { Label } from "../../types/Annotation";
 import { type ProjectState } from "../../types/Annotation/Project";
+import type { ScaledLine } from "../../types/Annotation/ScaledLine";
 import type { RLE } from "../../types/RLE";
 
 export type ModelOutputAnnotation = {
@@ -53,7 +54,58 @@ export type ProjectAnnotationAction =
 				categories: ModelOutputCategory[];
 			};
 	  }
-	;
+	| { type: "ADD_SCALED_LINE"; payload: { line: ScaledLine } }
+	| {
+			type: "UPDATE_SCALED_LINE";
+			payload: {
+				lineId: number;
+				updates: Partial<Omit<ScaledLine, "id">>;
+			};
+	  }
+	| { type: "DELETE_SCALED_LINE"; payload: { lineId: number } };
+
+function addScaledLine(
+	state: ProjectState,
+	line: ScaledLine,
+): ProjectState {
+	// Assign new id to the line
+	const newLineId =
+		state.scaledLineList.length > 0
+			? Math.max(...state.scaledLineList.map((l) => l.id)) + 1
+			: 0;
+	const newLine = { ...line, id: newLineId };
+	return {
+		...state,
+		scaledLineList: [...state.scaledLineList, newLine],
+	};
+}
+
+function updateScaledLine(
+	state: ProjectState,
+	lineId: number,
+	updates: Partial<Omit<ScaledLine, "id">>,
+): ProjectState {
+	return {
+		...state,
+		scaledLineList: state.scaledLineList.map((line) =>
+			line.id === lineId ? { ...line, ...updates } : line,
+		),
+	};
+}
+
+function deleteScaledLine(
+	state: ProjectState,
+	lineId: number,
+): ProjectState {
+	// Reoder the id of remaining lines to maintain contiguity
+	const remainingLines = state.scaledLineList
+		.filter(line => line.id !== lineId)
+		.map((line, index) => ({ ...line, id: index }));
+	return {
+		...state,
+		scaledLineList: remainingLines,
+	};
+}
 
 function addModelOutput(
 	state: ProjectState,
@@ -323,6 +375,16 @@ export function projectAnnotationReducer(
 				action.payload.annotations,
 				action.payload.categories,
 			);
+		case "ADD_SCALED_LINE":
+			return addScaledLine(state, action.payload.line);
+		case "UPDATE_SCALED_LINE":
+			return updateScaledLine(
+				state,
+				action.payload.lineId,
+				action.payload.updates,
+			);
+		case "DELETE_SCALED_LINE":
+			return deleteScaledLine(state, action.payload.lineId);
 		default:
 			return state;
 	}

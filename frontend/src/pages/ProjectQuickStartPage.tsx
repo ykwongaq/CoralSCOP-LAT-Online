@@ -55,11 +55,7 @@ import {
 	ImageGalleryPanelID,
 	AnnotationPanel,
 	AnnotationPanelID,
-	SelectModeBar,
-	AddModeBar,
 } from "../components/panels/ProjectAnnotation";
-import AnnotationSideBar from "../components/layout/AnnotationSideBar";
-import AnnotationCanvas from "../components/layout/AnnotationCanvas";
 import { QuickStartUploadImagePanel } from "../components/panels/ProjectQuickStart";
 import {
 	ProjectSettingPanel,
@@ -70,6 +66,8 @@ import { projectCreationReducer, initialProjectCreationState } from "../features
 import { usePopMessage } from "../components/common/PopUpMessages/PopMessageContext";
 import ActionButton from "../components/common/ActionButtons/ActionButton";
 import { runModel } from "../services/RunModelService";
+import type { ScaledLine } from "../types/Annotation/ScaledLine";
+import { SCALE_DEFINE_PANEL_ID, ScaleDefinePanel } from "../components/panels/ProjectAnnotation/ScaleDefinePanel";
 
 function isProjectLoaded(state: ProjectState): boolean {
 	return state.dataList.length > 0;
@@ -81,6 +79,7 @@ function ProjectQuickStartPage() {
 		dataList: [] as Data[],
 		labels: [] as Label[],
 		projectName: "" as string,
+		scaledLineList: [] as ScaledLine[],
 	};
 
 	const { showMessage, closeMessage, showLoading, showError } = usePopMessage();
@@ -298,6 +297,14 @@ function ProjectQuickStartPage() {
 										onClick={() => handlePanelChange(ProjectSettingPanelID)}
 										isActive={activePanel === ProjectSettingPanelID}
 									/>
+									<SideBarButton 
+										id="scale-define-button"
+										icon="ico-wrench"
+										label="Scale"
+										onClick={() => handlePanelChange(SCALE_DEFINE_PANEL_ID)}
+										isActive={projectLoaded && activePanel === SCALE_DEFINE_PANEL_ID}
+										disabled={!projectLoaded}
+									/>
 									<SideBarButton
 										id="save-button"
 										icon="ico-save"
@@ -459,23 +466,25 @@ function ProjectQuickStartPage() {
 										/>
 									</div>
 								)}
+								{projectLoaded && activePanel === SCALE_DEFINE_PANEL_ID && (
+									<div className="main-section page active-page" id="scaleDefinePage">
+										<ScaleDefinePanel />
+									</div>
+								)}
 								{projectLoaded && activePanel === AnnotationPanelID && (
 									<div
 										className="main-section page active-page"
 										id="annotationPage"
 									>
-										<AnnotationPanel>
-											<AnnotationSideBar />
-											<AnnotationCanvas />
-											<SelectModeBar>
+										<AnnotationPanel
+											selectModeChildren={
 												<ActionButton
 													name="Run Model"
 													icon=""
 													onClick={handleRunModel}
 												/>
-											</SelectModeBar>
-											<AddModeBar />
-										</AnnotationPanel>
+											}
+										/>
 									</div>
 								)}
 								{projectLoaded && activePanel === StatisticPanelID && (

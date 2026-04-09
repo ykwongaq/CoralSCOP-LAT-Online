@@ -56,12 +56,10 @@ import {
 	ImageGalleryPanelID,
 	AnnotationPanel,
 	AnnotationPanelID,
-	SelectModeBar,
-	AddModeBar,
 } from "../components/panels/ProjectAnnotation";
-import AnnotationSideBar from "../components/layout/AnnotationSideBar";
-import AnnotationCanvas from "../components/layout/AnnotationCanvas";
 import { usePopMessage } from "../components/common/PopUpMessages/PopMessageContext";
+import { SCALE_DEFINE_PANEL_ID, ScaleDefinePanel } from "../components/panels/ProjectAnnotation/ScaleDefinePanel";
+import type { ScaledLine } from "../types/Annotation/ScaledLine";
 
 function isProjectLoaded(state: ProjectState): boolean {
 	return state.dataList.length > 0;
@@ -73,6 +71,7 @@ function ProjectAnnotationPage() {
 		dataList: [] as Data[],
 		labels: [] as Label[],
 		projectName: "" as string,
+		scaledLineList: [] as ScaledLine[],
 	};
 
 	const { showMessage, closeMessage, showLoading, showError } = usePopMessage();
@@ -222,6 +221,14 @@ function ProjectAnnotationPage() {
 									label="Statistics"
 									onClick={() => handlePanelChange(StatisticPanelID)}
 									isActive={projectLoaded && activePanel === StatisticPanelID}
+									disabled={!projectLoaded}
+								/>
+								<SideBarButton
+									id="scale-define-button"
+									icon="ico-wrench"
+									label="Scale"
+									onClick={() => handlePanelChange(SCALE_DEFINE_PANEL_ID)}
+									isActive={projectLoaded && activePanel === SCALE_DEFINE_PANEL_ID}
 									disabled={!projectLoaded}
 								/>
 								<SideBarButton
@@ -381,12 +388,12 @@ function ProjectAnnotationPage() {
 									className="main-section page active-page"
 									id="annotationPage"
 								>
-									<AnnotationPanel>
-									<AnnotationSideBar />
-									<AnnotationCanvas />
-									<SelectModeBar />
-									<AddModeBar />
-								</AnnotationPanel>
+									<AnnotationPanel />
+								</div>
+							)}
+							{projectLoaded && activePanel === SCALE_DEFINE_PANEL_ID && (
+								<div className="main-section page active-page" id="scaleDefinePage">
+									<ScaleDefinePanel />
 								</div>
 							)}
 							{projectLoaded && activePanel === StatisticPanelID && (

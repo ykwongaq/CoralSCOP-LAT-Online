@@ -14,7 +14,9 @@ export type AnnotationSessionAction =
 	| { type: "SET_CURRENT_DATA_INDEX"; payload: number }
 	| { type: "ADD_POINT_PROMPT"; payload: PointPrompt }
 	| { type: "CLEAR_POINT_PROMPTS" }
-	| { type: "UNDO_POINT_PROMPT" };
+	| { type: "UNDO_POINT_PROMPT" }
+	| { type: "SELECT_SCALED_LINE_ID"; payload: number | null };
+
 
 export const initialAnnotationSessionState: AnnotationSessionState = {
 	pendingMask: null,
@@ -23,7 +25,15 @@ export const initialAnnotationSessionState: AnnotationSessionState = {
 	annotationMode: "select",
 	currentDataIndex: 0,
 	pointPrompts: [],
+	selectedScaledLineId: null,
 };
+
+function select_scaled_line_id(
+	state: AnnotationSessionState,
+	lineId: number | null,
+): AnnotationSessionState {
+	return { ...state, selectedScaledLineId: lineId };
+}
 
 function toggleMaskSelection(
 	state: AnnotationSessionState,
@@ -86,6 +96,8 @@ export function annotationSessionReducer(
 			return { ...state, pointPrompts: [] };
 		case "UNDO_POINT_PROMPT":
 			return { ...state, pointPrompts: state.pointPrompts.slice(0, -1) };
+		case "SELECT_SCALED_LINE_ID":
+			return select_scaled_line_id(state, action.payload);
 		default:
 			return state;
 	}

@@ -1,5 +1,5 @@
-export interface PointPrompt {
-	x: number;
-	y: number;
+import type { Point } from "../Point";
+
+export interface PointPrompt extends Point {
 	type: "positive" | "negative";
 }

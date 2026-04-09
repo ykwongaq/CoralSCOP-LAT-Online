@@ -186,6 +186,7 @@ export async function loadProject(
 			dataList,
 			labels: Array.from(labelsMap.values()),
 			projectName,
+			scaledLineList: [],
 			projectId,
 			sessionId,
 			sourceFile: file,

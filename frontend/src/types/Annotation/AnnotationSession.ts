@@ -19,4 +19,6 @@ export default interface AnnotationSessionState {
 
 	// Point prompts for SAM inference (add mode)
 	pointPrompts: PointPrompt[];
+
+	selectedScaledLineId: number | null;
 }

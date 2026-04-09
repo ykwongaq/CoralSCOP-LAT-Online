@@ -2,6 +2,7 @@ import type { RLE } from "../types/RLE";
 import type { Label, Data, Annotation } from "../types/Annotation";
 import { getLabelColor } from "../components/common/LabelColorMap";
 import { decodeRLE } from "../utils/cocoRle";
+import type { ScaledLine } from "../types/Annotation/ScaledLine";
 
 export interface CoverageData {
 	totalPct: number;
@@ -246,4 +247,80 @@ export function getCombinedBoundingBox(
 
 	if (maxX < 0) return null;
 	return { minX, minY, maxX, maxY };
+}
+
+
+export interface PixelScaleResult {
+	value: number;
+	unit: "mm²" | "cm²" | "m²";
+	squareMetersPerPixel: number;
+}
+
+function pickBestAreaUnit(squareMetersPerPixel: number): {
+	value: number;
+	unit: PixelScaleResult["unit"];
+} {
+	const areaUnits = [
+		{ unit: "m²" as const, factor: 1 },
+		{ unit: "cm²" as const, factor: 1e4 },
+		{ unit: "mm²" as const, factor: 1e6 },
+	];
+
+	const preferredUnit =
+		areaUnits.find(({ factor }) => {
+			const convertedValue = squareMetersPerPixel * factor;
+			return convertedValue >= 0.1 && convertedValue < 1000;
+		}) ??
+		(squareMetersPerPixel * 1e6 < 0.1 ? areaUnits[2] : areaUnits[0]);
+
+	return {
+		value: squareMetersPerPixel * preferredUnit.factor,
+		unit: preferredUnit.unit,
+	};
+}
+
+export function calculatePixelScale(
+	scaledLines: ScaledLine[],
+): PixelScaleResult {
+	if (scaledLines.length === 0) {
+		return { value: 0, unit: "cm²", squareMetersPerPixel: 0 };
+	}
+
+	const unitToMeters: Record<ScaledLine["unit"], number> = {
+		mm: 0.001,
+		cm: 0.01,
+		m: 1,
+	};
+
+	const areaPerPixelValues = scaledLines
+		.map((line) => {
+			const pixelLength = Math.hypot(
+				line.end.x - line.start.x,
+				line.end.y - line.start.y,
+			);
+			if (
+				!Number.isFinite(pixelLength) ||
+				pixelLength <= 0 ||
+				!Number.isFinite(line.scale) ||
+				line.scale <= 0
+			) {
+				return null;
+			}
+
+			const realWorldLengthInMeters = line.scale * unitToMeters[line.unit];
+			const metersPerPixel = realWorldLengthInMeters / pixelLength;
+			return metersPerPixel * metersPerPixel;
+		})
+		.filter((value): value is number => value !== null);
+
+	if (areaPerPixelValues.length === 0) {
+		return { value: 0, unit: "cm²", squareMetersPerPixel: 0 };
+	}
+
+	const squareMetersPerPixel =
+		areaPerPixelValues.reduce((sum, value) => sum + value, 0) /
+		areaPerPixelValues.length;
+	const { value, unit } = pickBestAreaUnit(squareMetersPerPixel);
+
+	return { value, unit, squareMetersPerPixel };
 }
