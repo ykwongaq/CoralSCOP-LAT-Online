@@ -2,7 +2,9 @@ import base64
 import io
 import os
 import tempfile
+import threading
 import uuid
+from collections import OrderedDict
 from typing import Any, Dict, List, Optional
 
 import numpy as np
@@ -63,6 +65,14 @@ class Server:
             embedding_store=self.embedding_store,
         )
 
+        # GPU-side LRU cache for predict_inst: avoids repeated CPU→GPU transfers
+        # for the same embedding across multiple clicks on the same image.
+        # Each SAM embedding is ~200 MB; default cap of 5 uses ~1 GB of VRAM.
+        self._gpu_cache_max = config.get("gpu_embedding_cache_size", 5)
+        self._gpu_cache: OrderedDict = OrderedDict()
+        self._gpu_cache_lock = threading.Lock()
+        _logger.info("GPU embedding cache size: %d", self._gpu_cache_max)
+
     def get_zip_path(self, token: str) -> str:
         return self.project_handler.get_zip_path(token)
 
@@ -78,6 +88,55 @@ class Server:
 
     def delete_embedding_session(self, session_id: str) -> None:
         self.embedding_store.delete_session(session_id)
+        with self._gpu_cache_lock:
+            stale = [k for k in self._gpu_cache if k[0] == session_id]
+            for k in stale:
+                del self._gpu_cache[k]
+            if stale:
+                _logger.debug("GPU cache evicted %d entries for session %s", len(stale), session_id)
+
+    def _get_state_on_device(self, session_id: str, stem: str):
+        """
+        Return the SAM embedding state already resident on the GPU.
+
+        Maintains a bounded LRU cache of GPU-side states so repeated
+        predict_inst calls on the same image skip the CPU→GPU transfer.
+        The cache is capped at ``gpu_embedding_cache_size`` entries
+        (default 5, configurable in config.json).  On a miss the state is
+        loaded from the CPU cache / disk, moved to GPU, then inserted;
+        the least-recently-used entry is evicted if the cache is full.
+        """
+        key = (session_id, stem)
+
+        # Fast path: GPU cache hit
+        with self._gpu_cache_lock:
+            if key in self._gpu_cache:
+                self._gpu_cache.move_to_end(key)
+                _logger.debug("GPU cache hit session=%s stem=%s", session_id, stem)
+                return self._gpu_cache[key]
+
+        # Slow path: load from CPU cache / disk (outside lock to avoid blocking)
+        state_cpu = self.embedding_store.get(session_id, stem)
+        if state_cpu is None:
+            return None
+
+        _logger.debug("GPU cache miss — transferring to device session=%s stem=%s", session_id, stem)
+        state_gpu = _to_device(state_cpu, self.sam3.device)
+
+        # Insert into GPU cache, evicting LRU if at capacity
+        with self._gpu_cache_lock:
+            if key not in self._gpu_cache:
+                self._gpu_cache[key] = state_gpu
+                self._gpu_cache.move_to_end(key)
+                while len(self._gpu_cache) > self._gpu_cache_max:
+                    evicted_key, _ = self._gpu_cache.popitem(last=False)
+                    _logger.debug("GPU cache LRU evicted %s", evicted_key)
+            else:
+                # Another thread inserted the same key while we were transferring
+                self._gpu_cache.move_to_end(key)
+                state_gpu = self._gpu_cache[key]
+
+        return state_gpu
 
     def gen_token(self) -> str:
         return str(uuid.uuid4())
@@ -156,7 +215,7 @@ class Server:
             len(input_points),
         )
         try:
-            state = self.embedding_store.get(session_id, stem)
+            state = self._get_state_on_device(session_id, stem)
         except MemoryError:
             raise HTTPException(
                 status_code=503,
@@ -168,8 +227,6 @@ class Server:
                 status_code=404,
                 detail=f"No embedding for session_id={session_id!r} stem={stem!r}",
             )
-
-        state = _to_device(state, self.sam3.device)
 
         input_points_np = np.array(input_points, dtype=np.float32)
         input_labels_np = np.array(input_labels, dtype=np.int32)
