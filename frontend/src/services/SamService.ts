@@ -38,8 +38,8 @@ export interface PredictInstanceResponse {
  *
  * The returned `session_id` must be passed to every subsequent
  * {@link uploadEmbedding} call and to the predict endpoint.
- * Sessions are auto-evicted after 30 minutes of inactivity; call
- * {@link releaseSession} to delete them immediately when done.
+ * Call {@link releaseSession} when you want to release the in-memory
+ * cache for a temporary session while leaving persisted files intact.
  */
 export function createSamSession(
     callbacks: ApiRequestCallbacks<CreateSamSessionResponse>,
@@ -121,7 +121,7 @@ export function releaseSession(sessionId: string): void {
 }
 
 /**
- * Deletes a SAM session during a page unload event (tab close / refresh).
+ * Releases a SAM session's cache during a page unload event (tab close / refresh).
  * Uses `fetch` with `keepalive: true` so the request survives page teardown.
  * `apiClient` wraps an AbortController and is not safe to use in `beforeunload`.
  */

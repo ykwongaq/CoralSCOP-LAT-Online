@@ -1,8 +1,13 @@
+import { useAnnotationSession } from "../../features/AnnotationSession/context";
 import { useProject } from "../../features/ProjectAnnotation/context";
 import LineBlock from "../common/ScaleDefintion/LineBlock";
 
 export default function ScaledLineSideBar() {
 	const { state } = useProject();
+	const { annotationSessionState } = useAnnotationSession();
+	const currentData =
+		state.dataList[annotationSessionState.currentDataIndex] ?? null;
+	const scaledLines = currentData?.scaledLineList ?? [];
 
 	return (
 		<div className="side-bar__sub">
@@ -15,14 +20,12 @@ export default function ScaledLineSideBar() {
 			</div>
 
 			<div className="scale-sidebar__list">
-				{state.scaledLineList.length === 0 ? (
+				{scaledLines.length === 0 ? (
 					<p className="scale-sidebar__empty">
-						No scale lines yet. Draw one on the canvas to get started.
+						No scale lines yet for this image. Draw one on the canvas to get started.
 					</p>
 				) : (
-					state.scaledLineList.map((line) => (
-						<LineBlock key={line.id} line={line} />
-					))
+					scaledLines.map((line) => <LineBlock key={line.id} line={line} />)
 				)}
 			</div>
 		</div>

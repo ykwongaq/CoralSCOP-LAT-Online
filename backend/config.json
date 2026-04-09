@@ -1,5 +1,5 @@
 {
-    "data_dir": "~/.local/share/coralscop-lat",
+    "data_dir": "C:/Users/arkwa/Desktop/coralscop-lat-online",
     "sam_model_path": "checkpoints/sam3/sam3.pt",
     "CoralSCOP": {
         "coralSCOP_model_path": "checkpoints/CoralSCOP/vit_b_coralscop.pth",

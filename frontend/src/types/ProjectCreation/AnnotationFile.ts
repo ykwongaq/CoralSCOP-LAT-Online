@@ -1,6 +1,8 @@
 import { type CocoCategory } from "./CocoCategory";
 
 import { type CocoAnnotation } from "./CocoAnnotation";
+import type { ScaledLine } from "../Annotation/ScaledLine";
+
 export interface AnnotationFile {
 	image: {
 		image_filename: string;
@@ -10,4 +12,5 @@ export interface AnnotationFile {
 	};
 	annotations: CocoAnnotation[];
 	categories: CocoCategory[];
+	scaledLineList?: ScaledLine[];
 }

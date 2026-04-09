@@ -63,6 +63,7 @@ function setCurrentDataIndex(
 		pointPrompts: [],
 		pendingMask: null,
 		selectedAnnotations: [],
+		selectedScaledLineId: null,
 	};
 }
 

@@ -267,8 +267,9 @@ async def create_sam_session():
         {"session_id": "<uuid>"}
 
     The returned session_id must be passed to subsequent embedding uploads
-    and to POST /api/sam/predict.  Sessions are evicted automatically after
-    3 hours of inactivity, or immediately via DELETE /api/sam/sessions/{session_id}.
+    and to POST /api/sam/predict. DELETE /api/sam/sessions/{session_id}
+    releases the in-memory caches for that session while keeping persisted
+    embedding files on disk.
     """
     session_id = _server.create_embedding_session()
     return CreateSamSessionResponse(session_id=session_id)
@@ -294,8 +295,8 @@ async def upload_embedding(session_id: str, stem: str, file: UploadFile = File(.
 @app.delete("/api/sam/sessions/{session_id}", status_code=204)
 async def delete_sam_session(session_id: str):
     """
-    Delete a SAM session and all its stored embeddings immediately.
-    Safe to call even if the session has already been evicted.
+    Release the CPU/GPU caches for a SAM session without deleting
+    its persisted embedding files on disk. Safe to call repeatedly.
     """
     _server.delete_embedding_session(session_id)
     return Response(status_code=204)

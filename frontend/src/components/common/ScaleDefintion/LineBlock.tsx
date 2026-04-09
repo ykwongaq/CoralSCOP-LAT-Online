@@ -7,9 +7,10 @@ interface LineBlockProps {
 }
 
 export default function LineBlock({ line }: LineBlockProps) {
-	const { dispatch } = useProject();
+	const { state, dispatch } = useProject();
 	const { annotationSessionState, dispatchAnnotationSession } =
 		useAnnotationSession();
+	const currentData = state.dataList[annotationSessionState.currentDataIndex];
 
 	const isSelected = annotationSessionState.selectedScaledLineId === line.id;
 	const pixelLength = Math.hypot(
@@ -25,10 +26,12 @@ export default function LineBlock({ line }: LineBlockProps) {
 	};
 
 	const handleScaleChange = (value: string) => {
+		if (!currentData) return;
 		const parsedValue = Number(value);
 		dispatch({
 			type: "UPDATE_SCALED_LINE",
 			payload: {
+				dataId: currentData.id,
 				lineId: line.id,
 				updates: {
 					scale: Number.isFinite(parsedValue) ? Math.max(0, parsedValue) : 0,
@@ -38,9 +41,11 @@ export default function LineBlock({ line }: LineBlockProps) {
 	};
 
 	const handleUnitChange = (unit: ScaledLine["unit"]) => {
+		if (!currentData) return;
 		dispatch({
 			type: "UPDATE_SCALED_LINE",
 			payload: {
+				dataId: currentData.id,
 				lineId: line.id,
 				updates: { unit },
 			},
@@ -49,9 +54,10 @@ export default function LineBlock({ line }: LineBlockProps) {
 
 	const handleDelete = (e: React.MouseEvent<HTMLButtonElement>) => {
 		e.stopPropagation();
+		if (!currentData) return;
 		dispatch({
 			type: "DELETE_SCALED_LINE",
-			payload: { lineId: line.id },
+			payload: { dataId: currentData.id, lineId: line.id },
 		});
 		if (isSelected) {
 			dispatchAnnotationSession({

@@ -54,56 +54,80 @@ export type ProjectAnnotationAction =
 				categories: ModelOutputCategory[];
 			};
 	  }
-	| { type: "ADD_SCALED_LINE"; payload: { line: ScaledLine } }
+	| { type: "ADD_SCALED_LINE"; payload: { dataId: number; line: ScaledLine } }
 	| {
 			type: "UPDATE_SCALED_LINE";
 			payload: {
+				dataId: number;
 				lineId: number;
 				updates: Partial<Omit<ScaledLine, "id">>;
 			};
 	  }
-	| { type: "DELETE_SCALED_LINE"; payload: { lineId: number } };
+	| { type: "DELETE_SCALED_LINE"; payload: { dataId: number; lineId: number } };
 
 function addScaledLine(
 	state: ProjectState,
+	dataId: number,
 	line: ScaledLine,
 ): ProjectState {
-	// Assign new id to the line
-	const newLineId =
-		state.scaledLineList.length > 0
-			? Math.max(...state.scaledLineList.map((l) => l.id)) + 1
-			: 0;
-	const newLine = { ...line, id: newLineId };
 	return {
 		...state,
-		scaledLineList: [...state.scaledLineList, newLine],
+		dataList: state.dataList.map((data) => {
+			if (data.id !== dataId) return data;
+
+			const newLineId =
+				data.scaledLineList.length > 0
+					? Math.max(...data.scaledLineList.map((l) => l.id)) + 1
+					: 0;
+
+			return {
+				...data,
+				scaledLineList: [...data.scaledLineList, { ...line, id: newLineId }],
+			};
+		}),
 	};
 }
 
 function updateScaledLine(
 	state: ProjectState,
+	dataId: number,
 	lineId: number,
 	updates: Partial<Omit<ScaledLine, "id">>,
 ): ProjectState {
 	return {
 		...state,
-		scaledLineList: state.scaledLineList.map((line) =>
-			line.id === lineId ? { ...line, ...updates } : line,
+		dataList: state.dataList.map((data) =>
+			data.id === dataId
+				? {
+						...data,
+						scaledLineList: data.scaledLineList.map((line) =>
+							line.id === lineId ? { ...line, ...updates } : line,
+						),
+				  }
+				: data,
 		),
 	};
 }
 
 function deleteScaledLine(
 	state: ProjectState,
+	dataId: number,
 	lineId: number,
 ): ProjectState {
-	// Reoder the id of remaining lines to maintain contiguity
-	const remainingLines = state.scaledLineList
-		.filter(line => line.id !== lineId)
-		.map((line, index) => ({ ...line, id: index }));
 	return {
 		...state,
-		scaledLineList: remainingLines,
+		dataList: state.dataList.map((data) => {
+			if (data.id !== dataId) return data;
+
+			const remainingLines = data.scaledLineList
+				.filter((line) => line.id !== lineId)
+				.map((line, index) => ({ ...line, id: index }));
+
+			return {
+				...data,
+				scaledLineList: remainingLines,
+			};
+		}),
 	};
 }
 
@@ -376,15 +400,16 @@ export function projectAnnotationReducer(
 				action.payload.categories,
 			);
 		case "ADD_SCALED_LINE":
-			return addScaledLine(state, action.payload.line);
+			return addScaledLine(state, action.payload.dataId, action.payload.line);
 		case "UPDATE_SCALED_LINE":
 			return updateScaledLine(
 				state,
+				action.payload.dataId,
 				action.payload.lineId,
 				action.payload.updates,
 			);
 		case "DELETE_SCALED_LINE":
-			return deleteScaledLine(state, action.payload.lineId);
+			return deleteScaledLine(state, action.payload.dataId, action.payload.lineId);
 		default:
 			return state;
 	}

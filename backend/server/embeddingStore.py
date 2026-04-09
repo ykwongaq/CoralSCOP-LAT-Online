@@ -1,6 +1,5 @@
 import io
 import os
-import shutil
 import threading
 import uuid
 from collections import OrderedDict
@@ -30,9 +29,8 @@ class EmbeddingStore:
     Manages SAM embedding states, grouped by session UUID.
 
     Disk layer  — every uploaded embedding is persisted as a .pt file under
-                  ``base_dir/<session_id>/<stem>.pt``.  Sessions are kept
-                  indefinitely; callers are responsible for explicit deletion
-                  via delete_session().
+                  ``base_dir/<session_id>/<stem>.pt`` and is kept indefinitely
+                  unless removed by a separate maintenance task.
 
     LRU cache   — the ``hot_cache_size`` most-recently-used states are kept
                   deserialised on CPU RAM.  A predict_inst call that hits the
@@ -153,20 +151,19 @@ class EmbeddingStore:
         return state
 
     def delete_session(self, session_id: str) -> None:
-        """Remove all files and cache entries for a session immediately."""
-        # Disk
-        session_dir = self._session_dir(session_id)
-        if os.path.exists(session_dir):
-            shutil.rmtree(session_dir, ignore_errors=True)
-            _logger.debug("Deleted session dir %s", session_id)
-
-        # Cache
+        """Release cached CPU memory for a session while keeping disk files intact."""
         with self._cache_lock:
             stale = [k for k in self._hot_cache if k[0] == session_id]
             for k in stale:
                 del self._hot_cache[k]
             if stale:
-                _logger.debug("Evicted %d cache entries for session %s", len(stale), session_id)
+                _logger.debug(
+                    "Evicted %d CPU cache entries for session %s",
+                    len(stale),
+                    session_id,
+                )
+            else:
+                _logger.debug("No CPU cache entries to evict for session %s", session_id)
 
     # ------------------------------------------------------------------
     # Internals

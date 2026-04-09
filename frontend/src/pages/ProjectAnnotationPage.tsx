@@ -48,6 +48,7 @@ import { saveProject } from "../services/SaveProjectService";
 import { exportAllImages } from "../services/ExportImagesService";
 import { exportAllAnnotatedImages } from "../services/ExportAnnotatedImagesService";
 import { exportAllCocoAnnotations } from "../services/ExportCocoService";
+import { exportProjectStatisticsSpreadsheet } from "../services/ExportStatisticService";
 import {
 	UploadProjectPanel,
 	StatisticPanel,
@@ -59,7 +60,6 @@ import {
 } from "../components/panels/ProjectAnnotation";
 import { usePopMessage } from "../components/common/PopUpMessages/PopMessageContext";
 import { SCALE_DEFINE_PANEL_ID, ScaleDefinePanel } from "../components/panels/ProjectAnnotation/ScaleDefinePanel";
-import type { ScaledLine } from "../types/Annotation/ScaledLine";
 
 function isProjectLoaded(state: ProjectState): boolean {
 	return state.dataList.length > 0;
@@ -71,7 +71,6 @@ function ProjectAnnotationPage() {
 		dataList: [] as Data[],
 		labels: [] as Label[],
 		projectName: "" as string,
-		scaledLineList: [] as ScaledLine[],
 	};
 
 	const { showMessage, closeMessage, showLoading, showError } = usePopMessage();
@@ -159,6 +158,37 @@ function ProjectAnnotationPage() {
 		},
 		[sessionDispatch],
 	);
+
+	const handleStatisticsExport = useCallback(async () => {
+		closeMessage();
+		showLoading({
+			title: "Exporting CSV",
+			content: "Please wait while we prepare your statistics file...",
+			progress: null,
+			buttons: [
+				{
+					label: "Cancel",
+					onClick: closeMessage,
+				},
+			],
+		});
+		try {
+			await exportProjectStatisticsSpreadsheet(state, "csv");
+			closeMessage();
+		} catch (error) {
+			showError({
+				title: "Export Failed",
+				content: "Failed to export statistics. Please try again.",
+				errorMessage: error instanceof Error ? error.message : String(error),
+				buttons: [
+					{
+						label: "Close",
+						onClick: closeMessage,
+					},
+				],
+			});
+		}
+	}, [closeMessage, showError, showLoading, state]);
 
 	return (
 		<AnnotationSessionContext.Provider
@@ -364,6 +394,14 @@ function ProjectAnnotationPage() {
 											}
 											closeMessage();
 										}}
+									/>
+
+									<SideBarDropDownButton
+									id="export-csv-button"
+									label="Export CSV"
+									onClick={() => {
+										void handleStatisticsExport();
+									}}
 									/>
 								</SideBarDropDownList>
 							</SideBar>

@@ -1,12 +1,10 @@
 import { type Data } from "./Data";
 import { type Label } from "./Label";
-import type { ScaledLine } from "./ScaledLine";
 
 export interface ProjectState {
   dataList: Data[];
   labels: Label[];
   projectName: string;
-  scaledLineList: ScaledLine[];
 
   /**
    * Project UUID stored in project_info.json.  For new-format .coral files

@@ -66,7 +66,6 @@ import { projectCreationReducer, initialProjectCreationState } from "../features
 import { usePopMessage } from "../components/common/PopUpMessages/PopMessageContext";
 import ActionButton from "../components/common/ActionButtons/ActionButton";
 import { runModel } from "../services/RunModelService";
-import type { ScaledLine } from "../types/Annotation/ScaledLine";
 import { SCALE_DEFINE_PANEL_ID, ScaleDefinePanel } from "../components/panels/ProjectAnnotation/ScaleDefinePanel";
 
 function isProjectLoaded(state: ProjectState): boolean {
@@ -79,7 +78,6 @@ function ProjectQuickStartPage() {
 		dataList: [] as Data[],
 		labels: [] as Label[],
 		projectName: "" as string,
-		scaledLineList: [] as ScaledLine[],
 	};
 
 	const { showMessage, closeMessage, showLoading, showError } = usePopMessage();

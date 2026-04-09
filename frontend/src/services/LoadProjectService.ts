@@ -3,6 +3,7 @@ import type { ProjectState } from "../types/Annotation/Project";
 import type { Data } from "../types/Annotation/Data";
 import type { Annotation } from "../types/Annotation/Annotation";
 import type { Label } from "../types/Annotation/Label";
+import type { ScaledLine } from "../types/Annotation/ScaledLine";
 import type { ApiRequestCallbacks } from "../types/api";
 import {
 	createSamSession,
@@ -101,12 +102,14 @@ export async function loadProject(
 			const imageUrl = URL.createObjectURL(imageBlob);
 
 			let annotations: Annotation[] = [];
+			let scaledLineList: ScaledLine[] = [];
 			const annoEntry = annotationMap.get(stem);
 
 			if (annoEntry) {
 				const annoFile = JSON.parse(
 					await annoEntry.async("text"),
 				) as AnnotationFile;
+				scaledLineList = annoFile.scaledLineList ?? [];
 
 				for (const cat of annoFile.categories) {
 					if (!labelsMap.has(cat.id)) {
@@ -134,6 +137,7 @@ export async function loadProject(
 				id: i,
 				imageData: { imageUrl, imageName, width, height },
 				annotations,
+				scaledLineList,
 			});
 		}
 
@@ -186,7 +190,6 @@ export async function loadProject(
 			dataList,
 			labels: Array.from(labelsMap.values()),
 			projectName,
-			scaledLineList: [],
 			projectId,
 			sessionId,
 			sourceFile: file,

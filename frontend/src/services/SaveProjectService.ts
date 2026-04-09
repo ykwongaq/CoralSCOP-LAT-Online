@@ -2,6 +2,7 @@ import JSZip from "jszip";
 import type { ProjectState } from "../types/Annotation/Project";
 import type { Data } from "../types/Annotation/Data";
 import type { Label } from "../types/Annotation/Label";
+import type { ScaledLine } from "../types/Annotation/ScaledLine";
 import { type AnnotationFile } from "../types/ProjectCreation";
 import triggerDownload from "../utils/download";
 
@@ -24,6 +25,9 @@ function buildAnnotationFile(data: Data, labels: Label[]): AnnotationFile {
 			name: l.name,
 			color: "#ffffff",
 			status: l.status,
+		})),
+		scaledLineList: data.scaledLineList.map((line: ScaledLine) => ({
+			...line,
 		})),
 	};
 }

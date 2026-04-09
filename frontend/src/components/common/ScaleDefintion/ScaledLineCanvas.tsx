@@ -217,6 +217,7 @@ export function ScaledLineCanvas() {
 		useAnnotationSession();
 
 	const data = state.dataList[annotationSessionState.currentDataIndex] ?? null;
+	const scaledLines = data?.scaledLineList ?? [];
 
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const containerRef = useRef<HTMLDivElement>(null);
@@ -225,10 +226,8 @@ export function ScaledLineCanvas() {
 	const viewportRef = useRef<Viewport>({ scale: 1, originX: 0, originY: 0 });
 	const interactionRef = useRef<InteractionState>({ phase: "idle" });
 	const draftLineRef = useRef<DraftLine | null>(null);
-	const projectStateRef = useRef(state);
-	projectStateRef.current = state;
-	const linesRef = useRef(state.scaledLineList);
-	linesRef.current = state.scaledLineList;
+	const linesRef = useRef(scaledLines);
+	linesRef.current = scaledLines;
 	const selectedLineIdRef = useRef(annotationSessionState.selectedScaledLineId);
 	selectedLineIdRef.current = annotationSessionState.selectedScaledLineId;
 	const rafRef = useRef(0);
@@ -436,20 +435,19 @@ export function ScaledLineCanvas() {
 				});
 			}
 
-			if (interaction.phase === "drawing" && draftLineRef.current) {
+			if (interaction.phase === "drawing" && draftLineRef.current && data) {
 				const { startX, startY, endX, endY } = draftLineRef.current;
 				const lineLength = Math.hypot(endX - startX, endY - startY);
 				if (lineLength >= MIN_LINE_LENGTH) {
 					const nextLineId =
-						projectStateRef.current.scaledLineList.length > 0
-							? Math.max(
-									...projectStateRef.current.scaledLineList.map((line) => line.id),
-								) + 1
+						linesRef.current.length > 0
+							? Math.max(...linesRef.current.map((line) => line.id)) + 1
 							: 0;
 
 					dispatch({
 						type: "ADD_SCALED_LINE",
 						payload: {
+							dataId: data.id,
 							line: {
 								id: -1,
 								start: { x: startX, y: startY },
@@ -474,6 +472,7 @@ export function ScaledLineCanvas() {
 			requestDraw();
 		},
 		[
+			data,
 			dispatch,
 			dispatchAnnotationSession,
 			findLineIdAtPoint,
@@ -547,10 +546,7 @@ export function ScaledLineCanvas() {
 
 	useEffect(() => {
 		const selectedId = annotationSessionState.selectedScaledLineId;
-		if (
-			selectedId !== null &&
-			!state.scaledLineList.some((line) => line.id === selectedId)
-		) {
+		if (selectedId !== null && !scaledLines.some((line) => line.id === selectedId)) {
 			dispatchAnnotationSession({
 				type: "SELECT_SCALED_LINE_ID",
 				payload: null,
@@ -562,7 +558,7 @@ export function ScaledLineCanvas() {
 		annotationSessionState.selectedScaledLineId,
 		dispatchAnnotationSession,
 		requestDraw,
-		state.scaledLineList,
+		scaledLines,
 	]);
 
 	useEffect(() => {
