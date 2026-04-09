@@ -4,12 +4,6 @@ import type { Data } from "../types/Annotation/Data";
 import type { Annotation } from "../types/Annotation/Annotation";
 import type { Label } from "../types/Annotation/Label";
 import type { ScaledLine } from "../types/Annotation/ScaledLine";
-import type { ApiRequestCallbacks } from "../types/api";
-import {
-	createSamSession,
-	uploadEmbedding,
-	type CreateSamSessionResponse,
-} from "./SamService";
 import { type AnnotationFile } from "../types/ProjectCreation";
 
 export interface LoadProjectCallbacks {
@@ -20,34 +14,10 @@ export interface LoadProjectCallbacks {
 }
 
 /**
- * Wrap a callback-based service function in a Promise so it can be awaited
- * inside the async loadProject flow.
- */
-function toPromise<T>(
-	fn: (
-		callbacks: Pick<ApiRequestCallbacks<T>, "onError" | "onComplete">,
-	) => void,
-): Promise<T> {
-	return new Promise<T>((resolve, reject) => {
-		fn({
-			onError: (err) => reject(new Error(err.message)),
-			onComplete: (data) => resolve(data),
-		});
-	});
-}
-
-/**
  * Unzips a .coral project file (ZIP archive) in the browser and:
  *  - Creates object URLs for images (in-memory, current session only)
  *  - Parses annotation JSON files into the ProjectState shape
- *
- * New-format .coral files (created without embedded embeddings):
- *  - Contain a project_info.json with a `project_id` field
- *  - Embeddings are stored persistently on the server under that project_id,
- *    which is used directly as the SAM session_id — no upload needed.
- *
- * Old-format .coral files (with an `embeddings/` folder inside):
- *  - Upload embedding .pt files to a new backend SAM session as before.
+ *  - Requires `project_info.json` with a `project_id` field
  *
  * Progress is reported from 0–100 via onProgress.
  */
@@ -65,7 +35,6 @@ export async function loadProject(
 		// Bucket ZIP entries by folder
 		const imageEntries: JSZip.JSZipObject[] = [];
 		const annotationMap = new Map<string, JSZip.JSZipObject>(); // stem → entry
-		const embeddingEntries: JSZip.JSZipObject[] = [];
 		let projectInfoEntry: JSZip.JSZipObject | null = null;
 
 		zip.forEach((path, entry) => {
@@ -75,8 +44,6 @@ export async function loadProject(
 			} else if (path.startsWith("annotations/")) {
 				const stem = path.replace("annotations/", "").replace(/\.json$/, "");
 				annotationMap.set(stem, entry);
-			} else if (path.startsWith("embeddings/")) {
-				embeddingEntries.push(entry);
 			} else if (path === "project_info.json") {
 				projectInfoEntry = entry;
 			}
@@ -143,47 +110,24 @@ export async function loadProject(
 
 		callbacks.onProgress?.(70);
 
-		// Phase 2 (70–95 %): resolve SAM session
-		let projectId: string | undefined;
-		let sessionId: string | undefined;
-
-		// New-format: project_info.json contains project_id; embeddings live on server
-		if (projectInfoEntry !== null) {
-			try {
-				const info = JSON.parse(
-					await (projectInfoEntry as JSZip.JSZipObject).async("text"),
-				) as Record<string, unknown>;
-				if (typeof info.project_id === "string") {
-					projectId = info.project_id;
-					sessionId = projectId; // token = session_id on the backend
-				}
-			} catch {
-				// Malformed project_info.json — fall through to legacy path
-			}
-		}
-
-		// Old-format: upload embedded .pt files to a fresh session
-		if (sessionId === undefined && embeddingEntries.length > 0) {
-			const { session_id } = await toPromise<CreateSamSessionResponse>((cb) =>
-				createSamSession(cb),
+		// Phase 2 (70–95 %): resolve SAM session from the current project format
+		if (projectInfoEntry === null) {
+			throw new Error(
+				"Unsupported project file: missing project_info.json.",
 			);
-			sessionId = session_id;
-
-			const m = embeddingEntries.length;
-			for (let j = 0; j < m; j++) {
-				const entry = embeddingEntries[j];
-				const stem = entry.name
-					.replace("embeddings/", "")
-					.replace(/\.pt$/, "");
-
-				callbacks.onProgress?.(70 + Math.round(((j + 1) / m) * 25));
-
-				const data = await entry.async("arraybuffer");
-				await toPromise<void>((cb) =>
-					uploadEmbedding({ sessionId: session_id, stem, data }, cb),
-				);
-			}
 		}
+
+		const info = JSON.parse(
+			await (projectInfoEntry as JSZip.JSZipObject).async("text"),
+		) as Record<string, unknown>;
+		if (typeof info.project_id !== "string" || info.project_id.trim() === "") {
+			throw new Error(
+				"Unsupported project file: missing project_id in project_info.json.",
+			);
+		}
+
+		const projectId = info.project_id;
+		const sessionId = projectId; // token = session_id on the backend
 
 		callbacks.onProgress?.(100);
 		callbacks.onComplete?.({
