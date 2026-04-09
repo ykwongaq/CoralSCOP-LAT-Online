@@ -2,9 +2,8 @@ import base64
 import io
 import os
 import tempfile
-import time
 import uuid
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 from fastapi import HTTPException
@@ -32,8 +31,13 @@ class Server:
         self.temp_folder = os.path.join(
             tempfile.gettempdir(), "coralscop-lat-online-temp"
         )
-
         os.makedirs(self.temp_folder, exist_ok=True)
+
+        # Persistent data directory for embeddings (never auto-deleted)
+        data_dir = os.path.expanduser(
+            config.get("data_dir", "~/.local/share/coralscop-lat")
+        )
+        embeddings_dir = os.path.join(data_dir, "embeddings")
 
         self.sam3 = SAM3Model(resolve_path(config["sam_model_path"]))
         coralSCOP = CoralSCOPModel(
@@ -48,15 +52,15 @@ class Server:
         coral_tank_path = resolve_path(config["coral_tank_model_path"])
         coral_tank_model = CoralTankModel(coral_tank_path)
 
+        self.mask_handler = MaskHandler()
+        self.embedding_store = EmbeddingStore(base_dir=embeddings_dir)
+
         self.project_handler = ProjectHandler(
             os.path.join(self.temp_folder, "projects"),
             self.sam3,
             coralSCOP,
             coral_tank_model,
-        )
-        self.mask_handler = MaskHandler()
-        self.embedding_store = EmbeddingStore(
-            base_dir=os.path.join(self.temp_folder, "embeddings")
+            embedding_store=self.embedding_store,
         )
 
     def get_zip_path(self, token: str) -> str:

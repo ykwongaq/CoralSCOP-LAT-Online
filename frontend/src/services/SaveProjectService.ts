@@ -38,8 +38,19 @@ export async function saveProject(state: ProjectState): Promise<void> {
 		throw new Error("No source file available. Load a project first.");
 	}
 
-	// Clone the original ZIP so images and embeddings are included unchanged.
-	const zip = await JSZip.loadAsync(state.sourceFile);
+	// Clone the original ZIP, keeping images and project_info but dropping any
+	// embedded embeddings (they live on the server for new-format projects, and
+	// stripping them reduces file size for old-format projects too).
+	const sourceZip = await JSZip.loadAsync(state.sourceFile);
+	const zip = new JSZip();
+	const keepPrefixes = ["images/", "annotations/", "project_info.json"];
+	await Promise.all(
+		Object.entries(sourceZip.files).map(async ([path, entry]) => {
+			if (entry.dir) return;
+			if (!keepPrefixes.some((p) => path.startsWith(p) || path === p)) return;
+			zip.file(path, await entry.async("arraybuffer"));
+		}),
+	);
 
 	// Overwrite only the annotation entries with the current in-memory state.
 	for (const data of state.dataList) {

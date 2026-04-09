@@ -1,10 +1,10 @@
 import logging
 import os
-from logging.handlers import RotatingFileHandler
 import tempfile
+from logging.handlers import RotatingFileHandler
 
 # Logs are written to backend/logs/
-_BACKEND_DIR = None
+_BACKEND_DIR = "logs"
 
 if _BACKEND_DIR is None:
     # Force people to define the log folder

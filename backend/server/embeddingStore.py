@@ -1,9 +1,7 @@
 import io
 import os
 import shutil
-import tempfile
 import threading
-import time
 import uuid
 from collections import OrderedDict
 from typing import Any, Optional
@@ -32,34 +30,23 @@ class EmbeddingStore:
     Manages SAM embedding states, grouped by session UUID.
 
     Disk layer  — every uploaded embedding is persisted as a .pt file under
-                  ``base_dir/<session_id>/<stem>.pt`` so nothing is ever lost
-                  on a cache eviction.
+                  ``base_dir/<session_id>/<stem>.pt``.  Sessions are kept
+                  indefinitely; callers are responsible for explicit deletion
+                  via delete_session().
 
     LRU cache   — the ``hot_cache_size`` most-recently-used states are kept
                   deserialised on CPU RAM.  A predict_inst call that hits the
-                  cache avoids 177 MB of disk IO; a miss loads from disk once
-                  then re-enters the cache.
-
-    TTL eviction — a daemon thread evicts sessions idle for longer than
-                   ``ttl_seconds`` from both cache and disk.
+                  cache avoids disk IO; a miss loads from disk once then
+                  re-enters the cache.
     """
 
     def __init__(
         self,
-        base_dir: Optional[str] = None,
-        ttl_seconds: int = 10800,  # 3 hours
-        cleanup_interval: int = 300,
+        base_dir: str,
         hot_cache_size: int = 20,
     ):
-        self._base_dir = base_dir or os.path.join(
-            tempfile.gettempdir(), "sam_embeddings"
-        )
-        self._ttl = ttl_seconds
+        self._base_dir = base_dir
         self._hot_cache_size = hot_cache_size
-
-        # Disk TTL tracking
-        self._activity_lock = threading.Lock()
-        self._last_activity: dict[str, float] = {}
 
         # LRU cache: (session_id, stem) → state (tensors on CPU)
         self._cache_lock = threading.Lock()
@@ -67,18 +54,9 @@ class EmbeddingStore:
 
         os.makedirs(self._base_dir, exist_ok=True)
 
-        t = threading.Thread(
-            target=self._cleanup_loop,
-            args=(cleanup_interval,),
-            daemon=True,
-            name="embedding-store-gc",
-        )
-        t.start()
-
         _logger.info(
-            "EmbeddingStore ready (dir=%s, ttl=%ds, hot_cache_size=%d)",
+            "EmbeddingStore ready (dir=%s, hot_cache_size=%d)",
             self._base_dir,
-            ttl_seconds,
             hot_cache_size,
         )
 
@@ -86,11 +64,17 @@ class EmbeddingStore:
     # Public API
     # ------------------------------------------------------------------
 
-    def create_session(self) -> str:
-        """Create a new session directory and return its UUID."""
-        session_id = str(uuid.uuid4())
+    def create_session(self, session_id: str = None) -> str:
+        """
+        Create a new session directory and return its UUID.
+
+        If *session_id* is provided (e.g. a project token), the directory is
+        created under that ID so callers can use the token directly as the
+        SAM session_id.
+        """
+        if session_id is None:
+            session_id = str(uuid.uuid4())
         os.makedirs(self._session_dir(session_id), exist_ok=True)
-        self._touch(session_id)
         _logger.debug("Created session %s", session_id)
         return session_id
 
@@ -106,7 +90,6 @@ class EmbeddingStore:
 
         with open(path, "wb") as fh:
             fh.write(data)
-        self._touch(session_id)
         _logger.debug(
             "Saved embedding session=%s stem=%s (%d bytes)",
             session_id,
@@ -144,7 +127,6 @@ class EmbeddingStore:
         with self._cache_lock:
             if key in self._hot_cache:
                 self._hot_cache.move_to_end(key)
-                self._touch(session_id)
                 _logger.debug("Cache hit session=%s stem=%s", session_id, stem)
                 return self._hot_cache[key]
 
@@ -153,16 +135,12 @@ class EmbeddingStore:
         if not os.path.isfile(path):
             return None
 
-        self._touch(session_id)
         _logger.debug("Cache miss — loading from disk session=%s stem=%s", session_id, stem)
 
         # MemoryError here means the server is critically low on RAM.
         # Let it propagate so the caller can return HTTP 503.
         state = torch.load(path, map_location="cpu", weights_only=False)
 
-        # Re-caching after a disk load: dict insertion is just a pointer
-        # assignment, so MemoryError here is extremely unlikely.  Catch it
-        # defensively so a bad edge case never crashes the server.
         try:
             self._cache_put(key, state)
         except MemoryError:
@@ -182,10 +160,6 @@ class EmbeddingStore:
             shutil.rmtree(session_dir, ignore_errors=True)
             _logger.debug("Deleted session dir %s", session_id)
 
-        # Activity tracking
-        with self._activity_lock:
-            self._last_activity.pop(session_id, None)
-
         # Cache
         with self._cache_lock:
             stale = [k for k in self._hot_cache if k[0] == session_id]
@@ -201,10 +175,6 @@ class EmbeddingStore:
     def _session_dir(self, session_id: str) -> str:
         return os.path.join(self._base_dir, session_id)
 
-    def _touch(self, session_id: str) -> None:
-        with self._activity_lock:
-            self._last_activity[session_id] = time.monotonic()
-
     def _cache_put(self, key: tuple, state: Any) -> None:
         """Insert *state* into the LRU cache and evict the oldest entry if full."""
         with self._cache_lock:
@@ -219,17 +189,3 @@ class EmbeddingStore:
             while len(self._hot_cache) > self._hot_cache_size:
                 evicted_key, _ = self._hot_cache.popitem(last=False)
                 _logger.debug("LRU evicted cache entry %s", evicted_key)
-
-    def _cleanup_loop(self, interval: int) -> None:
-        while True:
-            time.sleep(interval)
-            now = time.monotonic()
-            with self._activity_lock:
-                expired = [
-                    sid
-                    for sid, ts in self._last_activity.items()
-                    if now - ts > self._ttl
-                ]
-            for sid in expired:
-                _logger.info("Evicting idle session %s", sid)
-                self.delete_session(sid)

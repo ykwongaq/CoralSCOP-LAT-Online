@@ -1,7 +1,7 @@
+import io
 import json
 import os
 import shutil
-import tempfile
 import zipfile
 from typing import Dict, Iterator, List
 
@@ -13,7 +13,6 @@ from .models.CoralSCOPModel import CoralSCOPModel
 from .models.CoralTankModel import CoralTankModel
 from .models.SAM3Model import SAM3Model
 from .utils.logger import get_logger
-from .utils.path import resolve_path
 
 _logger = get_logger(__name__)
 
@@ -26,11 +25,13 @@ class ProjectHandler:
         sam_model: SAM3Model,
         coralSCOP_model: CoralSCOPModel = None,
         coralTank_model: CoralTankModel = None,
+        embedding_store=None,
     ):
         self.temp_folder = temp_folder
         self.sam3_model = sam_model
         self.coralSCOP_model = coralSCOP_model
         self.coralTank_model = coralTank_model
+        self.embedding_store = embedding_store
 
     def clean_up(self, token: str) -> None:
         zip_path = os.path.join(self.temp_folder, f"project_{token}.coral")
@@ -128,12 +129,18 @@ class ProjectHandler:
         """
         Generator that processes images and yields progress events.
 
+        Embeddings are stored persistently in the EmbeddingStore under the
+        project token (which doubles as the SAM session_id).  The .coral ZIP
+        contains only images, annotations, and project_info.json — no
+        embeddings — keeping the download size small.
+
         Args:
-            token: Externally-generated UUID used for temp file naming and cleanup.
+            token: Externally-generated UUID used for temp file naming,
+                   download token, and SAM session_id.
 
         Yields:
             {"type": "progress", "value": <0-95>, "message": <str>}
-            {"type": "done"}
+            {"type": "done", "token": <token>}
 
         Raises the original exception (after cleaning up temp files) on failure.
         """
@@ -143,10 +150,8 @@ class ProjectHandler:
         os.makedirs(temp_dir, exist_ok=True)
         image_folder = os.path.join(temp_dir, "images")
         annotations_folder = os.path.join(temp_dir, "annotations")
-        embeddings_folder = os.path.join(temp_dir, "embeddings")
         os.makedirs(image_folder, exist_ok=True)
         os.makedirs(annotations_folder, exist_ok=True)
-        os.makedirs(embeddings_folder, exist_ok=True)
 
         _logger.info(f"Config for project {token}: {config}")
 
@@ -194,11 +199,11 @@ class ProjectHandler:
                 ) as f:
                     json.dump(output_json, f, indent=4)
 
-                # Save embeddings
-                output_embedding_path = os.path.join(
-                    embeddings_folder, f"{filename_without_ext}.pt"
-                )
-                torch.save(state, output_embedding_path)
+                # Save embedding to persistent store (token doubles as session_id)
+                if self.embedding_store is not None:
+                    buf = io.BytesIO()
+                    torch.save(state, buf)
+                    self.embedding_store.save(token, filename_without_ext, buf.getvalue())
 
                 yield {
                     "type": "progress",
@@ -208,7 +213,9 @@ class ProjectHandler:
 
             yield {"type": "progress", "value": 85, "message": "Packaging project file"}
 
+            # token is also the SAM session_id for loading embeddings server-side
             project_info = {
+                "project_id": token,
                 "last_idx": 0,
                 "creation_time": token,
                 "config": config,
@@ -216,10 +223,11 @@ class ProjectHandler:
             with open(os.path.join(temp_dir, "project_info.json"), "w") as f:
                 json.dump(project_info, f, indent=4)
 
+            # Embeddings are stored server-side; ZIP contains only images + annotations
             with zipfile.ZipFile(
                 zip_output_path, "w", compression=zipfile.ZIP_DEFLATED
             ) as zf:
-                for folder_name in ["images", "annotations", "embeddings"]:
+                for folder_name in ["images", "annotations"]:
                     folder_path = os.path.join(temp_dir, folder_name)
                     for root, _, files in os.walk(folder_path):
                         for file in files:

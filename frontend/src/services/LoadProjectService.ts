@@ -39,9 +39,14 @@ function toPromise<T>(
  * Unzips a .coral project file (ZIP archive) in the browser and:
  *  - Creates object URLs for images (in-memory, current session only)
  *  - Parses annotation JSON files into the ProjectState shape
- *  - Uploads embedding .pt files to a backend SAM session so they can be
- *    used for interactive inference without re-sending 100 MB each request.
- *    The `sessionId` in the returned ProjectState identifies that session.
+ *
+ * New-format .coral files (created without embedded embeddings):
+ *  - Contain a project_info.json with a `project_id` field
+ *  - Embeddings are stored persistently on the server under that project_id,
+ *    which is used directly as the SAM session_id — no upload needed.
+ *
+ * Old-format .coral files (with an `embeddings/` folder inside):
+ *  - Upload embedding .pt files to a new backend SAM session as before.
  *
  * Progress is reported from 0–100 via onProgress.
  */
@@ -60,6 +65,7 @@ export async function loadProject(
 		const imageEntries: JSZip.JSZipObject[] = [];
 		const annotationMap = new Map<string, JSZip.JSZipObject>(); // stem → entry
 		const embeddingEntries: JSZip.JSZipObject[] = [];
+		let projectInfoEntry: JSZip.JSZipObject | null = null;
 
 		zip.forEach((path, entry) => {
 			if (entry.dir) return;
@@ -70,6 +76,8 @@ export async function loadProject(
 				annotationMap.set(stem, entry);
 			} else if (path.startsWith("embeddings/")) {
 				embeddingEntries.push(entry);
+			} else if (path === "project_info.json") {
+				projectInfoEntry = entry;
 			}
 		});
 
@@ -131,9 +139,27 @@ export async function loadProject(
 
 		callbacks.onProgress?.(70);
 
-		// Phase 2 (70–95 %): upload embeddings to backend SAM session
+		// Phase 2 (70–95 %): resolve SAM session
+		let projectId: string | undefined;
 		let sessionId: string | undefined;
-		if (embeddingEntries.length > 0) {
+
+		// New-format: project_info.json contains project_id; embeddings live on server
+		if (projectInfoEntry !== null) {
+			try {
+				const info = JSON.parse(
+					await (projectInfoEntry as JSZip.JSZipObject).async("text"),
+				) as Record<string, unknown>;
+				if (typeof info.project_id === "string") {
+					projectId = info.project_id;
+					sessionId = projectId; // token = session_id on the backend
+				}
+			} catch {
+				// Malformed project_info.json — fall through to legacy path
+			}
+		}
+
+		// Old-format: upload embedded .pt files to a fresh session
+		if (sessionId === undefined && embeddingEntries.length > 0) {
 			const { session_id } = await toPromise<CreateSamSessionResponse>((cb) =>
 				createSamSession(cb),
 			);
@@ -142,7 +168,9 @@ export async function loadProject(
 			const m = embeddingEntries.length;
 			for (let j = 0; j < m; j++) {
 				const entry = embeddingEntries[j];
-				const stem = entry.name.replace("embeddings/", "").replace(/\.pt$/, "");
+				const stem = entry.name
+					.replace("embeddings/", "")
+					.replace(/\.pt$/, "");
 
 				callbacks.onProgress?.(70 + Math.round(((j + 1) / m) * 25));
 
@@ -158,6 +186,7 @@ export async function loadProject(
 			dataList,
 			labels: Array.from(labelsMap.values()),
 			projectName,
+			projectId,
 			sessionId,
 			sourceFile: file,
 		});
