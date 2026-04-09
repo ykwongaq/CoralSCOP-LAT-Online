@@ -53,7 +53,11 @@ import {
 	ImageGalleryPanelID,
 	AnnotationPanel,
 	AnnotationPanelID,
+	SelectModeBar,
+	AddModeBar,
 } from "../components/panels/ProjectAnnotation";
+import AnnotationSideBar from "../components/layout/AnnotationSideBar";
+import AnnotationCanvas from "../components/layout/AnnotationCanvas";
 import { usePopMessage } from "../components/common/PopUpMessages/PopMessageContext";
 
 function isProjectLoaded(state: ProjectState): boolean {
@@ -373,7 +377,12 @@ function ProjectAnnotationPage() {
 									className="main-section page active-page"
 									id="annotationPage"
 								>
-									<AnnotationPanel />
+									<AnnotationPanel>
+									<AnnotationSideBar />
+									<AnnotationCanvas />
+									<SelectModeBar />
+									<AddModeBar />
+								</AnnotationPanel>
 								</div>
 							)}
 							{projectLoaded && activePanel === StatisticPanelID && (

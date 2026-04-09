@@ -52,7 +52,11 @@ import {
 	ImageGalleryPanelID,
 	AnnotationPanel,
 	AnnotationPanelID,
+	SelectModeBar,
+	AddModeBar,
 } from "../components/panels/ProjectAnnotation";
+import AnnotationSideBar from "../components/layout/AnnotationSideBar";
+import AnnotationCanvas from "../components/layout/AnnotationCanvas";
 import { QuickStartUploadImagePanel } from "../components/panels/ProjectQuickStart";
 import {
 	ProjectSettingPanel,
@@ -61,6 +65,8 @@ import {
 import { ProjectCreationContext } from "../features/ProjectCreation/context";
 import { projectCreationReducer, initialProjectCreationState } from "../features/ProjectCreation/reducer";
 import { usePopMessage } from "../components/common/PopUpMessages/PopMessageContext";
+import ActionButton from "../components/common/ActionButtons/ActionButton";
+import { runModel } from "../services/RunModelService";
 
 function isProjectLoaded(state: ProjectState): boolean {
 	return state.dataList.length > 0;
@@ -159,6 +165,70 @@ function ProjectQuickStartPage() {
 		sessionDispatch({ type: "CLEAR_SELECTION" });
 		setActivePanel(panelId);
 	}, []);
+
+	const handleRunModel = useCallback(async () => {
+		const currentData = state.dataList[sessionState.currentDataIndex];
+		if (!currentData) return;
+
+		const { imageData } = currentData;
+
+		let imageBlob: Blob;
+		try {
+			const fetchResponse = await fetch(imageData.imageUrl);
+			imageBlob = await fetchResponse.blob();
+		} catch (error) {
+			console.error("Failed to fetch image blob:", error);
+			return;
+		}
+
+		const config = {
+			model: creationState.model_selection,
+			min_area: creationState.config.min_area,
+			min_confidence: creationState.config.min_confidence,
+			max_overlap: creationState.config.max_overlap,
+		};
+
+		if (!config.model) {
+			showMessage({
+				title: "Model Not Selected",
+				content:
+					"Please select a model in the project settings before running inference.",
+				buttons: [{ label: "Dismiss", onClick: closeMessage }],
+			});
+			return;
+		}
+
+		runModel(
+			{ image: imageBlob, imageName: imageData.imageName, config },
+			{
+				onLoading: () =>
+					showLoading({
+						title: "Running Model",
+						content: "Running model inference on the current image...",
+						progress: null,
+					}),
+				onError: (error) => {
+					showError({
+						title: "Model Error",
+						content: "Failed to run model inference.",
+						errorMessage: error.message,
+						buttons: [{ label: "Dismiss", onClick: closeMessage }],
+					});
+				},
+				onComplete: (data) => {
+					closeMessage();
+					dispatch({
+						type: "ADD_MODEL_OUTPUT",
+						payload: {
+							dataId: currentData.id,
+							annotations: data.annotations,
+							categories: data.categories,
+						},
+					});
+				},
+			},
+		);
+	}, [state, sessionState.currentDataIndex, creationState, showMessage, showLoading, showError, closeMessage, dispatch]);
 
 	return (
 		<ProjectCreationContext.Provider
@@ -390,7 +460,18 @@ function ProjectQuickStartPage() {
 										className="main-section page active-page"
 										id="annotationPage"
 									>
-										<AnnotationPanel isQuickStart={true} />
+										<AnnotationPanel>
+											<AnnotationSideBar />
+											<AnnotationCanvas />
+											<SelectModeBar>
+												<ActionButton
+													name="Run Model"
+													icon=""
+													onClick={handleRunModel}
+												/>
+											</SelectModeBar>
+											<AddModeBar />
+										</AnnotationPanel>
 									</div>
 								)}
 								{projectLoaded && activePanel === StatisticPanelID && (
