@@ -190,12 +190,12 @@ class Server:
             multimask_output=multimask,
         )
 
-        # masks: [N, H, W] bool/uint8 — encode each candidate as COCO RLE
-        rle_masks = [encode_masks(masks[i]) for i in range(masks.shape[0])]
-
         # logits: [N, 256, 256] — keep the best one as [1, 256, 256] for the next mask_input
         best_idx = int(np.argmax(scores))
         best_logit = logits[best_idx : best_idx + 1]  # [1, 256, 256]
+
+        # Only encode the best mask — no need to encode discarded candidates
+        best_rle = encode_masks(masks[best_idx])
         buf = io.BytesIO()
         np.save(buf, best_logit.astype(np.float32))
         best_mask_logit_b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
@@ -204,7 +204,7 @@ class Server:
             f"best_mask_logit b64: {best_mask_logit_b64[:50]}... (length={len(best_mask_logit_b64)})"
         )
         return {
-            "mask": rle_masks[best_idx],
+            "mask": best_rle,
             "best_mask_logit": best_mask_logit_b64,
         }
 

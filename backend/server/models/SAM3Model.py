@@ -50,12 +50,13 @@ class SAM3Model:
         input_labels: [N]
         mask_input: [1, H, W]
         """
-        with torch.autocast(self.device.type, dtype=torch.bfloat16):
-            with self._model_queue as processor:
-                return processor.predict_inst(
-                    state,
-                    point_coords=input_points,
-                    point_labels=input_labels,
-                    mask_input=mask_input,
-                    multimask_output=multimask_output,
-                )
+        with torch.no_grad():
+            with torch.autocast(self.device.type, dtype=torch.bfloat16):
+                with self._model_queue as processor:
+                    return processor.predict_inst(
+                        state,
+                        point_coords=input_points,
+                        point_labels=input_labels,
+                        mask_input=mask_input,
+                        multimask_output=multimask_output,
+                    )
