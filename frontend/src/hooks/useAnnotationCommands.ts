@@ -1,4 +1,12 @@
-import { useCallback, useMemo, useState } from "react";
+import {
+	createContext,
+	createElement,
+	useCallback,
+	useContext,
+	useMemo,
+	useState,
+	type ReactNode,
+} from "react";
 import { useAnnotationSession } from "../features/AnnotationSession/context";
 import { useProject } from "../features/ProjectAnnotation/context";
 import { useVisualizationSetting } from "../features/VisualizationSetting/context";
@@ -9,7 +17,7 @@ import type { AnnotationCommand } from "../types/Annotation/AnnotationCommand";
  * Returns the full execute map plus the picker open/close state so that
  * AnnotationPanel (and any other consumer) can remain thin rendering shells.
  */
-export function useAnnotationCommands() {
+function useCreateAnnotationCommands() {
 	const { annotationSessionState, dispatchAnnotationSession } =
 		useAnnotationSession();
 	const { visualizationSetting, updateVisualizationSetting } =
@@ -186,4 +194,30 @@ export function useAnnotationCommands() {
 		isActivateLabelOpen,
 		setIsActivateLabelOpen,
 	};
+}
+
+type AnnotationCommandsContextValue = ReturnType<typeof useCreateAnnotationCommands>;
+
+const AnnotationCommandsContext =
+	createContext<AnnotationCommandsContextValue | null>(null);
+
+export function AnnotationCommandsProvider({
+	children,
+}: {
+	children: ReactNode;
+}) {
+	const value = useCreateAnnotationCommands();
+	return createElement(AnnotationCommandsContext.Provider, { value }, children);
+}
+
+export function useAnnotationCommands() {
+	const context = useContext(AnnotationCommandsContext);
+
+	if (!context) {
+		throw new Error(
+			"useAnnotationCommands must be used within an AnnotationCommandsProvider",
+		);
+	}
+
+	return context;
 }

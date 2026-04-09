@@ -13,7 +13,10 @@ import {
 	initialVisualizationSetting,
 } from "../features/VisualizationSetting/context";
 import HeaderWithNavigation from "../components/layout/HeaderWIthNavigation";
-import { useAnnotationCommands } from "../hooks/useAnnotationCommands";
+import {
+	AnnotationCommandsProvider,
+	useAnnotationCommands,
+} from "../hooks/useAnnotationCommands";
 
 // Rendered inside the context providers so useAnnotationCommands can reach them.
 function ConnectedHeader({
@@ -173,8 +176,9 @@ function ProjectAnnotationPage() {
 				}}
 			>
 				<ProjectContext.Provider value={{ state, dispatch }}>
-					<div className="wrapper">
-						<ConnectedHeader
+					<AnnotationCommandsProvider>
+						<div className="wrapper">
+							<ConnectedHeader
 							projectState={state}
 							title={
 								activePanel === AnnotationPanelID ||
@@ -395,6 +399,7 @@ function ProjectAnnotationPage() {
 							)}
 						</div>
 					</div>
+					</AnnotationCommandsProvider>
 				</ProjectContext.Provider>
 			</VisualizationSettingContext.Provider>
 		</AnnotationSessionContext.Provider>
