@@ -24,6 +24,10 @@ class CoralTankModel:
             result = result.cpu().numpy()
 
             masks = []
+
+            if result.masks is None:
+                return [], []   
+            
             for mask in result.masks.data:
                 masks.append(encode_masks(mask))
 
