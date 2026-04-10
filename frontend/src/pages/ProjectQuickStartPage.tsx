@@ -230,6 +230,10 @@ function ProjectQuickStartPage() {
 		);
 	}, [state, sessionState.currentDataIndex, creationState, showMessage, showLoading, showError, closeMessage, dispatch]);
 
+	function handleStatisticsExport() {
+		throw new Error("Function not implemented.");
+	}
+
 	return (
 		<ProjectCreationContext.Provider
 			value={{ state: creationState, dispatch: creationDispatch }}
@@ -435,6 +439,14 @@ function ProjectQuickStartPage() {
 												closeMessage();
 											}}
 										/>
+										
+																			<SideBarDropDownButton
+																			id="export-csv-button"
+																			label="Export CSV"
+																			onClick={() => {
+																				void handleStatisticsExport();
+																			}}
+																			/>
 									</SideBarDropDownList>
 								</SideBar>
 
