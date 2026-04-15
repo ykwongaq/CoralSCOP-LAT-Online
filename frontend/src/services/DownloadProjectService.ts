@@ -4,7 +4,6 @@ import type { ApiRequestCallbacks, ApiRequestHandle } from "../types/api";
 export interface DownloadProjectRequest {
   token: string;
   filename?: string;
-  saveBlob?: (blob: Blob, suggestedName: string) => void | Promise<void>;
 }
 
 export interface DownloadProjectResponse {
@@ -15,7 +14,7 @@ export function downloadProject(
   request: DownloadProjectRequest,
   callbacks: ApiRequestCallbacks<DownloadProjectResponse>,
 ): ApiRequestHandle {
-  const { token, filename, saveBlob } = request;
+  const { token, filename } = request;
 
   return apiClient.request<Blob>(
     `/api/projects/download/${encodeURIComponent(token)}`,
@@ -23,20 +22,15 @@ export function downloadProject(
       method: "GET",
       responseType: "blob",
       onError: callbacks.onError,
-      onComplete: async (blob) => {
-        const suggestedName = filename ? `${filename}.coral` : `project_${token}.coral`;
-        if (saveBlob) {
-          await saveBlob(blob, suggestedName);
-        } else {
-          const url = URL.createObjectURL(blob);
-          const anchor = document.createElement("a");
-          anchor.href = url;
-          anchor.download = suggestedName;
-          document.body.appendChild(anchor);
-          anchor.click();
-          document.body.removeChild(anchor);
-          URL.revokeObjectURL(url);
-        }
+      onComplete: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = filename ? `${filename}.coral` : `project_${token}.coral`;
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+        URL.revokeObjectURL(url);
 
         callbacks.onComplete?.({ success: true });
       },

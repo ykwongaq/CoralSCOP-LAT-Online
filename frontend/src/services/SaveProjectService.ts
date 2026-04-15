@@ -4,7 +4,7 @@ import type { Data } from "../types/Annotation/Data";
 import type { Label } from "../types/Annotation/Label";
 import type { ScaledLine } from "../types/Annotation/ScaledLine";
 import { type AnnotationFile } from "../types/ProjectCreation";
-import { saveBlobWithPicker } from "../utils/saveBlobWithPicker";
+import triggerDownload from "../utils/download";
 
 function buildAnnotationFile(data: Data, labels: Label[]): AnnotationFile {
 	return {
@@ -69,7 +69,5 @@ export async function saveProject(state: ProjectState): Promise<void> {
 		type: "blob",
 		compression: "DEFLATE",
 	});
-	await saveBlobWithPicker(blob, {
-		suggestedName: `${state.projectName}.coral`,
-	});
+	triggerDownload(blob, `${state.projectName}.coral`);
 }

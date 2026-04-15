@@ -20,6 +20,7 @@ export default function UploadImagePanel() {
 	const { state, dispatch } = useProjectCreation();
 	const {
 		showMessage,
+		showProjectNameInput,
 		closeMessage,
 		showError,
 		showLoading,
@@ -121,64 +122,50 @@ export default function UploadImagePanel() {
 				},
 				onComplete: (data) => {
 					closeMessage();
-					showMessage({
+					showProjectNameInput({
 						title: "Project Created",
 						content:
-							"Your project has been created successfully. Click Download to save your project file.",
-						buttons: [
-							{
-								label: "Cancel",
-								onClick: () => {
-									closeMessage();
-									deleteProject(
-										{ token: data.downloadToken },
-										{
-											onComplete: backToHome,
-											onError(error) {
-												showError({
-													title: "Failed to Delete Project",
-													content:
-														"An error occurred while communicating with the server.",
-													errorMessage: error.message,
-													buttons: [{ label: "Close", onClick: closeMessage }],
-												});
-											},
-										},
-									);
+							"Your project has been created successfully. Please enter a name and click Download to get your project file.",
+						defaultValue: data.downloadToken,
+						placeholder: "Enter project name",
+						confirmLabel: "Download",
+						onCancel: () => {
+							deleteProject(
+								{ token: data.downloadToken },
+								{
+									onComplete: closeMessage,
+									onError(error) {
+										showError({
+											title: "Failed to Delete Project",
+											content:
+												"An error occurred while communicating with the server.",
+											errorMessage: error.message,
+											buttons: [{ label: "Close", onClick: closeMessage }],
+										});
+									},
 								},
-							},
-							{
-								label: "Download",
-								onClick: () => {
-									closeMessage();
-									downloadProject(
-										{
-											token: data.downloadToken,
-											filename: data.downloadToken,
-											saveBlob: (blob, suggestedName) =>
-												import("../../../utils/saveBlobWithPicker").then(
-													({ saveBlobWithPicker }) =>
-														saveBlobWithPicker(blob, { suggestedName }),
-												),
-										},
-										{
-											onComplete: () => {
-												backToHome();
-											},
-											onError: (error) => {
-												showError({
-													title: "Failed to Download Project",
-													content:
-														"An error occurred while communicating with the server.",
-													errorMessage: error.message,
-													buttons: [{ label: "Close", onClick: closeMessage }],
-												});
-											},
-										},
-									);
+							);
+						},
+						onConfirm: (projectName) => {
+							downloadProject(
+								{ token: data.downloadToken, filename: projectName },
+								{
+									onComplete: () => {
+										closeMessage();
+										backToHome();
+									},
+									onError: (error) => {
+										showError({
+											title: "Failed to Download Project",
+											content:
+												"An error occurred while communicating with the server.",
+											errorMessage: error.message,
+											buttons: [{ label: "Close", onClick: closeMessage }],
+										});
+									},
 								},
-							},
-						],
+							);
+						},
 					});
 				},
 			},
@@ -190,9 +177,9 @@ export default function UploadImagePanel() {
 		showLoading,
 		showError,
 		showMessage,
+		showProjectNameInput,
 		closeMessage,
 		updateLoadingProgress,
-		backToHome,
 	]);
 
 	return (
