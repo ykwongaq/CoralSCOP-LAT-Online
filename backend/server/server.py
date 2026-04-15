@@ -28,6 +28,12 @@ class Server:
 
     def __init__(self, config: dict):
         self.config = config
+
+        if self.config["data_dir"] is None:
+            raise ValueError(
+                "data_dir must be set in config.json to a persistent directory for embeddings"
+            )
+
         _logger.info("Initializing Server")
 
         self.temp_folder = os.path.join(
@@ -93,7 +99,11 @@ class Server:
             for k in stale:
                 del self._gpu_cache[k]
             if stale:
-                _logger.debug("GPU cache evicted %d entries for session %s", len(stale), session_id)
+                _logger.debug(
+                    "GPU cache evicted %d entries for session %s",
+                    len(stale),
+                    session_id,
+                )
 
     def _get_state_on_device(self, session_id: str, stem: str):
         """
@@ -120,7 +130,11 @@ class Server:
         if state_cpu is None:
             return None
 
-        _logger.debug("GPU cache miss — transferring to device session=%s stem=%s", session_id, stem)
+        _logger.debug(
+            "GPU cache miss — transferring to device session=%s stem=%s",
+            session_id,
+            stem,
+        )
         state_gpu = _to_device(state_cpu, self.sam3.device)
 
         # Insert into GPU cache, evicting LRU if at capacity
