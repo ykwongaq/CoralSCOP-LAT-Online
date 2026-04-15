@@ -3,6 +3,7 @@ import type { ApiRequestCallbacks, ApiRequestHandle } from "../types/api";
 
 export interface DownloadProjectRequest {
   token: string;
+  filename?: string;
 }
 
 export interface DownloadProjectResponse {
@@ -13,7 +14,7 @@ export function downloadProject(
   request: DownloadProjectRequest,
   callbacks: ApiRequestCallbacks<DownloadProjectResponse>,
 ): ApiRequestHandle {
-  const { token } = request;
+  const { token, filename } = request;
 
   return apiClient.request<Blob>(
     `/api/projects/download/${encodeURIComponent(token)}`,
@@ -25,7 +26,7 @@ export function downloadProject(
         const url = URL.createObjectURL(blob);
         const anchor = document.createElement("a");
         anchor.href = url;
-        anchor.download = `project_${token}.coral`;
+        anchor.download = filename ? `${filename}.coral` : `project_${token}.coral`;
         document.body.appendChild(anchor);
         anchor.click();
         document.body.removeChild(anchor);

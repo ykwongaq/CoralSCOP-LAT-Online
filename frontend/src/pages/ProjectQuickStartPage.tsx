@@ -80,7 +80,7 @@ function ProjectQuickStartPage() {
 		projectName: "" as string,
 	};
 
-	const { showMessage, closeMessage, showLoading, showError } = usePopMessage();
+	const { showMessage, closeMessage, showLoading, showError, showProjectNameInput } = usePopMessage();
 	const [state, dispatch] = useReducer(projectAnnotationReducer, initialState);
 	const [creationState, creationDispatch] = useReducer(
 		projectCreationReducer,
@@ -234,35 +234,47 @@ function ProjectQuickStartPage() {
 		throw new Error("Function not implemented.");
 	}
 
-	const handleSaveProject = useCallback(async () => {
-		showLoading({
-			title: "Saving Project",
-			content: "Please wait while we prepare your project file...",
-			progress: null,
-			buttons: [
-				{
-					label: "Cancel",
-					onClick: closeMessage,
-				},
-			],
+	const handleSaveProject = useCallback(() => {
+		showProjectNameInput({
+			title: "Save Project",
+			content: "Please enter a name for your project.",
+			defaultValue: state.projectName,
+			placeholder: "Enter project name",
+			confirmLabel: "Save",
+			onCancel: () => closeMessage(),
+			onConfirm: async (projectName) => {
+				closeMessage();
+				dispatch({ type: "SET_PROJECT_NAME", payload: projectName });
+				showLoading({
+					title: "Saving Project",
+					content: "Please wait while we prepare your project file...",
+					progress: null,
+					buttons: [
+						{
+							label: "Cancel",
+							onClick: closeMessage,
+						},
+					],
+				});
+				try {
+					await saveProject({ ...state, projectName });
+					closeMessage();
+				} catch (error) {
+					showError({
+						title: "Save Failed",
+						content: "Failed to save project. Please try again.",
+						errorMessage: error instanceof Error ? error.message : String(error),
+						buttons: [
+							{
+								label: "Close",
+								onClick: closeMessage,
+							},
+						],
+					});
+				}
+			},
 		});
-		try {
-			await saveProject(state);
-			closeMessage();
-		} catch (error) {
-			showError({
-				title: "Save Failed",
-				content: "Failed to save project. Please try again.",
-				errorMessage: error instanceof Error ? error.message : String(error),
-				buttons: [
-					{
-						label: "Close",
-						onClick: closeMessage,
-					},
-				],
-			});
-		}
-	}, [closeMessage, showError, showLoading, state]);
+	}, [closeMessage, dispatch, showError, showLoading, showProjectNameInput, state]);
 
 	return (
 		<ProjectCreationContext.Provider

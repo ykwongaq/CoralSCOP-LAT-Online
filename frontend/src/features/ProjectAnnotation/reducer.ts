@@ -15,6 +15,7 @@ export type ModelOutputCategory = {
 
 export type ProjectAnnotationAction =
 	| { type: "LOAD_PROJECT"; payload: ProjectState }
+	| { type: "SET_PROJECT_NAME"; payload: string }
 	| {
 			type: "ADD_LABEL";
 			payload: {
@@ -350,6 +351,8 @@ export function projectAnnotationReducer(
 	switch (action.type) {
 		case "LOAD_PROJECT":
 			return action.payload;
+		case "SET_PROJECT_NAME":
+			return { ...state, projectName: action.payload };
 		case "ADD_LABEL":
 			return addLabel(state, action.payload.labelName);
 		case "DELETE_LABEL":

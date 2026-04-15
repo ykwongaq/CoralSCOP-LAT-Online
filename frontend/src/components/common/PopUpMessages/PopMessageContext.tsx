@@ -12,6 +12,8 @@ import PopMessager, {
 } from "./PopMessager";
 import ErrorMessager, { type ErrorMessagerProps } from "./ErrorMessager";
 import LoadingMessager, { type LoadingMessagerProps } from "./LoadingMessager";
+import TextInputMessager, { type TextInputMessagerProps } from "./TextInputMessager";
+import ProjectNameMessager, { type ProjectNameMessagerProps } from "./ProjectNameMessager";
 
 type ModalState =
   | { type: "none" }
@@ -29,12 +31,38 @@ type ModalState =
       content: string;
       progress: number | null;
       buttons?: ModalButton[];
+    }
+  | {
+      type: "textInput";
+      title: string;
+      content: string;
+      defaultValue?: string;
+      placeholder?: string;
+      confirmLabel?: string;
+      cancelLabel?: string;
+      onConfirm?: (value: string) => void;
+      onCancel?: () => void;
+      buttons?: ModalButton[];
+    }
+  | {
+      type: "projectNameInput";
+      title: string;
+      content: string;
+      defaultValue?: string;
+      placeholder?: string;
+      confirmLabel?: string;
+      cancelLabel?: string;
+      onConfirm?: (value: string) => void;
+      onCancel?: () => void;
+      buttons?: ModalButton[];
     };
 
 interface PopMessageContextValue {
   showMessage: (params: PopMessagerProps) => void;
   showError: (params: ErrorMessagerProps) => void;
   showLoading: (params: LoadingMessagerProps) => void;
+  showTextInput: (params: TextInputMessagerProps) => void;
+  showProjectNameInput: (params: ProjectNameMessagerProps) => void;
   updateLoadingProgress: (progress: number | null) => void;
   closeMessage: () => void;
 }
@@ -64,6 +92,40 @@ export function PopMessageProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  const showTextInput = useCallback(
+    ({ title, content, defaultValue, placeholder, confirmLabel, cancelLabel, onConfirm, onCancel, buttons }: TextInputMessagerProps) =>
+      setModal({
+        type: "textInput",
+        title,
+        content,
+        defaultValue,
+        placeholder,
+        confirmLabel,
+        cancelLabel,
+        onConfirm,
+        onCancel: onCancel ?? (buttons ? undefined : closeMessage),
+        buttons,
+      }),
+    [closeMessage],
+  );
+
+  const showProjectNameInput = useCallback(
+    ({ title, content, defaultValue, placeholder, confirmLabel, cancelLabel, onConfirm, onCancel, buttons }: ProjectNameMessagerProps) =>
+      setModal({
+        type: "projectNameInput",
+        title,
+        content,
+        defaultValue,
+        placeholder,
+        confirmLabel,
+        cancelLabel,
+        onConfirm,
+        onCancel: onCancel ?? (buttons ? undefined : closeMessage),
+        buttons,
+      }),
+    [closeMessage],
+  );
+
   const updateLoadingProgress = useCallback((progress: number | null) => {
     setModal((current) => {
       if (current.type === "loading") {
@@ -75,7 +137,7 @@ export function PopMessageProvider({ children }: { children: ReactNode }) {
 
   return (
     <PopMessageContext.Provider
-      value={{ showMessage, showError, showLoading, updateLoadingProgress, closeMessage }}
+      value={{ showMessage, showError, showLoading, showTextInput, showProjectNameInput, updateLoadingProgress, closeMessage }}
     >
       {children}
       {modal.type !== "none" &&
@@ -101,6 +163,32 @@ export function PopMessageProvider({ children }: { children: ReactNode }) {
                 title={modal.title}
                 content={modal.content}
                 progress={modal.progress}
+                buttons={modal.buttons}
+              />
+            )}
+            {modal.type === "textInput" && (
+              <TextInputMessager
+                title={modal.title}
+                content={modal.content}
+                defaultValue={modal.defaultValue}
+                placeholder={modal.placeholder}
+                confirmLabel={modal.confirmLabel}
+                cancelLabel={modal.cancelLabel}
+                onConfirm={modal.onConfirm}
+                onCancel={modal.onCancel}
+                buttons={modal.buttons}
+              />
+            )}
+            {modal.type === "projectNameInput" && (
+              <ProjectNameMessager
+                title={modal.title}
+                content={modal.content}
+                defaultValue={modal.defaultValue}
+                placeholder={modal.placeholder}
+                confirmLabel={modal.confirmLabel}
+                cancelLabel={modal.cancelLabel}
+                onConfirm={modal.onConfirm}
+                onCancel={modal.onCancel}
                 buttons={modal.buttons}
               />
             )}

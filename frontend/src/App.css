@@ -1720,6 +1720,37 @@ html:has(#confirm-button:not(.hidden)) #default-bar .float-bar__inner {
     height: 200px;
     display: block;
 }
+.modal-pop__input {
+    width: 100%;
+    border: 1px solid #ccc;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    background-color: #f9f9f9;
+    margin: 3px;
+    padding: 8px;
+    display: block;
+    box-sizing: border-box;
+}
+.modal-pop__input-group {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 20px;
+}
+.modal-pop__input--with-suffix {
+    width: auto;
+    flex: 1;
+    max-width: 400px;
+    margin: 0;
+    text-align: left;
+}
+.modal-pop__input-suffix {
+    font-size: 16px;
+    color: #555;
+    font-weight: 500;
+    user-select: none;
+}
 .modal-pop-backdrop {
     position: fixed;
     inset: 0;
