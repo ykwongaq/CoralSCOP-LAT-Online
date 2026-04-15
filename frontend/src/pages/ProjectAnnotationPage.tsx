@@ -190,6 +190,36 @@ function ProjectAnnotationPage() {
 		}
 	}, [closeMessage, showError, showLoading, state]);
 
+	const handleSaveProject = useCallback(async () => {
+		showLoading({
+			title: "Saving Project",
+			content: "Please wait while we prepare your project file...",
+			progress: null,
+			buttons: [
+				{
+					label: "Cancel",
+					onClick: closeMessage,
+				},
+			],
+		});
+		try {
+			await saveProject(state);
+			closeMessage();
+		} catch (error) {
+			showError({
+				title: "Save Failed",
+				content: "Failed to save project. Please try again.",
+				errorMessage: error instanceof Error ? error.message : String(error),
+				buttons: [
+					{
+						label: "Close",
+						onClick: closeMessage,
+					},
+				],
+			});
+		}
+	}, [closeMessage, showError, showLoading, state]);
+
 	return (
 		<AnnotationSessionContext.Provider
 			value={{
@@ -265,7 +295,7 @@ function ProjectAnnotationPage() {
 									id="save-button"
 									icon="ico-save"
 									label="Save"
-									onClick={() => saveProject(state)}
+									onClick={handleSaveProject}
 									disabled={!projectLoaded}
 								/>
 								<SideBarDropDownList
