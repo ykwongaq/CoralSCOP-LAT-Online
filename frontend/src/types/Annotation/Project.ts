@@ -14,6 +14,6 @@ export interface ProjectState {
   projectId?: string;
   /** SAM session UUID on the backend. Present when embeddings are available. */
   sessionId?: string;
-  /** Original .coral File object. Held so save can clone images/annotations. */
-  sourceFile?: File;
+  /** Original .coral file bytes. Held so save can clone images/annotations. */
+  sourceFile?: ArrayBuffer;
 }

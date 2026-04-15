@@ -30,7 +30,8 @@ export async function loadProject(
 	try {
 		callbacks.onProgress?.(5);
 
-		const zip = await JSZip.loadAsync(file);
+		const fileBuffer = await file.arrayBuffer();
+		const zip = await JSZip.loadAsync(fileBuffer);
 
 		// Bucket ZIP entries by folder
 		const imageEntries: JSZip.JSZipObject[] = [];
@@ -136,7 +137,7 @@ export async function loadProject(
 			projectName,
 			projectId,
 			sessionId,
-			sourceFile: file,
+			sourceFile: fileBuffer,
 		});
 	} catch (err) {
 		callbacks.onError?.({
