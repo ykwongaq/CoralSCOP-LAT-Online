@@ -344,7 +344,7 @@ export default function AnnotationCanvas() {
 			return;
 		}
 		let cancelled = false;
-		buildLayers(data, annotationSessionState)
+		buildLayers(data, annotationSessionState, visualizationSetting.hiddingLabels)
 			.then(({ layers, pixelMasks }) => {
 				if (!cancelled) {
 					layersRef.current = layers;
@@ -369,6 +369,7 @@ export default function AnnotationCanvas() {
 		data,
 		imageSize,
 		annotationSessionState.selectedAnnotations,
+		visualizationSetting.hiddingLabels, 
 		requestDraw,
 	]);
 

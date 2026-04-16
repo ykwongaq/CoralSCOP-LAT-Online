@@ -9,6 +9,7 @@ import {
 } from "../components/common/LabelColorMap";
 import type AnnotationSessionState from "../types/Annotation/AnnotationSession";
 import type { PendingAnnotation } from "../types/Annotation/PendingAnnotation";
+import type { Label } from "../types/Annotation";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -33,6 +34,7 @@ export type LayersResult = {
 export async function buildLayers(
 	data: Data,
 	annotationSessionState: AnnotationSessionState,
+	hiddingLabels: Label[] = [], // ADD THIS PARAMETER
 ): Promise<LayersResult> {
 	const width =
 		data.imageData.width ?? data.annotations[0]?.segmentation.size[1] ?? 0;
@@ -77,13 +79,25 @@ export async function buildLayers(
 		data.annotations.map((ann) => ann.segmentation),
 	);
 
+	const hiddenLabelIds = new Set(hiddingLabels.map(label => label.id));
+
 	function isMaskSelected(annotation: Annotation): boolean {
 		return annotationSessionState.selectedAnnotations.some(
 			(sel) => sel === annotation.id,
 		);
 	}
+
+	function isLabelHidden(labelId: number): boolean {
+		return hiddenLabelIds.has(labelId);
+	}
+
 	for (let annIdx = 0; annIdx < data.annotations.length; annIdx++) {
 		const ann = data.annotations[annIdx];
+		
+		if (isLabelHidden(ann.labelId)) {
+			continue;
+		}
+
 		const color = isMaskSelected(ann)
 			? getSelectedMaskColor()
 			: getLabelColor(ann.labelId);
