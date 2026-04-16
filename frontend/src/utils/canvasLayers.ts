@@ -65,6 +65,13 @@ export async function buildLayers(
 	const bd = borderImgData.data;
 
 	const centroids: Array<{ cx: number; cy: number; labelId: number }> = [];
+	const edges: Array<{
+		x: number;
+		y: number;
+		r: number;
+		g: number;
+		b: number;
+	}> = [];
 
 	const pixelMasks = await decodeRleMasks(
 		data.annotations.map((ann) => ann.segmentation),
@@ -106,10 +113,7 @@ export async function buildLayers(
 				(y < height - 1 && pixelMask[i + width] === 0);
 
 			if (isEdge) {
-				bd[idx] = r;
-				bd[idx + 1] = g;
-				bd[idx + 2] = b;
-				bd[idx + 3] = 255;
+				edges.push({ x, y, r, g, b });
 			}
 
 			sumX += x;
@@ -126,11 +130,28 @@ export async function buildLayers(
 		}
 	}
 
+	const minDim = Math.min(width, height);
+	const boundaryRadius = Math.max(1, Math.round(minDim * 0.0015));
+
+	for (const { x, y, r, g, b } of edges) {
+		for (let dy = -boundaryRadius; dy <= boundaryRadius; dy++) {
+			for (let dx = -boundaryRadius; dx <= boundaryRadius; dx++) {
+				const px = x + dx;
+				const py = y + dy;
+				if (px < 0 || px >= width || py < 0 || py >= height) continue;
+				const pIdx = (py * width + px) * 4;
+				bd[pIdx] = r;
+				bd[pIdx + 1] = g;
+				bd[pIdx + 2] = b;
+				bd[pIdx + 3] = 255;
+			}
+		}
+	}
+
 	maskCtx.putImageData(maskImgData, 0, 0);
 	borderCtx.putImageData(borderImgData, 0, 0);
 
-	const minDim = Math.min(width, height);
-	const badgeRadius = Math.min(Math.floor(minDim * 0.015), 20);
+	const badgeRadius = Math.max(4, Math.floor(minDim * 0.012));
 	const fontSize = Math.round(badgeRadius * 1.2);
 
 	textCtx.textAlign = "center";
