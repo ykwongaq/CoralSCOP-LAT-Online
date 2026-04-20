@@ -208,3 +208,9 @@ __marimo__/
 
 # Local markdown
 COMMAND.md
+sam3/
+embeddings/
+conda
+images/
+demo_projects
+backend/config.json
