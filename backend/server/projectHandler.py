@@ -119,6 +119,100 @@ class ProjectHandler:
         }
         return output_json
 
+    def create_project(
+        self,
+        token: str,
+        images: List[Image.Image],
+        image_filenames: List[str],
+        config: Dict,
+    ) -> List[Dict]:
+        """
+        Non stream version of create_project
+        """
+
+        temp_dir = os.path.join(self.temp_folder, f"project_{token}")
+        zip_output_path = os.path.join(self.temp_folder, f"project_{token}.coral")
+
+        os.makedirs(temp_dir, exist_ok=True)
+        image_folder = os.path.join(temp_dir, "images")
+        annotations_folder = os.path.join(temp_dir, "annotations")
+        os.makedirs(image_folder, exist_ok=True)
+        os.makedirs(annotations_folder, exist_ok=True)
+
+        try:
+            sorted_indexes = np.argsort(image_filenames)
+            images = [images[i] for i in sorted_indexes]
+            filenames = [image_filenames[i] for i in sorted_indexes]
+            n = len(images)
+
+            for idx, (image, filename) in enumerate(zip(images, filenames)):
+                state = self.sam3_model.gen_embeddings(image)
+
+                if config.get("model") == "CoralSCOP":
+                    output_json = self.run_coral_scop(image, config)
+                elif config.get("model") == "CoralTank":
+                    output_json = self.run_coral_tank(image, config)
+                else:
+                    output_json = {
+                        "image": {
+                            "image_filename": filename,
+                            "image_width": image.width,
+                            "image_height": image.height,
+                            "id": idx,
+                        },
+                        "annotations": [],
+                        "categories": [],
+                    }
+
+                filename_without_ext = os.path.splitext(filename)[0]
+
+                # Save image
+                image_output_path = os.path.join(image_folder, filename)
+                image.save(image_output_path)
+
+                # Save annotations
+                with open(
+                    os.path.join(annotations_folder, f"{filename_without_ext}.json"),
+                    "w",
+                ) as f:
+                    json.dump(output_json, f, indent=4)
+
+                if self.embedding_store is not None:
+                    buf = io.BytesIO()
+                    torch.save(state, buf)
+                    self.embedding_store.save(
+                        token, filename_without_ext, buf.getvalue()
+                    )
+
+            project_info = {
+                "project_id": token,
+                "last_idx": 0,
+                "creation_time": token,
+                "config": config,
+            }
+
+            with open(os.path.join(temp_dir, "project_info.json"), "w") as f:
+                json.dump(project_info, f, indent=4)
+
+            with zipfile.ZipFile(
+                zip_output_path, "w", compression=zipfile.ZIP_DEFLATED
+            ) as zf:
+                for folder_name in ["images", "annotations"]:
+                    folder_path = os.path.join(temp_dir, folder_name)
+                    for root, _, files in os.walk(folder_path):
+                        for file in files:
+                            file_path = os.path.join(root, file)
+                            zf.write(file_path, os.path.relpath(file_path, temp_dir))
+                project_info_path = os.path.join(temp_dir, "project_info.json")
+                zf.write(
+                    project_info_path, os.path.relpath(project_info_path, temp_dir)
+                )
+            shutil.rmtree(temp_dir, ignore_errors=True)
+
+        except Exception as e:
+            self.clean_up(token)
+            raise e
+
     def stream_create_project(
         self,
         token: str,
@@ -203,7 +297,9 @@ class ProjectHandler:
                 if self.embedding_store is not None:
                     buf = io.BytesIO()
                     torch.save(state, buf)
-                    self.embedding_store.save(token, filename_without_ext, buf.getvalue())
+                    self.embedding_store.save(
+                        token, filename_without_ext, buf.getvalue()
+                    )
 
                 yield {
                     "type": "progress",
