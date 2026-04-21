@@ -209,7 +209,7 @@ export default function StatisticCanvas() {
 			return;
 		}
 		let cancelled = false;
-		buildLayers(data, annotationSessionState)
+		buildLayers(data, annotationSessionState, visualizationSetting)
 			.then(({ layers, pixelMasks }) => {
 				if (!cancelled) {
 					layersRef.current = layers;
@@ -222,7 +222,12 @@ export default function StatisticCanvas() {
 			cancelled = true;
 		};
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [data, imageSize, annotationSessionState.selectedAnnotations, requestDraw]);
+	}, [
+		data,
+		imageSize,
+		annotationSessionState.selectedAnnotations,
+		requestDraw,
+	]);
 
 	useEffect(() => {
 		requestDraw();
