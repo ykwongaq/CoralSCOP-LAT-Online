@@ -57,6 +57,12 @@ def main(args):
         "max_overlap": 0.001,
     }
 
+    if args.use_coralscop:
+        project_config["model"] = "CoralSCOP"
+
+    if args.use_coral_tank:
+        project_config["model"] = "CoralTank"
+
     image_filenames = []
     images = []
 
