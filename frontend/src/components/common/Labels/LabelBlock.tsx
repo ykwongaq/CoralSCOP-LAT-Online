@@ -5,6 +5,7 @@ import { getLabelColor, getTextColor } from "../LabelColorMap";
 import { useProject } from "../../../features/ProjectAnnotation/context";
 import { usePopMessage } from "../PopUpMessages/PopMessageContext";
 import { useAnnotationSession } from "../../../features/AnnotationSession/context";
+import styles from "./Labels.module.css";
 
 interface LabelBlockProps {
     label: Label;
@@ -220,10 +221,10 @@ export default function LabelBlock({ label }: LabelBlockProps) {
     ];
 
     return (
-        <div className="color-plate-list__item">
-            <div className="label-blk labelButton">
+        <div className={styles.colorPlateListItem}>
+            <div className={`${styles.labelBlk} labelButton`}>
                 <div
-                    className="label-blk__color color-plate-list__color-plate colorBox"
+                    className={`${styles.colorPlate} colorBox`}
                     style={{
                         backgroundColor: labelColor,
                         color: textColor,
@@ -234,7 +235,7 @@ export default function LabelBlock({ label }: LabelBlockProps) {
                 </div>
                 <p
                     ref={labelTextRef}
-                    className="label-blk__label labelText"
+                    className={`${styles.labelBlkLabel} labelText`}
                     contentEditable={isEditing}
                     suppressContentEditableWarning={true}
                     onKeyDown={(e) => {
@@ -253,16 +254,16 @@ export default function LabelBlock({ label }: LabelBlockProps) {
                 >
                     {labelName}
                 </p>
-                <div className="label-blk__side">
+                <div className={styles.labelBlkSide}>
                     <button
-                        className={`label-blk__btn label-blk__btn--chevron${isExpanded ? " active" : ""}`}
+                        className={`${styles.labelBlkBtn} ${styles.labelBlkBtnChevron}${isExpanded ? ` ${styles.labelBlkBtnChevronActive}` : ""}`}
                         onClick={() => setIsExpanded(!isExpanded)}
                         title="Toggle sub-categories"
                     >
-                        <span className="label-blk__chevron">&#9662;</span>
+                        <span className={styles.labelBlkChevron}>&#9662;</span>
                     </button>
                     <button
-                        className={`label-blk__btn label-hide-fn${isHidding ? " active" : ""}`}
+                        className={`${styles.labelBlkBtn}${isHidding ? ` ${styles.labelBlkBtnActive}` : ""}`}
                         value="1"
                         onClick={onToggleShowLabel}
                     >
@@ -271,7 +272,7 @@ export default function LabelBlock({ label }: LabelBlockProps) {
                     </button>
                     <button
                         ref={menuButtonRef}
-                        className="label-blk__btn label-menu-fn"
+                        className={styles.labelBlkBtn}
                         onClick={handleMenuClick}
                     >
                         <span className="ico-dots-horizontal-triple"></span>
@@ -279,12 +280,12 @@ export default function LabelBlock({ label }: LabelBlockProps) {
                 </div>
             </div>
             {isExpanded && (
-                <div className="label-subcategory">
+                <div className={styles.labelSubcategory}>
                     {subCategories.map((status, index) => (
-                        <span key={index} className="label-subcategory__tag">
+                        <span key={index} className={styles.labelSubcategoryTag}>
                             {status}
                             <button
-                                className="label-subcategory__tag-remove"
+                                className={styles.labelSubcategoryTagRemove}
                                 onClick={() => handleDeleteStatus(index)}
                             >
                                 &#215;
@@ -295,7 +296,7 @@ export default function LabelBlock({ label }: LabelBlockProps) {
                         <input
                             autoFocus
                             type="text"
-                            className="label-subcategory__input"
+                            className={styles.labelSubcategoryInput}
                             placeholder="Sub-category..."
                             value={newStatus}
                             onChange={(e) => setNewStatus(e.target.value)}
@@ -315,7 +316,7 @@ export default function LabelBlock({ label }: LabelBlockProps) {
                         />
                     ) : (
                         <button
-                            className="label-subcategory__add-btn"
+                            className={styles.labelSubcategoryAddBtn}
                             onClick={() => setIsAddingStatus(true)}
                             title="Add sub-category"
                         >

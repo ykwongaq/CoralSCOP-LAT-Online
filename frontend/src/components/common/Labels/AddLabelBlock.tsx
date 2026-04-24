@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useToggleInput } from "../../../hooks/useToggleInputOptions";
+import styles from "./Labels.module.css";
+
 interface AddLabelBlockProps {
 	onAddLabel: (labelName: string) => void;
 }
@@ -17,7 +19,6 @@ export default function AddLabelBlock({ onAddLabel }: AddLabelBlockProps) {
 		}
 	};
 
-	// Hide input when clicking outside
 	useEffect(() => {
 		const handleClickOutside = (event: MouseEvent) => {
 			if (
@@ -40,35 +41,34 @@ export default function AddLabelBlock({ onAddLabel }: AddLabelBlockProps) {
 	};
 
 	return (
-		<div
-			ref={containerRef}
-			className={`toggle-input-blk toggle-fn ${isOpen ? "open" : ""}`}
-		>
-			<button className="toggle-input-blk__btn" onClick={toggle}>
-				<span className="icon">{isOpen ? "×" : "+"}</span>
-				<span className="text">{isOpen ? "Cancel" : "Add Label"}</span>
+		<div ref={containerRef}>
+			<button className={styles.expandableInputBtn} onClick={toggle}>
+				<span className={styles.expandableInputBtnIcon}>{isOpen ? "×" : "+"}</span>
+				<span className={styles.expandableInputBtnText}>{isOpen ? "Cancel" : "Add Label"}</span>
 			</button>
-			<div className="input-blk toggle-fn__hide">
-				<div className="input-blk__wrap">
-					<input
-						ref={inputRef}
-						type="text"
-						id="add-category-input"
-						name="add"
-						value={inputValue}
-						onChange={(e) => setInputValue(e.target.value)}
-						onKeyDown={handleKeyDown}
-					/>
-					<button
-						className="input-blk__confirm"
-						id="add-category-button"
-						type="button"
-						onClick={handleConfirm}
-					>
-						Confirm
-					</button>
+			{isOpen && (
+				<div className={styles.inputBlk}>
+					<div className={styles.inputBlkWrap}>
+						<input
+							ref={inputRef}
+							type="text"
+							id="add-category-input"
+							name="add"
+							value={inputValue}
+							onChange={(e) => setInputValue(e.target.value)}
+							onKeyDown={handleKeyDown}
+						/>
+						<button
+							className={styles.inputBlkConfirm}
+							id="add-category-button"
+							type="button"
+							onClick={handleConfirm}
+						>
+							Confirm
+						</button>
+					</div>
 				</div>
-			</div>
+			)}
 		</div>
 	);
 }

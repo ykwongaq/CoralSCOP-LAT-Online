@@ -1,7 +1,7 @@
 import type { ImageSelectionData } from "../../types/ProjectCreation";
 // import type { ImageData } from "../../types/ImageData";
 import { useImageUploader } from "../../hooks/useImageUploader";
-import "../../App.css";
+import styles from "./ImageUploader.module.css";
 
 interface ImageUploaderProps {
   onImages: (images: ImageSelectionData[]) => void;
@@ -20,12 +20,12 @@ export default function ImageUploader({ onImages }: ImageUploaderProps) {
 
   return (
     <div
-      className={`drop-container${isDragging ? " drop-container--active" : ""}`}
+      className={`${styles.dropContainer}${isDragging ? ` ${styles.dropContainerActive}` : ""}`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      <div className="drop-text">
+      <div className={styles.dropText}>
         Drop images here. Or select{" "}
         <button className="button select-link" onClick={openFolderSelect}>
           image folder

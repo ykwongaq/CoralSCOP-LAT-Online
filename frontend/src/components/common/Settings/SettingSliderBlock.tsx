@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import styles from "./Settings.module.css";
 
 interface SettingBlockProps {
   title: string;
@@ -92,11 +93,11 @@ export default function SettingSliderBlock({
   };
 
   return (
-    <div className="setting-item" id={id}>
-      <label className="setting-item__title" htmlFor={`${id}-input`}>
+    <div className={styles.settingItem} id={id}>
+      <label className={styles.settingItemTitle} htmlFor={`${id}-input`}>
         {title}
       </label>
-      <p className="setting-item__desc">{description}</p>
+      <p className={styles.settingItemDesc}>{description}</p>
       <div className="slider-blk">
         <input
           type="text"

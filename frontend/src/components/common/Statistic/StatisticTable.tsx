@@ -1,6 +1,7 @@
 import type { Annotation } from "../../../types/Annotation";
 import type { InstanceRowData } from "./StatisticTableRow";
 import StatisticTableRow from "./StatisticTableRow";
+import styles from "./Statistic.module.css";
 
 interface StatisticTableProps {
     rows: InstanceRowData[];
@@ -30,10 +31,10 @@ export default function StatisticTable({
 
     return (
         <div
-            className="stat-table-wrap"
+            className={styles.statTableWrap}
             style={{ maxHeight, overflow: "auto" }}
         >
-            <table className="stat-table">
+            <table className={styles.statTable}>
                 <thead>
                     <tr>
                         {showCroppedCanvas && <th style={{ position: 'sticky', top: 0, backgroundColor: '#f5f5f5', zIndex: 1 }}>Preview</th>}

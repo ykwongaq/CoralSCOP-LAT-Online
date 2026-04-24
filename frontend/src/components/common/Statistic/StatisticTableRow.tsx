@@ -1,5 +1,6 @@
 import type { Annotation } from "../../../types/Annotation";
 import CroppedCanvas from "./CroppedCanvas";
+import styles from "./Statistic.module.css";
 
 export interface InstanceRowData {
 	id: number;
@@ -34,8 +35,8 @@ export default function StatisticTableRow({
 	return (
 		<tr>
 			{showCroppedCanvas && (
-				<td className="stat-cell-crop">
-					<div className="stat-crop-wrap-row">
+				<td className={styles.statCellCrop}>
+					<div className={styles.statCropWrapRow}>
 						<CroppedCanvas
 							imageUrl={imageUrl}
 							annotation={annotation}
@@ -48,20 +49,20 @@ export default function StatisticTableRow({
 			<td>{row.labelName}</td>
 			<td>
 				{row.statuses.length > 0 ? (
-					<div className="stat-tag-list">
+					<div className={styles.statTagList}>
 						{row.statuses.map((s) => (
-							<span key={s} className="stat-tag">
+							<span key={s} className={styles.statTag}>
 								{s}
 							</span>
 						))}
 					</div>
 				) : (
-					<span className="stat-no-status">—</span>
+					<span className={styles.statNoStatus}>—</span>
 				)}
 			</td>
 			<td>
 				{row.bleachingPct === null ? (
-					<span className="stat-loading">…</span>
+					<span className={styles.statLoading}>…</span>
 				) : (
 					`${row.bleachingPct.toFixed(1)}%`
 				)}

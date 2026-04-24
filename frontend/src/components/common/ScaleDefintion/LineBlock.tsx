@@ -1,6 +1,7 @@
 import { useAnnotationSession } from "../../../features/AnnotationSession/context";
 import { useProject } from "../../../features/ProjectAnnotation/context";
 import type { ScaledLine } from "../../../types/Annotation/ScaledLine";
+import styles from "./ScaleDefine.module.css";
 
 interface LineBlockProps {
 	line: ScaledLine;
@@ -69,7 +70,7 @@ export default function LineBlock({ line }: LineBlockProps) {
 
 	return (
 		<div
-			className={`scale-line-block${isSelected ? " scale-line-block--selected" : ""}`}
+			className={`${styles.scaleLineBlock}${isSelected ? ` ${styles.scaleLineBlockSelected}` : ""}`}
 			onClick={handleSelect}
 			onKeyDown={(e) => {
 				if (e.key === "Enter" || e.key === " ") {
@@ -80,21 +81,21 @@ export default function LineBlock({ line }: LineBlockProps) {
 			role="button"
 			tabIndex={0}
 		>
-			<div className="scale-line-block__header">
+			<div className={styles.scaleLineBlockHeader}>
 				<div>
-					<p className="scale-line-block__title">Line {line.id + 1}</p>
-					<p className="scale-line-block__meta">Length: {pixelLength}px</p>
+					<p className={styles.scaleLineBlockTitle}>Line {line.id + 1}</p>
+					<p className={styles.scaleLineBlockMeta}>Length: {pixelLength}px</p>
 				</div>
-				<span className="scale-line-block__tag">
+				<span className={styles.scaleLineBlockTag}>
 					{isSelected ? "Selected" : "Click to select"}
 				</span>
 			</div>
 
-			<div className="scale-line-block__controls">
-				<label className="scale-line-block__field">
+			<div className={styles.scaleLineBlockControls}>
+				<label className={styles.scaleLineBlockField}>
 					<span>Scale</span>
 					<input
-						className="scale-line-block__input"
+						className={styles.scaleLineBlockInput}
 						type="number"
 						min="0"
 						step="0.01"
@@ -103,10 +104,10 @@ export default function LineBlock({ line }: LineBlockProps) {
 					/>
 				</label>
 
-				<label className="scale-line-block__field">
+				<label className={styles.scaleLineBlockField}>
 					<span>Unit</span>
 					<select
-						className="scale-line-block__select"
+						className={styles.scaleLineBlockSelect}
 						value={line.unit}
 						onChange={(e) =>
 							handleUnitChange(e.target.value as ScaledLine["unit"])
@@ -120,7 +121,7 @@ export default function LineBlock({ line }: LineBlockProps) {
 
 				<button
 					type="button"
-					className="scale-line-block__delete"
+					className={styles.scaleLineBlockDelete}
 					onClick={handleDelete}
 				>
 					Delete line

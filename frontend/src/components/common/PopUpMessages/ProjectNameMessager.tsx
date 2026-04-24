@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { PopMessagerProps } from "./PopMessager";
+import styles from "./PopMessager.module.css";
 
 export interface ProjectNameMessagerProps extends PopMessagerProps {
   defaultValue?: string;
@@ -21,7 +22,6 @@ export default function ProjectNameMessager({
   onCancel,
   buttons = [],
 }: ProjectNameMessagerProps) {
-  // Strip .coral extension from default value so user edits the base name
   const initialValue = defaultValue.replace(/\.coral$/i, "");
   const [value, setValue] = useState(initialValue);
 
@@ -43,22 +43,22 @@ export default function ProjectNameMessager({
         ];
 
   return (
-    <div className="modal-pop">
-      <div className="modal-pop__inner">
-        <p className="modal-pop__lg-text">{title}</p>
-        <p className="modal-pop__text">{content}</p>
-        <div className="modal-pop__input-group">
+    <div className={styles.modalPop}>
+      <div className={styles.modalPopInner}>
+        <p className={styles.modalPopLgText}>{title}</p>
+        <p className={styles.modalPopText}>{content}</p>
+        <div className={styles.modalPopInputGroup}>
           <input
             type="text"
-            className="modal-pop__input modal-pop__input--with-suffix"
+            className={`${styles.modalPopInput} ${styles.modalPopInputWithSuffix}`}
             value={value}
             onChange={(e) => setValue(e.target.value)}
             placeholder={placeholder}
           />
-          <span className="modal-pop__input-suffix">.coral</span>
+          <span className={styles.modalPopInputSuffix}>.coral</span>
         </div>
         {effectiveButtons.length > 0 && (
-          <div className="modal-pop__row">
+          <div className={styles.modalPopRow}>
             {effectiveButtons.map((btn, i) => (
               <button key={i} className="button" onClick={btn.onClick}>
                 {btn.label}

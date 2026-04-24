@@ -4,6 +4,7 @@ import type { Label } from "../../../types/Annotation";
 import AddLabelBlock from "./AddLabelBlock";
 import LabelBlock from "./LabelBlock";
 import { LabelSearcher } from "./LabelSearcher";
+import styles from "./Labels.module.css";
 
 interface LabelBarProps {
 	labels: Label[];
@@ -25,7 +26,7 @@ export default function LabelBar({ labels }: LabelBarProps) {
 				<LabelSearcher value={searchQuery} onChange={setSearchQuery} />
 			</div>
 			<div className="side-bar__bottom">
-				<div id="label-container" className="label-container color-plate-list">
+				<div id="label-container" className={`${styles.labelContainer} ${styles.colorPlateList}`}>
 					{filteredLabels.map((label) => (
 						<LabelBlock key={label.id} label={label} />
 					))}

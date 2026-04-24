@@ -1,5 +1,7 @@
 import type { PopMessagerProps } from "./PopMessager";
 import LoadingSVG from "../../../assets/images/loading.svg";
+import styles from "./PopMessager.module.css";
+
 export interface LoadingMessagerProps extends PopMessagerProps {
   progress: number | null;
 }
@@ -11,25 +13,22 @@ export default function LoadingMessager({
   buttons = [],
 }: LoadingMessagerProps) {
   return (
-    <div className="modal-pop">
-      <div className="modal-pop__inner">
+    <div className={styles.modalPop}>
+      <div className={styles.modalPopInner}>
         <img
-          className="loading-pop__loading modal-pop__loading"
+          className={styles.modalPopLoading}
           src={LoadingSVG}
           alt=""
         />
         {progress !== null ? (
-          <p
-            id="loading-percentage"
-            className="loading-pop__number modal-pop__number"
-          >
+          <p id="loading-percentage" className={styles.modalPopNumber}>
             {progress}%
           </p>
         ) : null}
-        <p className="modal-pop__lg-text">{title}</p>
-        <p className="modal-pop__text">{content}</p>
+        <p className={styles.modalPopLgText}>{title}</p>
+        <p className={styles.modalPopText}>{content}</p>
         {buttons.length > 0 && (
-          <div className="modal-pop__row">
+          <div className={styles.modalPopRow}>
             {buttons.map((btn, i) => (
               <button key={i} className="button" onClick={btn.onClick}>
                 {btn.label}

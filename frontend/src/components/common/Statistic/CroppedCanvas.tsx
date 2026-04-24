@@ -2,6 +2,7 @@ import { useRef, useEffect } from "react";
 import { decodeRLE } from "../../../utils/cocoRle";
 import type { Annotation } from "../../../types/Annotation";
 import { getMaskBoundingBox } from "../../../services/StatisticService";
+import styles from "./Statistic.module.css";
 
 interface CroppedCanvasProps {
 	imageUrl: string;
@@ -50,5 +51,5 @@ export default function CroppedCanvas({
 		img.src = imageUrl;
 	}, [imageUrl, annotation, imageWidth, imageHeight]);
 
-	return <canvas ref={canvasRef} className="stat-crop-canvas" />;
+	return <canvas ref={canvasRef} className={styles.statCropCanvas} />;
 }

@@ -3,6 +3,7 @@ import { useProject } from "../../../features/ProjectAnnotation/context";
 import StatisticCanvas from "../../layout/StatisticCanvas";
 import ImageLevelStatisticView from "../../layout/ImageLevelStatisticView";
 import InstanceLevelStatisticView from "../../layout/InstanceLevelStatisticView";
+import styles from "../../common/Statistic/Statistic.module.css";
 
 export const StatisticPanelID = "statistic-panel";
 
@@ -14,17 +15,15 @@ export function StatisticPanel() {
 
 	return (
 		<>
-			{/* Left — select-only canvas */}
-			<div className="stat-left">
+			<div className={styles.statLeft}>
 				<StatisticCanvas />
 			</div>
 
-			{/* Right — statistics pane (split top/bottom) */}
-			<div className="stat-right">
-				<div className="stat-right__top">
+			<div className={styles.statRight}>
+				<div className={styles.statRightTop}>
 					<ImageLevelStatisticView data={data} labels={state.labels} />
 				</div>
-				<div className="stat-right__bottom">
+				<div className={styles.statRightBottom}>
 					<InstanceLevelStatisticView
 						data={data}
 						labels={state.labels}

@@ -6,6 +6,7 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
+import styles from "./PopMessager.module.css";
 import PopMessager, {
   type ModalButton,
   type PopMessagerProps,
@@ -192,7 +193,7 @@ export function PopMessageProvider({ children }: { children: ReactNode }) {
                 buttons={modal.buttons}
               />
             )}
-            <div className="modal-pop-backdrop" />
+            <div className={styles.modalPopBackdrop} />
           </>,
           document.body,
         )}

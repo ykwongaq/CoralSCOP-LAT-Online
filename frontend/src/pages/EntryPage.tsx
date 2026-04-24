@@ -1,4 +1,4 @@
-import "../App.css";
+import styles from "./EntryPage.module.css";
 import backgroundImage from "../assets/images/CoralSCOP_Homepage.jpg";
 import titleImage from "../assets/images/home-title.svg";
 import { useNavigate } from "react-router-dom";
@@ -7,13 +7,13 @@ function EntryPage() {
   const navigate = useNavigate();
 
   return (
-    <div className="home">
-      <img className="bg" src={backgroundImage} alt="" />
-      <div className="home__content">
+    <div className={styles.home}>
+      <img className={styles.bg} src={backgroundImage} alt="" />
+      <div className={styles.homeContent}>
         <div>
-          <img className="title" src={titleImage} alt="" />
+          <img className={styles.title} src={titleImage} alt="" />
           <p>Segment any coral in the images.</p>
-          <div className="button-row">
+          <div className={styles.buttonRow}>
             <button
               id="create-project-button"
               className="button"

@@ -4,6 +4,7 @@ import Button from "../../common/Button";
 import { useProject } from "../../../features/ProjectAnnotation/context";
 import { usePopMessage } from "../../common/PopUpMessages/PopMessageContext";
 import { loadProject } from "../../../services/LoadProjectService";
+import styles from "../../common/ImageUploader.module.css";
 
 export const UploadProjectPanelID = "project-upload-panel";
 
@@ -89,12 +90,12 @@ export function UploadProjectPanel() {
       <p className="main-section__title">Open Project</p>
       <div className="main-section__content">
         <div
-          className={`drop-container drop-container--large${isDragging ? " drop-container--active" : ""}`}
+          className={`${styles.dropContainer} ${styles.dropContainerLarge}${isDragging ? ` ${styles.dropContainerActive}` : ""}`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
         >
-          <div className="drop-text">
+          <div className={styles.dropText}>
             {selectedFile ? (
               <span>{selectedFile.name}</span>
             ) : (

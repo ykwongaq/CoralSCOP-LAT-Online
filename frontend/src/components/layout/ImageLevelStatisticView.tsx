@@ -19,6 +19,7 @@ import {
 	getImageStatistics,
 } from "../../services/StatisticService";
 import SummaryCard from "../common/Statistic/SummaryCard";
+import styles from "../common/Statistic/Statistic.module.css";
 
 interface Props {
 	data: Data | null;
@@ -33,27 +34,10 @@ export default function ImageLevelStatisticView({ data, labels }: Props) {
 	const barData = prepareBarData(coverage);
 
 	return (
-		<div className="stat-section">
-			<h3 className="stat-section__title">Image Statistics</h3>
+		<div className={styles.statSection}>
+			<h3 className={styles.statSectionTitle}>Image Statistics</h3>
 
-			{/* <div className="stat-summary-row">
-				<div className="stat-summary-card">
-					<span className="stat-summary-card__value">
-						{stats.totalCoveragePct.toFixed(1)}%
-					</span>
-					<span className="stat-summary-card__label">Total Coverage</span>
-				</div>
-				<div className="stat-summary-card">
-					<span className="stat-summary-card__value">{stats.totalAnnotations}</span>
-					<span className="stat-summary-card__label">Annotations</span>
-				</div>
-				<div className="stat-summary-card">
-					<span className="stat-summary-card__value">{stats.activeLabelCount}</span>
-					<span className="stat-summary-card__label">Categories</span>
-				</div>
-			</div> */}
-
-			<div className="stat-summary-row">
+			<div className={styles.statSummaryRow}>
 				<SummaryCard
 					statistic={`${stats.totalCoveragePct.toFixed(1)}%`}
 					name="Total Coverage"
@@ -69,9 +53,9 @@ export default function ImageLevelStatisticView({ data, labels }: Props) {
 			</div>
 
 			{pieData.length > 0 && (
-				<div className="stat-charts-row">
-					<div className="stat-chart-wrap">
-						<p className="stat-chart-label">Coverage Breakdown</p>
+				<div className={styles.statChartsRow}>
+					<div className={styles.statChartWrap}>
+						<p className={styles.statChartLabel}>Coverage Breakdown</p>
 						<ResponsiveContainer width="100%" height="100%">
 							<PieChart>
 								<defs>
@@ -135,8 +119,8 @@ export default function ImageLevelStatisticView({ data, labels }: Props) {
 					</div>
 
 					{barData.length > 0 && (
-						<div className="stat-chart-wrap">
-							<p className="stat-chart-label">Coverage by Category (%)</p>
+						<div className={styles.statChartWrap}>
+							<p className={styles.statChartLabel}>Coverage by Category (%)</p>
 							<ResponsiveContainer width="100%" height="100%">
 								<BarChart
 									data={barData}
@@ -187,7 +171,7 @@ export default function ImageLevelStatisticView({ data, labels }: Props) {
 				</div>
 			)}
 
-			{!data && <p className="stat-empty-hint">No image selected.</p>}
+			{!data && <p className={styles.statEmptyHint}>No image selected.</p>}
 		</div>
 	);
 }

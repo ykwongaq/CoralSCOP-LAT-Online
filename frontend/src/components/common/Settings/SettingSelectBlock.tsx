@@ -1,3 +1,5 @@
+import styles from "./Settings.module.css";
+
 interface SettingSelectBlockProps {
   title: string;
   description: string;
@@ -21,12 +23,12 @@ export default function SettingSelectBlock({
   };
 
   return (
-    <div className="setting-item" id={id}>
-      <label className="setting-item__title" htmlFor={`${id}-select`}>
+    <div className={styles.settingItem} id={id}>
+      <label className={styles.settingItemTitle} htmlFor={`${id}-select`}>
         {title}
       </label>
-      <p className="setting-item__desc">{description}</p>
-      <div className="select-blk">
+      <p className={styles.settingItemDesc}>{description}</p>
+      <div className={styles.selectBlk}>
         <select
           id={`${id}-select`}
           value={value ?? ""}

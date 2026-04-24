@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import styles from "./AnnotationSettings.module.css";
 
 interface AnnotationToggleBlockProps {
   name: string;
@@ -27,16 +28,16 @@ export function AnnotationToggleBlock({
 
   return (
     <div className="side-bar__blk">
-      <div className="toggle-blk">
-        <p className="toggle-blk__title">{name}</p>
-        <label className="switch">
+      <div className={styles.toggleBlk}>
+        <p className={styles.toggleBlkTitle}>{name}</p>
+        <label className={styles.switch}>
           <input
             type="checkbox"
             id={id}
             checked={isChecked}
             onChange={handleToggle}
           />
-          <span className="switch__slider"></span>
+          <span className={styles.switchSlider}></span>
         </label>
       </div>
     </div>

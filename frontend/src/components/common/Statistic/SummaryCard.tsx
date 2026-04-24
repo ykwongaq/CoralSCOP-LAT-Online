@@ -1,3 +1,5 @@
+import styles from "./Statistic.module.css";
+
 interface SummaryCardProps {
     statistic: string;
     name: string;
@@ -5,9 +7,9 @@ interface SummaryCardProps {
 
 export default function SummaryCard({ statistic, name }: SummaryCardProps) {
     return (
-        <div className="stat-summary-card">
-            <span className="stat-summary-card__value">{statistic}</span>
-            <span className="stat-summary-card__label">{name}</span>
+        <div className={styles.statSummaryCard}>
+            <span className={styles.statSummaryCardValue}>{statistic}</span>
+            <span className={styles.statSummaryCardLabel}>{name}</span>
         </div>
     );
 }

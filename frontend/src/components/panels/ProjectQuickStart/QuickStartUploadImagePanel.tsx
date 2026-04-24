@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import BottomBar from "../../layout/BottomBar";
 import Button from "../../common/Button";
 import ImageDisplayBlock from "./ImageDisplayBlock";
+import styles from "./QuickStart.module.css";
 import { useProject } from "../../../features/ProjectAnnotation/context";
 import { usePopMessage } from "../../common/PopUpMessages/PopMessageContext";
 import { loadProject } from "../../../services/LoadProjectService";
@@ -169,12 +170,12 @@ export default function QuickStartUploadImagePanel() {
 					<ImageDisplayBlock imagePreview={imagePreview} />
 				) : (
 					<div
-						className={`drop-container drop-container--large${isDragging ? " drop-container--active" : ""}`}
+						className={`${styles.dropContainer} ${styles.dropContainerLarge}${isDragging ? ` ${styles.dropContainerActive}` : ""}`}
 						onDragOver={handleDragOver}
 						onDragLeave={handleDragLeave}
 						onDrop={handleDrop}
 					>
-						<div className="drop-text">
+						<div className={styles.dropText}>
 							Drop an image here. Or{" "}
 							<button className="button select-link" onClick={openFileSelect}>
 								browse
@@ -193,7 +194,7 @@ export default function QuickStartUploadImagePanel() {
 			</div>
 
 			<BottomBar>
-				<div className="quick-start-upload-image-panel__buttons">
+				<div className={styles.buttons}>
 					{selectedImage && (
 						<Button onClick={handleClearImage} disabled={isProcessing}>
 							Clear

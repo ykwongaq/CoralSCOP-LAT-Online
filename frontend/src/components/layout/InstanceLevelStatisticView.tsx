@@ -4,6 +4,7 @@ import type { RLE } from "../../types/RLE";
 import { computeBleachingPercentages } from "../../services/StatisticService";
 import StatisticTable from "../common/Statistic/StatisticTable";
 import type { InstanceRowData } from "../common/Statistic/StatisticTableRow";
+import styles from "../common/Statistic/Statistic.module.css";
 
 // ---------------------------------------------------------------------------
 // Main export
@@ -79,9 +80,9 @@ export default function InstanceLevelStatisticView({
 
 	if (selectedAnnotations.length === 0) {
 		return (
-			<div className="stat-section stat-section--instance">
-				<h3 className="stat-section__title">Instance Statistics</h3>
-				<p className="stat-empty-hint">
+			<div className={`${styles.statSection} ${styles.statSectionInstance}`}>
+				<h3 className={styles.statSectionTitle}>Instance Statistics</h3>
+				<p className={styles.statEmptyHint}>
 					Click or drag on the canvas to select annotations.
 				</p>
 			</div>
@@ -89,10 +90,10 @@ export default function InstanceLevelStatisticView({
 	}
 
 	return (
-		<div className="stat-section stat-section--instance">
-			<h3 className="stat-section__title">
+		<div className={`${styles.statSection} ${styles.statSectionInstance}`}>
+			<h3 className={styles.statSectionTitle}>
 				Instance Statistics
-				<span className="stat-section__count">
+				<span className={styles.statSectionCount}>
 					&nbsp;({selectedAnnotations.length} selected)
 				</span>
 			</h3>

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { PopMessagerProps } from "./PopMessager";
+import styles from "./PopMessager.module.css";
 
 export interface TextInputMessagerProps extends PopMessagerProps {
   defaultValue?: string;
@@ -32,19 +33,19 @@ export default function TextInputMessager({
         ];
 
   return (
-    <div className="modal-pop">
-      <div className="modal-pop__inner">
-        <p className="modal-pop__lg-text">{title}</p>
-        <p className="modal-pop__text">{content}</p>
+    <div className={styles.modalPop}>
+      <div className={styles.modalPopInner}>
+        <p className={styles.modalPopLgText}>{title}</p>
+        <p className={styles.modalPopText}>{content}</p>
         <input
           type="text"
-          className="modal-pop__input"
+          className={styles.modalPopInput}
           value={value}
           onChange={(e) => setValue(e.target.value)}
           placeholder={placeholder}
         />
         {effectiveButtons.length > 0 && (
-          <div className="modal-pop__row">
+          <div className={styles.modalPopRow}>
             {effectiveButtons.map((btn, i) => (
               <button key={i} className="button" onClick={btn.onClick}>
                 {btn.label}

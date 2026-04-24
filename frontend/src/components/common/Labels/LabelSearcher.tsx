@@ -1,3 +1,5 @@
+import styles from "./Labels.module.css";
+
 interface LabelSearcherProps {
 	value: string;
 	onChange: (value: string) => void;
@@ -5,10 +7,10 @@ interface LabelSearcherProps {
 
 export function LabelSearcher({ value, onChange }: LabelSearcherProps) {
 	return (
-		<div className="input-blk">
-			<p className="input-blk__label">Label Search</p>
-			<div className="input-blk__wrap">
-				<span className="input-blk__icon">
+		<div className={styles.inputBlk}>
+			<p className={styles.inputBlkLabel}>Label Search</p>
+			<div className={styles.inputBlkWrap}>
+				<span className={styles.inputBlkIcon}>
 					<span className="ico-search"></span>
 				</span>
 				<input
