@@ -1,6 +1,9 @@
 import { useEffect } from "react";
-import type { AnnotationCommand } from "../utils";
-import { normalizeKey, KEYMAP } from "../utils";
+import {
+	type AnnotationCommand,
+	KEYMAP,
+	normalizeKey,
+} from "../types/Annotation/AnnotationCommand";
 
 /**
  * Thin bridge: listens for keydown events, looks up the current mode's KEYMAP,
@@ -18,8 +21,7 @@ export function useAnnotationKeyboard(
 			// Skip when the user is typing in an input field or contentEditable element
 			const target = e.target as HTMLElement;
 			const tag = target.tagName;
-			if (tag === "INPUT" || tag === "TEXTAREA" || target.isContentEditable)
-				return;
+			if (tag === "INPUT" || tag === "TEXTAREA" || target.isContentEditable) return;
 
 			const key = normalizeKey(e);
 			const cmd = KEYMAP[mode][key];

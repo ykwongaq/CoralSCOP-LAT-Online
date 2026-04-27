@@ -1,18 +1,15 @@
+import type { Annotation, Data } from "../types/Annotation";
 import { decodeRLE, decodeRleMasks } from "./cocoRle";
 import { hexToRgb } from "./color";
-import type {
-	Annotation,
-	Data,
-	AnnotationSessionState,
-	PendingAnnotation,
-	VisualizationSetting,
-} from "../types";
 import {
 	getLabelColor,
 	getPendingMaskColor,
 	getSelectedMaskColor,
 	getTextColor,
-} from "./LabelColorMap";
+} from "../components/common/LabelColorMap";
+import type AnnotationSessionState from "../types/Annotation/AnnotationSession";
+import type { PendingAnnotation } from "../types/Annotation/PendingAnnotation";
+import type { VisualizationSetting } from "../types/Annotation/VisualizationSetting";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -82,9 +79,7 @@ export async function buildLayers(
 		data.annotations.map((ann) => ann.segmentation),
 	);
 
-	const hiddenLabelIds = new Set(
-		visualizationSetting.hiddingLabels.map((label) => label.id),
-	);
+	const hiddenLabelIds = new Set(visualizationSetting.hiddingLabels.map(label => label.id));
 
 	function isMaskSelected(annotation: Annotation): boolean {
 		return annotationSessionState.selectedAnnotations.some(
@@ -98,7 +93,7 @@ export async function buildLayers(
 
 	for (let annIdx = 0; annIdx < data.annotations.length; annIdx++) {
 		const ann = data.annotations[annIdx];
-
+		
 		if (isLabelHidden(ann.labelId)) {
 			continue;
 		}

@@ -7,34 +7,30 @@ import {
 	useState,
 	type ReactNode,
 } from "react";
-import {
-	useAnnotationSession,
-	useProject,
-	useVisualizationSetting,
-} from "../store";
-import type { AnnotationCommand } from "../types";
+import { useAnnotationSession } from "../features/AnnotationSession/context";
+import { useProject } from "../features/ProjectAnnotation/context";
+import { useVisualizationSetting } from "../features/VisualizationSetting/context";
+import type { AnnotationCommand } from "../types/Annotation/AnnotationCommand";
+
 /**
  * Owns all annotation command logic and the UI state for label pickers.
  * Returns the full execute map plus the picker open/close state so that
  * AnnotationPanel (and any other consumer) can remain thin rendering shells.
  */
 function useCreateAnnotationCommands() {
-	const { annotationSessionState, annotationSessionDispatch } =
+	const { annotationSessionState, dispatchAnnotationSession } =
 		useAnnotationSession();
-	const { visualizationSettingState, visualizationSettingDispatch } =
+	const { visualizationSetting, updateVisualizationSetting } =
 		useVisualizationSetting();
-	const { projectState, projectDispatch } = useProject();
+	const { state: projectState, dispatch: projectDispatch } = useProject();
 
 	const mode = annotationSessionState.annotationMode;
 	const [isLabelPanelOpen, setIsLabelPanelOpen] = useState(false);
 	const [isActivateLabelOpen, setIsActivateLabelOpen] = useState(false);
 
 	const handleToggleMasks = useCallback(() => {
-		visualizationSettingDispatch({
-			type: "SET_SHOW_MASKS",
-			payload: !visualizationSettingState.showMasks,
-		});
-	}, [visualizationSettingState.showMasks, visualizationSettingDispatch]);
+		updateVisualizationSetting({ showMasks: !visualizationSetting.showMasks });
+	}, [visualizationSetting.showMasks, updateVisualizationSetting]);
 
 	const handleRemove = useCallback(() => {
 		projectDispatch({
@@ -44,18 +40,18 @@ function useCreateAnnotationCommands() {
 				annotationIds: annotationSessionState.selectedAnnotations,
 			},
 		});
-		annotationSessionDispatch({ type: "CLEAR_SELECTION" });
+		dispatchAnnotationSession({ type: "CLEAR_SELECTION" });
 	}, [
-		annotationSessionDispatch,
+		dispatchAnnotationSession,
 		projectDispatch,
 		annotationSessionState.currentDataIndex,
 		annotationSessionState.selectedAnnotations,
 	]);
 
 	const handleClearPrompts = useCallback(() => {
-		annotationSessionDispatch({ type: "CLEAR_POINT_PROMPTS" });
-		annotationSessionDispatch({ type: "CLEAR_PENDING_MASK" });
-	}, [annotationSessionDispatch]);
+		dispatchAnnotationSession({ type: "CLEAR_POINT_PROMPTS" });
+		dispatchAnnotationSession({ type: "CLEAR_PENDING_MASK" });
+	}, [dispatchAnnotationSession]);
 
 	const handleConfirmMask = useCallback(() => {
 		const labelId = annotationSessionState.activateLabel
@@ -70,28 +66,28 @@ function useCreateAnnotationCommands() {
 				labelId,
 			},
 		});
-		annotationSessionDispatch({ type: "CLEAR_PENDING_MASK" });
-		annotationSessionDispatch({ type: "CLEAR_POINT_PROMPTS" });
+		dispatchAnnotationSession({ type: "CLEAR_PENDING_MASK" });
+		dispatchAnnotationSession({ type: "CLEAR_POINT_PROMPTS" });
 	}, [
 		annotationSessionState.activateLabel,
 		annotationSessionState.currentDataIndex,
 		annotationSessionState.pendingMask,
 		projectDispatch,
-		annotationSessionDispatch,
+		dispatchAnnotationSession,
 	]);
 
 	const handleSwitchToAdd = useCallback(() => {
-		annotationSessionDispatch({ type: "SET_ANNOTATION_MODE", payload: "add" });
-	}, [annotationSessionDispatch]);
+		dispatchAnnotationSession({ type: "SET_ANNOTATION_MODE", payload: "add" });
+	}, [dispatchAnnotationSession]);
 
 	const handleSwitchToSelect = useCallback(() => {
-		annotationSessionDispatch({ type: "CLEAR_PENDING_MASK" });
-		annotationSessionDispatch({ type: "CLEAR_POINT_PROMPTS" });
-		annotationSessionDispatch({
+		dispatchAnnotationSession({ type: "CLEAR_PENDING_MASK" });
+		dispatchAnnotationSession({ type: "CLEAR_POINT_PROMPTS" });
+		dispatchAnnotationSession({
 			type: "SET_ANNOTATION_MODE",
 			payload: "select",
 		});
-	}, [annotationSessionDispatch]);
+	}, [dispatchAnnotationSession]);
 
 	const handleToggleLabels = useCallback(() => {
 		if (mode === "select") setIsLabelPanelOpen((prev) => !prev);
@@ -114,10 +110,10 @@ function useCreateAnnotationCommands() {
 						},
 					});
 				});
-				annotationSessionDispatch({ type: "CLEAR_SELECTION" });
+				dispatchAnnotationSession({ type: "CLEAR_SELECTION" });
 				setIsLabelPanelOpen(false);
 			} else if (isActivateLabelOpen) {
-				annotationSessionDispatch({ type: "SET_ACTIVE_LABEL", payload: label });
+				dispatchAnnotationSession({ type: "SET_ACTIVE_LABEL", payload: label });
 				setIsActivateLabelOpen(false);
 			}
 		},
@@ -128,30 +124,30 @@ function useCreateAnnotationCommands() {
 			annotationSessionState.selectedAnnotations,
 			annotationSessionState.currentDataIndex,
 			projectDispatch,
-			annotationSessionDispatch,
+			dispatchAnnotationSession,
 		],
 	);
 
 	const handlePrevImage = useCallback(() => {
 		const currentDataIndex = annotationSessionState.currentDataIndex;
 		if (currentDataIndex > 0) {
-			annotationSessionDispatch({
+			dispatchAnnotationSession({
 				type: "SET_CURRENT_DATA_INDEX",
 				payload: currentDataIndex - 1,
 			});
 		}
-	}, [annotationSessionDispatch, annotationSessionState.currentDataIndex]);
+	}, [dispatchAnnotationSession, annotationSessionState.currentDataIndex]);
 
 	const handleNextImage = useCallback(() => {
 		const currentDataIndex = annotationSessionState.currentDataIndex;
 		if (currentDataIndex < projectState.dataList.length - 1) {
-			annotationSessionDispatch({
+			dispatchAnnotationSession({
 				type: "SET_CURRENT_DATA_INDEX",
 				payload: currentDataIndex + 1,
 			});
 		}
 	}, [
-		annotationSessionDispatch,
+		dispatchAnnotationSession,
 		annotationSessionState.currentDataIndex,
 		projectState.dataList.length,
 	]);
@@ -200,9 +196,7 @@ function useCreateAnnotationCommands() {
 	};
 }
 
-type AnnotationCommandsContextValue = ReturnType<
-	typeof useCreateAnnotationCommands
->;
+type AnnotationCommandsContextValue = ReturnType<typeof useCreateAnnotationCommands>;
 
 const AnnotationCommandsContext =
 	createContext<AnnotationCommandsContextValue | null>(null);

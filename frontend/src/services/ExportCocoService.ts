@@ -1,9 +1,7 @@
 import JSZip from "jszip";
-import type { ProjectState } from "../types/Annotation/Project";
-import type { RLE } from "../types/RLE";
-import type { CompressedRLE } from "../types/CompressedRLE";
 import { apiClient } from "./ApiClient";
 import triggerDownload from "../utils/download";
+import type { ProjectState, RLE, CompressedRLE } from "../types";
 
 // ---------------------------------------------------------------------------
 // Export-specific types (segmentation uses CompressedRLE, not the in-memory RLE)

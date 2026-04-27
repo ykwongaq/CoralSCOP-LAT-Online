@@ -6,7 +6,7 @@ import {
 	type DragEvent,
 	type ChangeEvent,
 } from "react";
-import type { ImageSelectionData } from "../types";
+import type { ImageSelectionData } from "../types/ProjectCreation";
 
 const IMAGE_MIME_TYPES = new Set([
 	"image/jpeg",

@@ -1,12 +1,10 @@
 import JSZip from "jszip";
-import type {
-	ProjectState,
-	Data,
-	Annotation,
-	Label,
-	ScaledLine,
-	AnnotationFile,
-} from "../types";
+import type { ProjectState } from "../types/Annotation/Project";
+import type { Data } from "../types/Annotation/Data";
+import type { Annotation } from "../types/Annotation/Annotation";
+import type { Label } from "../types/Annotation/Label";
+import type { ScaledLine } from "../types/Annotation/ScaledLine";
+import { type AnnotationFile } from "../types/ProjectCreation";
 
 export interface LoadProjectCallbacks {
 	onLoading?: () => void;
@@ -115,7 +113,9 @@ export async function loadProject(
 
 		// Phase 2 (70–95 %): resolve SAM session from the current project format
 		if (projectInfoEntry === null) {
-			throw new Error("Unsupported project file: missing project_info.json.");
+			throw new Error(
+				"Unsupported project file: missing project_info.json.",
+			);
 		}
 
 		const info = JSON.parse(

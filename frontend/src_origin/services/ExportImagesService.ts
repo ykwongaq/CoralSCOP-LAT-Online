@@ -1,6 +1,6 @@
 import JSZip from "jszip";
+import type { ProjectState } from "../types/Annotation/Project";
 import triggerDownload from "../utils/download";
-import type { ProjectState } from "../types";
 
 /**
  * Exports all original images from the project as a ZIP file.

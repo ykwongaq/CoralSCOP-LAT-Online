@@ -1,6 +1,6 @@
-import type { ProjectState } from "../types/Annotation/Project";
 import triggerDownload from "../utils/download";
 import { calculatePixelScale, countRLEPixels } from "./StatisticService";
+import type { ProjectState } from "../types";
 
 export type StatisticsExportFormat = "csv" | "excel";
 
@@ -38,7 +38,10 @@ function buildStatisticsRows(state: ProjectState): StatisticsExportRow[] {
 		const pixelScale = calculatePixelScale(data.scaledLineList ?? []);
 		const hasScale = pixelScale.squareMetersPerPixel > 0;
 		const totalPixels = data.imageData.width * data.imageData.height;
-		const byLabelId = new Map<number, { pixels: number; instanceCount: number }>();
+		const byLabelId = new Map<
+			number,
+			{ pixels: number; instanceCount: number }
+		>();
 
 		for (const annotation of data.annotations) {
 			const current = byLabelId.get(annotation.labelId) ?? {
@@ -55,16 +58,16 @@ function buildStatisticsRows(state: ProjectState): StatisticsExportRow[] {
 		)) {
 			const label = labelMap.get(labelId);
 			const areaPct = totalPixels > 0 ? (stats.pixels / totalPixels) * 100 : 0;
-			const areaPerLabel = hasScale ? stats.pixels * pixelScale.value : stats.pixels;
+			const areaPerLabel = hasScale
+				? stats.pixels * pixelScale.value
+				: stats.pixels;
 
 			rows.push({
 				"image name": data.imageData.imageName,
 				label: label?.name ?? `label_${labelId}`,
 				"label id": labelId,
 				status:
-					(label?.status.length ?? 0) > 0
-						? label!.status.join(", ")
-						: "N/A",
+					(label?.status.length ?? 0) > 0 ? label!.status.join(", ") : "N/A",
 				"instance count": stats.instanceCount,
 				"% of area per label": Number(areaPct.toFixed(2)),
 				"area per label": Number(areaPerLabel.toFixed(hasScale ? 4 : 0)),
@@ -101,7 +104,9 @@ function escapeHtml(value: string): string {
 }
 
 function buildExcelContent(rows: StatisticsExportRow[]): string {
-	const tableHead = COLUMN_HEADERS.map((header) => `<th>${escapeHtml(header)}</th>`).join("");
+	const tableHead = COLUMN_HEADERS.map(
+		(header) => `<th>${escapeHtml(header)}</th>`,
+	).join("");
 	const tableRows = rows
 		.map(
 			(row) =>

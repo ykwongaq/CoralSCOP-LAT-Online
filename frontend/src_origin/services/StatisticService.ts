@@ -1,10 +1,13 @@
 import type { RLE } from "../types/RLE";
-import type { Label, Data, Annotation, ScaledLine } from "../types";
+import type { Label, Data, Annotation } from "../types/Annotation";
+import { getLabelColor } from "../components/common/LabelColorMap";
+import { decodeRLE } from "../utils/cocoRle";
+import type { ScaledLine } from "../types/Annotation/ScaledLine";
+
 export interface CoverageData {
 	totalPct: number;
 	byLabel: { name: string; pixels: number; pct: number; color: string }[];
 }
-import { getLabelColor, decodeRLE } from "../utils";
 
 /**
  * Counts the number of pixels in an RLE-encoded mask.
@@ -23,10 +26,7 @@ export function countRLEPixels(rle: RLE): number {
  * Calculates coverage statistics for a dataset.
  * Returns the total coverage percentage and per-label breakdown.
  */
-export function calculateCoverageData(
-	data: Data | null,
-	labels: Label[],
-): CoverageData {
+export function calculateCoverageData(data: Data | null, labels: Label[]): CoverageData {
 	if (!data) return { totalPct: 0, byLabel: [] };
 	const total = data.imageData.width * data.imageData.height;
 	if (total === 0) return { totalPct: 0, byLabel: [] };
@@ -54,9 +54,7 @@ export function calculateCoverageData(
 /**
  * Filters coverage data to return only labels with non-zero coverage.
  */
-export function getActiveLabels(
-	coverage: CoverageData,
-): CoverageData["byLabel"] {
+export function getActiveLabels(coverage: CoverageData): CoverageData["byLabel"] {
 	return coverage.byLabel.filter((l) => l.pixels > 0);
 }
 
@@ -100,10 +98,7 @@ export function prepareBarData(coverage: CoverageData): Array<{
 /**
  * Gets basic image-level statistics.
  */
-export function getImageStatistics(
-	data: Data | null,
-	coverage: CoverageData,
-): {
+export function getImageStatistics(data: Data | null, coverage: CoverageData): {
 	totalAnnotations: number;
 	activeLabelCount: number;
 	totalCoveragePct: number;
@@ -159,10 +154,7 @@ export function getMaskBoundingBox(
  * @param mask - Binary mask as Uint8Array
  * @returns Bleaching percentage (0-100)
  */
-export function calculateBleaching(
-	pixelData: ImageData,
-	mask: Uint8Array,
-): number {
+export function calculateBleaching(pixelData: ImageData, mask: Uint8Array): number {
 	const { data } = pixelData;
 	let total = 0;
 	let bleached = 0;
@@ -257,6 +249,7 @@ export function getCombinedBoundingBox(
 	return { minX, minY, maxX, maxY };
 }
 
+
 export interface PixelScaleResult {
 	value: number;
 	unit: "mm²" | "cm²" | "m²";
@@ -277,7 +270,8 @@ function pickBestAreaUnit(squareMetersPerPixel: number): {
 		areaUnits.find(({ factor }) => {
 			const convertedValue = squareMetersPerPixel * factor;
 			return convertedValue >= 0.1 && convertedValue < 1000;
-		}) ?? (squareMetersPerPixel * 1e6 < 0.1 ? areaUnits[2] : areaUnits[0]);
+		}) ??
+		(squareMetersPerPixel * 1e6 < 0.1 ? areaUnits[2] : areaUnits[0]);
 
 	return {
 		value: squareMetersPerPixel * preferredUnit.factor,

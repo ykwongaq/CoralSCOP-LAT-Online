@@ -1,8 +1,9 @@
 import JSZip from "jszip";
+import type { ProjectState } from "../types/Annotation/Project";
+import type { Data } from "../types/Annotation";
+import type { VisualizationSetting } from "../types/Annotation/VisualizationSetting";
 import { buildLayers } from "../utils/canvasLayers";
 import triggerDownload from "../utils/download";
-
-import type { ProjectState, Data, VisualizationSetting } from "../types";
 
 // Max images rendered concurrently. Each image's buildLayers already fans out
 // to navigator.hardwareConcurrency workers for RLE decoding, so keep this low

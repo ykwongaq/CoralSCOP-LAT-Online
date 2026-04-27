@@ -1,4 +1,5 @@
 import type { RLE } from "../types/RLE";
+
 // ---------------------------------------------------------------------------
 // Inline Web Worker source — runs decoding off the main thread.
 // Must be self-contained (no imports).

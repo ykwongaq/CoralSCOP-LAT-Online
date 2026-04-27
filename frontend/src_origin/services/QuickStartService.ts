@@ -1,6 +1,6 @@
 import type { ApiRequestCallbacks, ApiRequestHandle } from "../types/api";
+import type { ProjectConfig } from "../types/ProjectCreation";
 import { apiClient } from "./ApiClient";
-import type { ProjectConfig } from "../types";
 
 export interface QuickStartRequest {
 	image: File;
