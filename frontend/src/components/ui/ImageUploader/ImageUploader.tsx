@@ -1,7 +1,6 @@
-import type { ImageData } from "../../types";
-import { useImageUploader } from "../../hooks/useImageUploader";
 import styles from "./ImageUploader.module.css";
-
+import type { ImageData } from "../../../types";
+import { useImageUploader } from "../../../hooks/useImageUploader";
 interface ImageUploaderProps {
 	onImages: (images: ImageData[]) => void;
 }
