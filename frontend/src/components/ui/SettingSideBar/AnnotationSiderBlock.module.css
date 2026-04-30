@@ -1,0 +1,24 @@
+.side-bar__title {
+  color: var(--text-text-page-heading);
+  font-size: 24px;
+  font-weight: 600;
+  padding-inline: var(--side-padding);
+}
+.side-bar__sub-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-text-primary1);
+}
+.side-bar__blk {
+  padding-block: 20px;
+}
+.side-bar__blk:has(+ .side-bar__blk) {
+  border-bottom: 1px solid #f7f8f9;
+}
+.side-bar__blk .slider-blk {
+  margin-inline: var(--side-padding);
+}
+.side-bar__bottom {
+  flex: 1;
+  overflow: auto;
+}
