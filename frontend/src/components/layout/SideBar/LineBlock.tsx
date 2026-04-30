@@ -1,47 +1,72 @@
-import type { ScaledLine } from "../../../types/annoations/ScaledLine";
-import styles from "./LineBlock.module.css";
+import styles from "./ScaleDefine.module.css";
 
-export interface LineBlockProps {
+import { useAnnotationSession, useProject } from "../../../store";
+import type { ScaledLine } from "../../../types";
+
+interface LineBlockProps {
 	line: ScaledLine;
-	isSelected: boolean;
-	onSelect: (id: number) => void;
-	onScaleChange: (id: number, scale: number) => void;
-	onUnitChange: (id: number, unit: ScaledLine["unit"]) => void;
-	onDelete: (id: number) => void;
 }
 
-export default function LineBlock({
-	line,
-	isSelected,
-	onSelect,
-	onScaleChange,
-	onUnitChange,
-	onDelete,
-}: LineBlockProps) {
+export default function LineBlock({ line }: LineBlockProps) {
+	const { projectDispatch, projectState } = useProject();
+	const { annotationSessionState, annotationSessionDispatch } =
+		useAnnotationSession();
+	const currentData =
+		projectState.dataList[annotationSessionState.currentDataIndex];
+
+	const isSelected = annotationSessionState.selectedScaledLineId === line.id;
 	const pixelLength = Math.hypot(
 		line.end.x - line.start.x,
 		line.end.y - line.start.y,
 	).toFixed(1);
 
 	const handleSelect = () => {
-		onSelect(line.id);
+		annotationSessionDispatch({
+			type: "SELECT_SCALED_LINE_ID",
+			payload: line.id,
+		});
 	};
 
 	const handleScaleChange = (value: string) => {
+		if (!currentData) return;
 		const parsedValue = Number(value);
-		onScaleChange(
-			line.id,
-			Number.isFinite(parsedValue) ? Math.max(0, parsedValue) : 0,
-		);
+		projectDispatch({
+			type: "UPDATE_SCALED_LINE",
+			payload: {
+				dataId: currentData.id,
+				lineId: line.id,
+				updates: {
+					scale: Number.isFinite(parsedValue) ? Math.max(0, parsedValue) : 0,
+				},
+			},
+		});
 	};
 
 	const handleUnitChange = (unit: ScaledLine["unit"]) => {
-		onUnitChange(line.id, unit);
+		if (!currentData) return;
+		projectDispatch({
+			type: "UPDATE_SCALED_LINE",
+			payload: {
+				dataId: currentData.id,
+				lineId: line.id,
+				updates: { unit },
+			},
+		});
 	};
 
 	const handleDelete = (e: React.MouseEvent<HTMLButtonElement>) => {
 		e.stopPropagation();
-		onDelete(line.id);
+		if (!currentData) return;
+		projectDispatch({
+			type: "DELETE_SCALED_LINE",
+			payload: { dataId: currentData.id, lineId: line.id },
+		});
+		if (isSelected) {
+			annotationSessionDispatch({
+				type: "SELECT_SCALED_LINE_ID",
+				payload: null,
+			});
+		}
 	};
 
 	return (
