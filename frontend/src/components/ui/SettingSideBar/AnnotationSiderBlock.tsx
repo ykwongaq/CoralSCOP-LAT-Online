@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import styles from "./AnnotationSiderBlock.module.css";
 
 interface AnnotationSiderBlockProps {
 	name: string;
@@ -93,10 +94,10 @@ export default function AnnotationSiderBlock({
 
 	return (
 		<>
-			<p className="side-bar__title">{name}</p>
-			<div className="side-bar__blk">
-				<div className="slider-blk" id={id}>
-					<div className="slider-blk__inner">
+			<p className={styles.sideBarTitle}>{name}</p>
+			<div className={styles.sideBarBlock}>
+				<div className={styles.sliderBlock} id={id}>
+					<div className={styles.sliderBlockInner}>
 						<input
 							id={`${id}-slider`}
 							min={minValue}
@@ -114,7 +115,7 @@ export default function AnnotationSiderBlock({
 						value={inputText}
 						onChange={handleTextChange}
 						onBlur={handleTextBlur}
-						className={!isValid ? "input-error" : ""}
+						className={!isValid ? styles.inputError : ""}
 					/>
 				</div>
 			</div>
