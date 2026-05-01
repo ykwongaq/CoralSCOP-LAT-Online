@@ -8,7 +8,7 @@ interface ModeBarProps {
 	children?: React.ReactNode;
 }
 
-export function SelectModeBar({ children }: ModeBarProps) {
+export default function SelectModeBar({ children }: ModeBarProps) {
 	const { annotationSessionState } = useAnnotationSession();
 	const mode = annotationSessionState.annotationMode;
 	const { execute, isLabelPanelOpen, setIsLabelPanelOpen } =

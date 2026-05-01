@@ -9,7 +9,7 @@ interface ModeBarProps {
 	children?: React.ReactNode;
 }
 
-export function AddModeBar({ children }: ModeBarProps) {
+export default function AddModeBar({ children }: ModeBarProps) {
 	const { annotationSessionState } = useAnnotationSession();
 	const mode = annotationSessionState.annotationMode;
 	const { execute, isActivateLabelOpen, setIsActivateLabelOpen } =
