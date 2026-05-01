@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import styles from "../../common/ImageUploader.module.css";
+import styles from "./UploadProjectPlane.module.css";
 
 import { useProject } from "../../../store";
 import { usePopMessage } from "../../ui/Messager";

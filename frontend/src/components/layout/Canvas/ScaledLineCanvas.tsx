@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAnnotationSession, useProject } from "../../../store";
-import { ScaledLine } from "../../../types";
-
+import { type ScaledLine } from "../../../types";
 type Viewport = {
 	scale: number;
 	originX: number;

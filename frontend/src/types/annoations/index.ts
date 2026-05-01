@@ -1,5 +1,4 @@
 export { type Annotation } from "./Annotation";
-export { type AnnotationCommand, normalizeKey, KEYMAP } from "./AnnotationCommand";
 export { type default as AnnotationSessionState } from "./AnnotationSession";
 export { type Data } from "./Data";
 export { type Label } from "./Label";

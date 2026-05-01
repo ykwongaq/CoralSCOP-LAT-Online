@@ -2,7 +2,7 @@ import {
 	type Label,
 	type RLE,
 	type ProjectState,
-	ScaledLine,
+	type ScaledLine,
 } from "../../types";
 
 export const initialProjectAnnotationState: ProjectState = {
@@ -21,7 +21,7 @@ export type ModelOutputCategory = {
 	name: string;
 };
 
-export type ProjectAnnotationAction =
+export type ProjectAction =
 	| { type: "LOAD_PROJECT"; payload: ProjectState }
 	| { type: "SET_PROJECT_NAME"; payload: string }
 	| {
@@ -358,9 +358,9 @@ function deleteAnnotations(
 	};
 }
 
-export function projectAnnotationReducer(
+export function projectReducer(
 	state: ProjectState,
-	action: ProjectAnnotationAction,
+	action: ProjectAction,
 ): ProjectState {
 	switch (action.type) {
 		case "LOAD_PROJECT":

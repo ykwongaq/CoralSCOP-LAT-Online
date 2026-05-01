@@ -1,4 +1,4 @@
-import type { Annotation } from "../../../types/Annotation";
+import type { Annotation } from "../../../types";
 import CroppedCanvas from "./CroppedCanvas";
 import styles from "./StatisticTableRow.module.css";
 
@@ -31,7 +31,6 @@ export default function StatisticTableRow({
 	imageHeight,
 	showCroppedCanvas = true,
 }: StatisticTableRowProps) {
-
 	return (
 		<tr>
 			{showCroppedCanvas && (

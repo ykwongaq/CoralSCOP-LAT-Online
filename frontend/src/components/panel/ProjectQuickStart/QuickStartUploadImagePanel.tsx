@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import ImageDisplayBlock from "./ImageDisplayBlock";
-import styles from "./QuickStart.module.css";
+import styles from "./QuickStartUploadImage.module.css";
 import { Button, usePopMessage } from "../../ui";
 import { useProject } from "../../../store";
 import { loadProject, quickStart } from "../../../services";

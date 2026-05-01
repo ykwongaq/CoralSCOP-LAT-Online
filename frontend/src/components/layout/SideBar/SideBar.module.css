@@ -1,9 +1,14 @@
-.sideBarSub {
-  width: calc(var(--logo-blk-width) - var(--nav-width));
-  background-color: #fff;
-  margin-left: 1px;
-  padding: 10px 10px;
-  display: flex;
-  flex-direction: column;
-  height: calc(100vh - var(--header-height));
+.sideBar {
+	--side-padding: 22px;
+	display: flex;
+	height: 100%;
+	max-width: var(--logo-blk-width);
+}
+
+.sideBarMain {
+	width: var(--nav-width);
+	background-color: #fff;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
 }

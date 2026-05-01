@@ -4,7 +4,7 @@ import {
 	AnnotationToggleBlock,
 } from "../../ui/SettingSideBar";
 import LabelBar from "../Labels/LabelBar";
-import styles from "./SideBar.module.css";
+import styles from "./ToolBar.module.css";
 
 export default function AnnotationSideBar() {
 	const { visualizationSettingState, visualizationSettingDispatch } =

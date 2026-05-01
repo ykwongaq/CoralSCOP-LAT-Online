@@ -1,7 +1,7 @@
 import { useProject, useAnnotationSession } from "../../../store";
 import LineBlock from "./LineBlock";
 import styles from "./ScaledLineSideBar.module.css";
-import sideBarStyles from "./SideBar.module.css";
+import sideBarStyles from "./ToolBar.module.css";
 
 export default function ScaledLineSideBar() {
 	const { projectState } = useProject();

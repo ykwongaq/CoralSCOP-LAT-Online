@@ -1,6 +1,6 @@
 import { useRef, useEffect } from "react";
 import { decodeRLE } from "../../../utils/cocoRle";
-import type { Annotation } from "../../../types/Annotation";
+import type { Annotation } from "../../../types";
 import { getMaskBoundingBox } from "../../../services/StatisticService";
 import styles from "./CroppedCanvas.module.css";
 

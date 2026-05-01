@@ -1,14 +1,15 @@
 import { createContext, useContext, useReducer } from "react";
 import type { ProjectState } from "../../types";
+
 import {
-	projectAnnotationReducer,
+	projectReducer,
 	initialProjectAnnotationState,
-	type ProjectAnnotationAction,
-} from "./projectAnnotationReducer";
+	type ProjectAction,
+} from "./projectReducer";
 
 export const ProjectContext = createContext<{
 	projectState: ProjectState;
-	projectDispatch: React.Dispatch<ProjectAnnotationAction>;
+	projectDispatch: React.Dispatch<ProjectAction>;
 } | null>(null);
 
 export function useProject() {
@@ -19,13 +20,9 @@ export function useProject() {
 	return context;
 }
 
-export function ProjectProvider({
-	children,
-}: {
-	children: React.ReactNode;
-}) {
+export function ProjectProvider({ children }: { children: React.ReactNode }) {
 	const [projectState, projectDispatch] = useReducer(
-		projectAnnotationReducer,
+		projectReducer,
 		initialProjectAnnotationState,
 	);
 

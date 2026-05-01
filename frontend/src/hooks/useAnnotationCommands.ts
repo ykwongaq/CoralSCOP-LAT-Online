@@ -12,7 +12,8 @@ import {
 	useProject,
 	useVisualizationSetting,
 } from "../store";
-import type { AnnotationCommand } from "../types";
+import { type AnnotationCommand } from "../utils";
+
 /**
  * Owns all annotation command logic and the UI state for label pickers.
  * Returns the full execute map plus the picker open/close state so that

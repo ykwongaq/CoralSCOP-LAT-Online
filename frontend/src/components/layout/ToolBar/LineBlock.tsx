@@ -1,4 +1,4 @@
-import styles from "./ScaleDefine.module.css";
+import styles from "./LineBlock.module.css";
 
 import { useAnnotationSession, useProject } from "../../../store";
 import type { ScaledLine } from "../../../types";
