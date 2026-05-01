@@ -11,6 +11,8 @@ interface AnnotationPanelProps {
 	addModeChildren?: React.ReactNode;
 }
 
+export const AnnotationPanelID = "annotation-panel";
+
 /**
  * Sets up annotation keyboard shortcuts and renders the default annotation
  * layout in one place. Optional extra controls can still be appended to the
