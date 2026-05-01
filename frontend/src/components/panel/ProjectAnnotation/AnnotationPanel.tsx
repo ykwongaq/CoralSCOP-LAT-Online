@@ -16,7 +16,7 @@ interface AnnotationPanelProps {
  * layout in one place. Optional extra controls can still be appended to the
  * select/add mode action bars when needed.
  */
-export function AnnotationPanel({
+export default function AnnotationPanel({
 	selectModeChildren,
 	addModeChildren,
 }: AnnotationPanelProps) {

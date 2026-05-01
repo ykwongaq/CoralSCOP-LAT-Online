@@ -3,7 +3,7 @@ import { ImageBlock } from "../../ui/ImageGallery";
 
 export const ImageGalleryPanelID = "image-gallery-panel";
 
-export function ImageGalleryPanel({
+export default function ImageGalleryPanel({
 	onImageClick,
 }: {
 	onImageClick?: () => void;

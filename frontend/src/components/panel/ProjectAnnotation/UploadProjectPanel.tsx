@@ -9,7 +9,7 @@ import { BottomBar } from "../../layout";
 
 export const UploadProjectPanelID = "project-upload-panel";
 
-export function UploadProjectPanel() {
+export default function UploadProjectPanel() {
 	const { projectDispatch } = useProject();
 	const { showLoading, showError, updateLoadingProgress, closeMessage } =
 		usePopMessage();
