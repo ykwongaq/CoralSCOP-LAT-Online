@@ -1,7 +1,8 @@
-import { type ImageSelectionData } from "./ImageSelectionData";
+import { type ImageData } from "../ImageData";
 import { type ProjectConfig } from "./ProjectConfig";
 export interface ProjectCreationState {
-  imageDataList: ImageSelectionData[];
-  config: ProjectConfig;
-  model_selection: string | null;
+	imageDataList: ImageData[];
+	selectedIndices: number[];
+	config: ProjectConfig;
+	model_selection: string | null;
 }

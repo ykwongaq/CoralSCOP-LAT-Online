@@ -1,5 +1,5 @@
 import type { ApiRequestCallbacks, ApiRequestHandle } from "../types/api";
-import { type ImageSelectionData, ProjectConfig } from "../types";
+import type { ImageData, ProjectConfig } from "../types";
 import { apiClient } from "./ApiClient";
 
 // ---------------------------------------------------------------------------
@@ -7,7 +7,7 @@ import { apiClient } from "./ApiClient";
 // ---------------------------------------------------------------------------
 
 export interface CreateProjectRequest {
-	images: ImageSelectionData[];
+	images: ImageData[];
 	config: ProjectConfig;
 	model: string | null;
 }
@@ -62,7 +62,7 @@ export function createProject(
 	void (async () => {
 		try {
 			const formData = new FormData();
-			const selected = request.images.filter((img) => img.selected);
+			const selected = request.images;
 
 			for (const img of selected) {
 				if (cancelled) return;

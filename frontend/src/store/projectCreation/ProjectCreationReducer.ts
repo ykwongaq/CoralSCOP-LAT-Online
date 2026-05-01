@@ -1,8 +1,7 @@
-import { ImageSelectionData, ProjectCreationState } from "../../types";
-
+import type { ImageData, ProjectCreationState } from "../../types";
 export type ProjectCreationAction =
-	| { type: "ADD_IMAGE"; payload: ImageSelectionData }
-	| { type: "ADD_IMAGES"; payload: ImageSelectionData[] }
+	| { type: "ADD_IMAGE"; payload: ImageData }
+	| { type: "ADD_IMAGES"; payload: ImageData[] }
 	| { type: "TOGGLE_IMAGE_SELECTION"; payload: number }
 	| { type: "SELECT_ALL_IMAGES"; payload: null }
 	| { type: "DESELECT_ALL_IMAGES"; payload: null }
@@ -11,29 +10,22 @@ export type ProjectCreationAction =
 	| { type: "UPDATE_MAX_OVERLAP"; payload: number }
 	| { type: "UPDATE_MODEL_SELECTION"; payload: string | null };
 
-function add_image(state: ProjectCreationState, payload: ImageSelectionData) {
+function add_image(state: ProjectCreationState, payload: ImageData) {
+	const newIndex = state.imageDataList.length;
 	return {
 		...state,
-		imageDataList: [
-			...state.imageDataList,
-			{ ...payload, selected: payload.selected ?? true },
-		],
+		imageDataList: [...state.imageDataList, { ...payload }],
+		selectedIndices: [...state.selectedIndices, newIndex],
 	};
 }
 
-function add_images(
-	state: ProjectCreationState,
-	payload: ImageSelectionData[],
-) {
+function add_images(state: ProjectCreationState, payload: ImageData[]) {
+	const startIndex = state.imageDataList.length;
+	const newIndices = payload.map((_, i) => startIndex + i);
 	return {
 		...state,
-		imageDataList: [
-			...state.imageDataList,
-			...payload.map((img) => ({
-				...img,
-				selected: img.selected ?? true,
-			})),
-		],
+		imageDataList: [...state.imageDataList, ...payload],
+		selectedIndices: [...state.selectedIndices, ...newIndices],
 	};
 }
 
@@ -42,22 +34,19 @@ function toggle_image_selection(
 	payload: number,
 ): ProjectCreationState {
 	if (payload < 0 || payload >= state.imageDataList.length) return state;
-	const newList = [...state.imageDataList];
-	newList[payload] = {
-		...newList[payload],
-		selected: !newList[payload].selected,
+	const has = state.selectedIndices.includes(payload);
+	return {
+		...state,
+		selectedIndices: has
+			? state.selectedIndices.filter((i) => i !== payload)
+			: [...state.selectedIndices, payload],
 	};
-
-	return { ...state, imageDataList: newList };
 }
 
 function select_all_images(state: ProjectCreationState): ProjectCreationState {
 	return {
 		...state,
-		imageDataList: state.imageDataList.map((img) => ({
-			...img,
-			selected: true,
-		})),
+		selectedIndices: state.imageDataList.map((_, i) => i),
 	};
 }
 
@@ -66,10 +55,7 @@ function deselect_all_images(
 ): ProjectCreationState {
 	return {
 		...state,
-		imageDataList: state.imageDataList.map((img) => ({
-			...img,
-			selected: false,
-		})),
+		selectedIndices: [],
 	};
 }
 
@@ -115,6 +101,7 @@ function update_model_selection(
 
 export const initialProjectCreationState: ProjectCreationState = {
 	imageDataList: [],
+	selectedIndices: [],
 	config: {
 		min_area: 0.001,
 		min_confidence: 0.5,
@@ -132,27 +119,20 @@ export function projectCreationReducer(
 			return add_image(state, action.payload);
 		case "ADD_IMAGES":
 			return add_images(state, action.payload);
-		case "TOGGLE_IMAGE_SELECTION": {
+		case "TOGGLE_IMAGE_SELECTION":
 			return toggle_image_selection(state, action.payload);
-		}
-		case "SELECT_ALL_IMAGES": {
+		case "SELECT_ALL_IMAGES":
 			return select_all_images(state);
-		}
-		case "DESELECT_ALL_IMAGES": {
+		case "DESELECT_ALL_IMAGES":
 			return deselect_all_images(state);
-		}
-		case "UPDATE_MIN_AREA": {
+		case "UPDATE_MIN_AREA":
 			return update_min_area(state, action.payload);
-		}
-		case "UPDATE_MIN_CONFIDENCE": {
+		case "UPDATE_MIN_CONFIDENCE":
 			return update_min_confidence(state, action.payload);
-		}
-		case "UPDATE_MAX_OVERLAP": {
+		case "UPDATE_MAX_OVERLAP":
 			return update_max_overlap(state, action.payload);
-		}
-		case "UPDATE_MODEL_SELECTION": {
+		case "UPDATE_MODEL_SELECTION":
 			return update_model_selection(state, action.payload);
-		}
 		default:
 			return state;
 	}
