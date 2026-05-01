@@ -1,13 +1,13 @@
 import { Children } from "react";
 import styles from "./FlowBar.module.css";
 
-interface ActionBarProps {
+interface FlowBarProps {
 	children: React.ReactNode;
 	hidden?: boolean;
 	className?: string;
 }
 
-export default function ActionBar({ children, hidden, className }: ActionBarProps) {
+export default function FlowBar({ children, hidden, className }: FlowBarProps) {
 	return (
 		<div
 			className={`${styles.floatBar}${hidden ? ` ${styles.floatBarHidden}` : ""}${className ? ` ${className}` : ""}`}
