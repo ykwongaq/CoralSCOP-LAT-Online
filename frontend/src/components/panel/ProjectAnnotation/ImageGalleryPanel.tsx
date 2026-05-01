@@ -1,0 +1,44 @@
+import { useProject, useAnnotationSession } from "../../../store";
+import { ImageBlock } from "../../ui/ImageGallery";
+
+export const ImageGalleryPanelID = "image-gallery-panel";
+
+export function ImageGalleryPanel({
+	onImageClick,
+}: {
+	onImageClick?: () => void;
+}) {
+	const { projectState } = useProject();
+	const { annotationSessionDispatch } = useAnnotationSession();
+
+	// The image data list should be sorted by the data.id
+	const imageDataList = projectState.dataList
+		.sort((a, b) => a.id - b.id)
+		.map((data) => data.imageData);
+
+	return (
+		<>
+			<div className="main-section__inner">
+				<p className="main-section__title">All Images</p>
+				<div id="gallery-container" className="gallery-list gallery-list--full">
+					{imageDataList.map((imageData, dataId) => (
+						<ImageBlock
+							key={dataId}
+							displayId={dataId + 1}
+							imageURl={imageData.imageUrl}
+							imageName={imageData.imageName}
+							onClick={() => {
+								annotationSessionDispatch({
+									type: "SET_CURRENT_DATA_INDEX",
+									payload: dataId,
+								});
+								onImageClick?.();
+							}}
+						/>
+					))}
+				</div>
+			</div>
+			;
+		</>
+	);
+}

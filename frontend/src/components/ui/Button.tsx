@@ -6,6 +6,7 @@ interface ButtonProps {
 	isBorder?: boolean;
 	disabled?: boolean;
 	type?: "button" | "submit" | "reset";
+	children?: React.ReactNode;
 }
 
 export default function Button({
@@ -14,6 +15,7 @@ export default function Button({
 	isBorder = false,
 	type = "button",
 	disabled = false,
+	children,
 }: ButtonProps) {
 	return (
 		<button
@@ -24,7 +26,7 @@ export default function Button({
 			onClick={onClick}
 			disabled={disabled}
 		>
-			{label}
+			{children ?? label}
 		</button>
 	);
 }
