@@ -280,3 +280,13 @@ button {
   --nav-width: 72px;
 }
 
+:where(*) {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+:where(*):hover,
+:where(*):focus,
+:where(*):active {
+  outline: none;
+}
