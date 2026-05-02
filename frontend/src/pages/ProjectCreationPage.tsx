@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import layoutStyles from "./PageLayout.module.css";
 import { SideBarButton } from "../components/ui";
 import { ProjectCreationProvider } from "../store";
 import { Header, SideBar } from "../components/layout/";
@@ -24,9 +25,9 @@ function ProjectCreationPage() {
 
 	return (
 		<ProjectCreationProvider>
-			<div className="wrapper">
+			<div className={layoutStyles.wrapper}>
 				<Header />
-				<div className="main">
+				<div className={layoutStyles.main}>
 					<SideBar>
 						<SideBarButton
 							id="back-to-main-page-button"
@@ -50,12 +51,12 @@ function ProjectCreationPage() {
 						/>
 					</SideBar>
 					{activePanel === UploadImagePanelID && (
-						<div className="main-section page active-page" id="galleryPage">
+						<div className={`${layoutStyles.mainSection} ${layoutStyles.page} ${layoutStyles.activePage}`} id="galleryPage">
 							<UploadImagePanel />
 						</div>
 					)}
 					{activePanel === ProjectSettingPanelID && (
-						<div className="main-section page active-page" id="settingPage">
+						<div className={`${layoutStyles.mainSection} ${layoutStyles.page} ${layoutStyles.activePage}`} id="settingPage">
 							<ProjectSettingPanel />
 						</div>
 					)}

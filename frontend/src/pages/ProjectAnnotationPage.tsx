@@ -1,5 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useCallback, useEffect, useRef, useState } from "react";
+import layoutStyles from "./PageLayout.module.css";
+import styles from "./ProjectAnnotationPage.module.css";
 
 import { HeaderWithNavigation } from "../components/layout";
 import {
@@ -239,7 +241,7 @@ function ProjectAnnotationContent() {
 	]);
 
 	return (
-		<div className="wrapper">
+		<div className={layoutStyles.wrapper}>
 			<ConnectedHeader
 				projectState={projectState}
 				title={
@@ -252,7 +254,7 @@ function ProjectAnnotationContent() {
 					handlePanelChange(ImageGalleryPanelID);
 				}}
 			/>
-			<div className="main">
+			<div className={layoutStyles.main}>
 				<SideBar>
 					<SideBarButton
 						id="back-to-main-page-button"
@@ -435,14 +437,14 @@ function ProjectAnnotationContent() {
 
 				{!projectLoaded && (
 					<div
-						className="main-section page active-page"
+						className={`${layoutStyles.mainSection} ${layoutStyles.page} ${layoutStyles.activePage}`}
 						id="uploadProjectPage"
 					>
 						<UploadProjectPanel />
 					</div>
 				)}
 				{projectLoaded && activePanel === ImageGalleryPanelID && (
-					<div className="main-section page active-page" id="galleryPage">
+					<div className={`${layoutStyles.mainSection} ${layoutStyles.page} ${layoutStyles.activePage}`} id="galleryPage">
 						<ImageGalleryPanel
 							onImageClick={() => handlePanelChange(AnnotationPanelID)}
 						/>
@@ -450,7 +452,7 @@ function ProjectAnnotationContent() {
 				)}
 				{projectLoaded && activePanel === AnnotationPanelID && (
 					<div
-						className="main-section page active-page"
+						className={`${layoutStyles.mainSection} ${layoutStyles.page} ${layoutStyles.activePage}`}
 						id="annotationPage"
 					>
 						<AnnotationPanel />
@@ -458,7 +460,7 @@ function ProjectAnnotationContent() {
 				)}
 				{projectLoaded && activePanel === SCALE_DEFINE_PANEL_ID && (
 					<div
-						className="main-section page active-page"
+						className={`${layoutStyles.mainSection} ${layoutStyles.page} ${layoutStyles.activePage}`}
 						id="scaleDefinePage"
 					>
 						<ScaleDefinePanel />
@@ -466,7 +468,7 @@ function ProjectAnnotationContent() {
 				)}
 				{projectLoaded && activePanel === StatisticPanelID && (
 					<div
-						className="main-section page active-page"
+						className={`${layoutStyles.mainSection} ${layoutStyles.page} ${layoutStyles.activePage}`}
 						id="statisticPage"
 					>
 						<StatisticPanel />

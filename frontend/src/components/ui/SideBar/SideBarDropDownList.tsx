@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import styles from "./SideBar.module.css";
 
 interface SideBarDropDownListProps {
   id: string;
@@ -37,13 +38,13 @@ export default function SideBarDropDownList({
   }, []);
 
   return (
-    <li className="nav-list__item" ref={containerRef}>
-      <button id={id} className="nav-list__button" onClick={handleToggle}>
+    <li className={styles.navListItem} ref={containerRef}>
+      <button id={id} className={styles.navListButton} onClick={handleToggle}>
         <span className={icon}></span>
-        <span className="arrow-tooltip">{label}</span>
+        <span className={styles.arrowTooltip}>{label}</span>
       </button>
       {isOpen && (
-        <div id={`file-dropdown-menu-${id}`} className="normal-dropdown">
+        <div id={`file-dropdown-menu-${id}`} className={styles.normalDropdown}>
           {children}
         </div>
       )}

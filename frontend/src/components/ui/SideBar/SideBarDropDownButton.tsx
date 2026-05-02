@@ -1,3 +1,5 @@
+import styles from "./SideBar.module.css";
+
 interface SideBarDropDownButtonProps {
   id: string;
   label: string;
@@ -10,7 +12,7 @@ export default function SideBarDropDownButton({
   onClick,
 }: SideBarDropDownButtonProps) {
   return (
-    <button id={id} className="normal-dropdown__link" onClick={onClick}>
+    <button id={id} className={styles.normalDropdownLink} onClick={onClick}>
       {label}
     </button>
   );

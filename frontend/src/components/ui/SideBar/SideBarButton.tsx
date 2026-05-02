@@ -1,3 +1,5 @@
+import styles from "./SideBar.module.css";
+
 interface SideBarButtonProps {
   id: string;
   icon: string;
@@ -16,17 +18,17 @@ export default function SideBarButton({
   disabled = false,
 }: SideBarButtonProps) {
   return (
-    <li className="nav-list__item">
+    <li className={styles.navListItem}>
       <button
         id={id}
-        className={`nav-list__button ${isActive ? 'active' : ''}`}
+        className={`${styles.navListButton} ${isActive ? styles.active : ""}`}
         onClick={onClick}
         aria-label={label}
         aria-pressed={isActive}
         disabled={disabled}
       >
         <span className={icon}></span>
-        <span className="arrow-tooltip">{label}</span>
+        <span className={styles.arrowTooltip}>{label}</span>
       </button>
     </li>
   );

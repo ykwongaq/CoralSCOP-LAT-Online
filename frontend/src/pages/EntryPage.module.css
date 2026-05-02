@@ -46,7 +46,7 @@
     align-items: center;
 }
 
-.buttonRow :global(.button) {
-    width: 350px;
+.buttonRow button {
+    --width: 350px;
     font-size: clamp(17px, 1.4vw, 22px);
 }

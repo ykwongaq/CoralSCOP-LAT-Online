@@ -1,5 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useCallback, useEffect, useRef, useState } from "react";
+import layoutStyles from "./PageLayout.module.css";
+import styles from "./ProjectQuickStartPage.module.css";
 
 import { HeaderWithNavigation } from "../components/layout";
 import {
@@ -271,7 +273,7 @@ function ProjectQuickStartPageContent() {
 	]);
 
 	return (
-		<div className="wrapper">
+		<div className={layoutStyles.wrapper}>
 			<HeaderWithNavigation
 				projectState={projectState}
 				title={
@@ -283,7 +285,7 @@ function ProjectQuickStartPageContent() {
 				nextImage={() => execute["next-image"]()}
 				onClick={() => handlePanelChange(ImageGalleryPanelID)}
 			/>
-			<div className="main">
+			<div className={layoutStyles.main}>
 				<SideBar>
 					<SideBarButton
 						id="back-to-main-page-button"
@@ -421,29 +423,29 @@ function ProjectQuickStartPageContent() {
 				</SideBar>
 
 				{!projectLoaded && activePanel !== ProjectSettingPanelID && (
-					<div className="main-section page active-page" id="quickStartPage">
+					<div className={`${layoutStyles.mainSection} ${layoutStyles.page} ${layoutStyles.activePage}`} id="quickStartPage">
 						<QuickStartUploadImagePanel />
 					</div>
 				)}
 				{activePanel === ProjectSettingPanelID && (
-					<div className="main-section page active-page" id="settingPage">
+					<div className={`${layoutStyles.mainSection} ${layoutStyles.page} ${layoutStyles.activePage}`} id="settingPage">
 						<ProjectSettingPanel />
 					</div>
 				)}
 				{projectLoaded && activePanel === ImageGalleryPanelID && (
-					<div className="main-section page active-page" id="galleryPage">
+					<div className={`${layoutStyles.mainSection} ${layoutStyles.page} ${layoutStyles.activePage}`} id="galleryPage">
 						<ImageGalleryPanel
 							onImageClick={() => handlePanelChange(AnnotationPanelID)}
 						/>
 					</div>
 				)}
 				{projectLoaded && activePanel === SCALE_DEFINE_PANEL_ID && (
-					<div className="main-section page active-page" id="scaleDefinePage">
+					<div className={`${layoutStyles.mainSection} ${layoutStyles.page} ${layoutStyles.activePage}`} id="scaleDefinePage">
 						<ScaleDefinePanel />
 					</div>
 				)}
 				{projectLoaded && activePanel === AnnotationPanelID && (
-					<div className="main-section page active-page" id="annotationPage">
+					<div className={`${layoutStyles.mainSection} ${layoutStyles.page} ${layoutStyles.activePage}`} id="annotationPage">
 						<AnnotationPanel
 							selectModeChildren={
 								<ActionButton
@@ -456,7 +458,7 @@ function ProjectQuickStartPageContent() {
 					</div>
 				)}
 				{projectLoaded && activePanel === StatisticPanelID && (
-					<div className="main-section page active-page" id="statisticPage">
+					<div className={`${layoutStyles.mainSection} ${layoutStyles.page} ${layoutStyles.activePage}`} id="statisticPage">
 						<StatisticPanel />
 					</div>
 				)}

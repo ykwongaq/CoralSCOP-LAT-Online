@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import backgroundImage from "../assets/images/CoralSCOP_Homepage.jpg";
 import titleImage from "../assets/images/home-title.svg";
 import styles from "./EntryPage.module.css";
+import { Button } from "../components/ui";
 
 function EntryPage() {
 	const navigate = useNavigate();
@@ -14,7 +15,16 @@ function EntryPage() {
 					<img className={styles.title} src={titleImage} alt="" />
 					<p>Segment any coral in the images.</p>
 					<div className={styles.buttonRow}>
-						<button
+						<Button onClick={() => navigate("/project-creation")}>
+							Create New Project
+						</Button>
+						<Button isBorder onClick={() => navigate("/project-annotation")}>
+							Load Existing Project
+						</Button>
+						<Button isBorder onClick={() => navigate("/project-quick-start")}>
+							Quick Start
+						</Button>
+						{/* <button
 							id="create-project-button"
 							className="button"
 							onClick={() => navigate("/project-creation")}
@@ -34,7 +44,7 @@ function EntryPage() {
 							onClick={() => navigate("/project-quick-start")}
 						>
 							Quick Start
-						</button>
+						</button> */}
 					</div>
 				</div>
 			</div>

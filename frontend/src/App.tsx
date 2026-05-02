@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import "./assets/icon/style.css";
+import "./App.css";
 
 import {
 	EntryPage,
