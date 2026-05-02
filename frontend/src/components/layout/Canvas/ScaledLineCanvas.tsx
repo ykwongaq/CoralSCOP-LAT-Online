@@ -60,6 +60,8 @@ function distancePointToSegment(
 	return Math.hypot(px - projX, py - projY);
 }
 
+import styles from "./CanvasCommon.module.css";
+
 function formatScaleValue(line: ScaledLine) {
 	const scaleValue = Number.isFinite(line.scale) ? line.scale : 0;
 	if (scaleValue <= 0) {
@@ -587,12 +589,12 @@ export default function ScaledLineCanvas() {
 			style={{ position: "relative", flex: 1, overflow: "hidden" }}
 		>
 			<div
-				className="canvas-container"
+				className={styles.canvasContainer}
 				style={{ backgroundColor: "var(--surface-surface-primary3)" }}
 			>
 				<canvas
 					ref={canvasRef}
-					className="canvas"
+					className={styles.canvas}
 					style={{ display: "block", cursor: "crosshair" }}
 					onMouseDown={handleMouseDown}
 					onMouseMove={handleMouseMove}

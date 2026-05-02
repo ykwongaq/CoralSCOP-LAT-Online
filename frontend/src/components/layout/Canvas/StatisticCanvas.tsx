@@ -13,6 +13,7 @@ import {
 	maskIntersectsRect,
 } from "../../../utils";
 import { useCanvasInteraction, type CanvasAction } from "../../../hooks";
+import styles from "./CanvasCommon.module.css";
 type Viewport = { scale: number; originX: number; originY: number };
 
 export default function StatisticCanvas() {
@@ -278,12 +279,12 @@ export default function StatisticCanvas() {
 			style={{ position: "relative", flex: 1, overflow: "hidden" }}
 		>
 			<div
-				className="canvas-container"
+				className={styles.canvasContainer}
 				style={{ backgroundColor: "var(--surface-surface-primary3)" }}
 			>
 				<canvas
 					ref={canvasRef}
-					className="canvas"
+					className={styles.canvas}
 					style={{ cursor: "default", display: "block" }}
 					onMouseDown={handleMouseDown}
 					onMouseMove={handleMouseMove}

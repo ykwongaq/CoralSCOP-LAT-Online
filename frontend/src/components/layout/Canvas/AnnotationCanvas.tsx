@@ -16,6 +16,7 @@ import {
 import { useCanvasInteraction, type CanvasAction } from "../../../hooks";
 
 import { predictInstance } from "../../../services";
+import styles from "./CanvasCommon.module.css";
 
 type Viewport = {
 	scale: number;
@@ -452,10 +453,10 @@ export default function AnnotationCanvas() {
 			ref={containerRef}
 			style={{ position: "relative", flex: 1, overflow: "hidden" }}
 		>
-			<div className="canvas-container">
+			<div className={styles.canvasContainer}>
 				<canvas
 					ref={canvasRef}
-					className="canvas"
+					className={styles.canvas}
 					style={{
 						cursor: mode === "add" ? "crosshair" : "default",
 						display: "block",
