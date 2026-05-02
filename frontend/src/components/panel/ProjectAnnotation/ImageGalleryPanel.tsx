@@ -1,5 +1,7 @@
 import { useProject, useAnnotationSession } from "../../../store";
 import { ImageBlock } from "../../ui/ImageGallery";
+import layoutStyles from "../PanelLayout.module.css";
+import galleryStyles from "../../ui/ImageGallery/ImageGallery.module.css";
 
 export const ImageGalleryPanelID = "image-gallery-panel";
 
@@ -18,9 +20,9 @@ export default function ImageGalleryPanel({
 
 	return (
 		<>
-			<div className="main-section__inner">
-				<p className="main-section__title">All Images</p>
-				<div id="gallery-container" className="gallery-list gallery-list--full">
+			<div className={layoutStyles.mainSectionInner}>
+				<p className={layoutStyles.mainSectionTitle}>All Images</p>
+				<div id="gallery-container" className={`${galleryStyles.galleryList} ${galleryStyles.galleryListFull}`}>
 					{imageDataList.map((imageData, dataId) => (
 						<ImageBlock
 							key={dataId}

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import ImageDisplayBlock from "./ImageDisplayBlock";
 import styles from "./QuickStartUploadImage.module.css";
+import layoutStyles from "../PanelLayout.module.css";
 import { Button, usePopMessage } from "../../ui";
 import { useProject } from "../../../store";
 import { loadProject, quickStart } from "../../../services";
@@ -160,13 +161,13 @@ export default function QuickStartUploadImagePanel() {
 	}, [selectedImage]);
 
 	return (
-		<div className="main-section__inner">
-			<p className="main-section__title">Quick Start</p>
-			<p className="main-section__desc">
+		<div className={layoutStyles.mainSectionInner}>
+			<p className={layoutStyles.mainSectionTitle}>Quick Start</p>
+			<p>
 				Upload a single image to start annotating immediately. The server will
 				process your image and open it for annotation.
 			</p>
-			<div className="main-section__content">
+			<div className={layoutStyles.mainSectionContent}>
 				{imagePreview ? (
 					<ImageDisplayBlock imagePreview={imagePreview} />
 				) : (
@@ -178,7 +179,7 @@ export default function QuickStartUploadImagePanel() {
 					>
 						<div className={styles.dropText}>
 							Drop an image here. Or{" "}
-							<button className="button select-link" onClick={openFileSelect}>
+							<button className={styles.selectLink} onClick={openFileSelect}>
 								browse
 							</button>{" "}
 							to select a file.
@@ -197,13 +198,14 @@ export default function QuickStartUploadImagePanel() {
 			<FlowBar>
 				<div className={styles.buttons}>
 					{selectedImage && (
-						<Button onClick={handleClearImage} disabled={isProcessing}>
+						<Button onClick={handleClearImage} disabled={isProcessing} className={styles.flowBarButton}>
 							Clear
 						</Button>
 					)}
 					<Button
 						onClick={handleStartAnnotation}
 						disabled={!selectedImage || isProcessing}
+						className={styles.flowBarButton}
 					>
 						{isProcessing ? "Processing..." : "Start Annotation"}
 					</Button>

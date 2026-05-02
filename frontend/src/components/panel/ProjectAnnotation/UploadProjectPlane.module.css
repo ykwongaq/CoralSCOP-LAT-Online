@@ -25,3 +25,15 @@
   justify-content: center;
   align-items: center;
 }
+
+.selectLink {
+  appearance: none;
+  background: transparent;
+  border: none;
+  color: var(--text-text-primary2);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  padding: 0;
+  text-decoration: underline;
+}

@@ -1,3 +1,4 @@
+import layoutStyles from "../PanelLayout.module.css";
 import { useProjectCreation } from "../../../store";
 import {
 	SettingSliderBlock,
@@ -39,13 +40,13 @@ export default function ProjectSettingPanel() {
 	}
 
 	return (
-		<div className="main-section__inner">
-			<p className="main-section__title">Setting</p>
-			<p className="main-section__desc">
+		<div className={layoutStyles.mainSectionInner}>
+			<p className={layoutStyles.mainSectionTitle}>Setting</p>
+			<p>
 				Adjust the settings to carefully filter out any unwanted masks generated
 				by the model, enhancing the accuracy and performance of your results.
 			</p>
-			<div className="main-section__content">
+			<div className={layoutStyles.mainSectionContent}>
 				<SettingGroups>
 					<SettingSliderBlock
 						title="Min Area:"

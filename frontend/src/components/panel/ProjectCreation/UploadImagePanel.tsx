@@ -1,5 +1,6 @@
 export const UploadImagePanelID = "upload-image-panel";
 import { useCallback, useRef } from "react";
+import layoutStyles from "../PanelLayout.module.css";
 
 import { useProjectCreation } from "../../../store";
 import { ImageUploader, usePopMessage, ImageGallery, Button } from "../../ui";
@@ -197,11 +198,11 @@ export default function UploadImagePanel() {
 	]);
 
 	return (
-		<div className="main-section__inner">
-			<p className="main-section__title">
+		<div className={layoutStyles.mainSectionInner}>
+			<p className={layoutStyles.mainSectionTitle}>
 				Upload Images ({projectCreationState.imageDataList.length}/{MAX_IMAGES})
 			</p>
-			<div className="main-section__content">
+			<div className={layoutStyles.mainSectionContent}>
 				<ImageUploader onImages={handleImages} />
 				<ImageGallery
 					imageDataList={projectCreationState.imageDataList}
@@ -211,7 +212,7 @@ export default function UploadImagePanel() {
 			</div>
 
 			{projectCreationState.imageDataList.length > 0 && (
-				<BottomBar>
+				<BottomBar className={layoutStyles.mainSectionBottom}>
 					<Button onClick={handleDeselectAll} isBorder>
 						Deselect All
 					</Button>

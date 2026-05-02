@@ -98,15 +98,15 @@ export default function SettingSliderBlock({
         {title}
       </label>
       <p className={styles.settingItemDesc}>{description}</p>
-      <div className="slider-blk">
+      <div className={styles.sliderBlk}>
         <input
           type="text"
           value={inputText}
           onChange={handleTextChange}
           onBlur={handleTextBlur}
-          className={!isValid ? "input-error" : ""}
+          className={!isValid ? styles.inputError : ""}
         />
-        <div className="slider-blk__inner">
+        <div className={styles.sliderBlkInner}>
           <input
             type="range"
             id={`${id}-input`}

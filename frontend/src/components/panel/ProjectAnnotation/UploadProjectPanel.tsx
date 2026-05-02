@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import styles from "./UploadProjectPlane.module.css";
+import layoutStyles from "../PanelLayout.module.css";
 
 import { useProject } from "../../../store";
 import { usePopMessage } from "../../ui/Messager";
@@ -87,9 +88,9 @@ export default function UploadProjectPanel() {
 	]);
 
 	return (
-		<div className="main-section__inner">
-			<p className="main-section__title">Open Project</p>
-			<div className="main-section__content">
+		<div className={layoutStyles.mainSectionInner}>
+			<p className={layoutStyles.mainSectionTitle}>Open Project</p>
+			<div className={layoutStyles.mainSectionContent}>
 				<div
 					className={`${styles.dropContainer} ${styles.dropContainerLarge}${isDragging ? ` ${styles.dropContainerActive}` : ""}`}
 					onDragOver={handleDragOver}
@@ -102,7 +103,7 @@ export default function UploadProjectPanel() {
 						) : (
 							<>
 								Drop .coral project file here. Or{" "}
-								<button className="button select-link" onClick={openFileSelect}>
+								<button className={styles.selectLink} onClick={openFileSelect}>
 									browse
 								</button>{" "}
 								to select a file.
@@ -119,7 +120,7 @@ export default function UploadProjectPanel() {
 				</div>
 			</div>
 
-			<BottomBar>
+			<BottomBar className={layoutStyles.mainSectionBottom}>
 				<Button onClick={handleOpenProject} disabled={!selectedFile}>
 					Open Project
 				</Button>

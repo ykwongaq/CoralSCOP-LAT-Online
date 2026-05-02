@@ -7,6 +7,7 @@ interface ButtonProps {
 	disabled?: boolean;
 	type?: "button" | "submit" | "reset";
 	children?: React.ReactNode;
+	className?: string;
 }
 
 export default function Button({
@@ -16,11 +17,12 @@ export default function Button({
 	type = "button",
 	disabled = false,
 	children,
+	className: extraClassName,
 }: ButtonProps) {
 	return (
 		<button
 			type={type}
-			className={[styles.button, isBorder ? styles["button--border"] : ""]
+			className={[styles.button, isBorder ? styles["button--border"] : "", extraClassName]
 				.filter(Boolean)
 				.join(" ")}
 			onClick={onClick}
