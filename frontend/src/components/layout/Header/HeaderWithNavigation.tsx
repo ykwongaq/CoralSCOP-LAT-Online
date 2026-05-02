@@ -1,6 +1,6 @@
 import type { ProjectState } from "../../../types";
 import LogoBlock from "../../ui/LogoBlock";
-import styles from "./Header.module.css";
+import styles from "./HeaderWithNavigation.module.css";
 
 export interface HeaderWithNavigationProps {
 	projectState: ProjectState;
@@ -39,7 +39,7 @@ export default function HeaderWithNavigation({
 						<span className="ico-circle-arrow-left"></span>
 					</button>
 					<p className={styles.headerTitle}>
-						<span id="progress-info-name">{title}</span>
+						<span className={styles.progressInfoName}>{title}</span>
 					</p>
 					<button
 						id="next-image-button"
@@ -50,7 +50,6 @@ export default function HeaderWithNavigation({
 					</button>
 					<div
 						id="progress-bar"
-						className="progressbar round-xlarge"
 						style={{ width: "0%" }}
 					></div>
 				</div>
