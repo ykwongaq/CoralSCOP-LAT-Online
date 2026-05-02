@@ -103,9 +103,14 @@ export default function UploadProjectPanel() {
 						) : (
 							<>
 								Drop .coral project file here. Or{" "}
-								<button className={styles.selectLink} onClick={openFileSelect}>
+								<Button
+									label="browse"
+									onClick={openFileSelect}
+									className={styles.selectLink}
+								/>
+								{/* <button className={styles.selectLink} onClick={openFileSelect}>
 									browse
-								</button>{" "}
+								</button>{" "} */}
 								to select a file.
 							</>
 						)}

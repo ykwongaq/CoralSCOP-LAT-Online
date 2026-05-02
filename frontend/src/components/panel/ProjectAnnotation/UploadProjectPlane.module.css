@@ -27,7 +27,7 @@
 }
 
 .selectLink {
-  appearance: none;
+  /* appearance: none;
   background: transparent;
   border: none;
   color: var(--text-text-primary2);
@@ -35,5 +35,7 @@
   font-family: inherit;
   font-size: inherit;
   padding: 0;
-  text-decoration: underline;
+  text-decoration: underline; */
+  margin-inline: 10px;
+  padding-block: 7px;
 }
