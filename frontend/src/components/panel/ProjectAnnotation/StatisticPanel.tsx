@@ -16,7 +16,7 @@ export function StatisticPanel() {
 	const data = projectState.dataList[currentDataIndex] ?? null;
 
 	return (
-		<>
+		<div className={styles.statePanel}>
 			<div className={styles.statLeft}>
 				<StatisticCanvas />
 			</div>
@@ -33,7 +33,7 @@ export function StatisticPanel() {
 					/>
 				</div>
 			</div>
-		</>
+		</div>
 	);
 }
 

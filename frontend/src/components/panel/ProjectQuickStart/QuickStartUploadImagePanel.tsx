@@ -8,7 +8,7 @@ import { useProject } from "../../../store";
 import { loadProject, quickStart } from "../../../services";
 import type { ApiRequestHandle, ProjectConfig } from "../../../types";
 export const QuickStartUploadImagePanelID = "quick-start-upload-image-panel";
-import { FlowBar } from "../../layout";
+import { BottomBar } from "../../layout";
 const ACCEPTED_IMAGE_TYPES = [
 	"image/jpeg",
 	"image/png",
@@ -179,9 +179,11 @@ export default function QuickStartUploadImagePanel() {
 					>
 						<div className={styles.dropText}>
 							Drop an image here. Or{" "}
-							<button className={styles.selectLink} onClick={openFileSelect}>
-								browse
-							</button>{" "}
+							<Button
+								label="browse"
+								onClick={openFileSelect}
+								className={styles.selectLink}
+							/>
 							to select a file.
 						</div>
 						<input
@@ -195,10 +197,14 @@ export default function QuickStartUploadImagePanel() {
 				)}
 			</div>
 
-			<FlowBar>
+			<BottomBar>
 				<div className={styles.buttons}>
 					{selectedImage && (
-						<Button onClick={handleClearImage} disabled={isProcessing} className={styles.flowBarButton}>
+						<Button
+							onClick={handleClearImage}
+							disabled={isProcessing}
+							className={styles.flowBarButton}
+						>
 							Clear
 						</Button>
 					)}
@@ -210,7 +216,7 @@ export default function QuickStartUploadImagePanel() {
 						{isProcessing ? "Processing..." : "Start Annotation"}
 					</Button>
 				</div>
-			</FlowBar>
+			</BottomBar>
 		</div>
 	);
 }

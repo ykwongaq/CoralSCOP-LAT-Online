@@ -1,4 +1,5 @@
 .statLeft {
+  --gap: 14px;
   flex: 1;
   min-width: 0;
   display: flex;
@@ -12,6 +13,7 @@
 }
 
 .statRight {
+  --gap: 14px;
   flex: 1;
   min-width: 0;
   display: flex;
@@ -43,4 +45,14 @@
   padding: 20px;
   display: flex;
   flex-direction: column;
+}
+
+.statePanel {
+  --gap: 14px;
+  padding: 0;
+  overflow: hidden;
+  gap: var(--gap);
+  background: var(--surface-suface-bg);
+  display: flex;
+  flex: 1;
 }

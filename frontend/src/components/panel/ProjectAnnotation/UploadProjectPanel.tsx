@@ -108,9 +108,6 @@ export default function UploadProjectPanel() {
 									onClick={openFileSelect}
 									className={styles.selectLink}
 								/>
-								{/* <button className={styles.selectLink} onClick={openFileSelect}>
-									browse
-								</button>{" "} */}
 								to select a file.
 							</>
 						)}

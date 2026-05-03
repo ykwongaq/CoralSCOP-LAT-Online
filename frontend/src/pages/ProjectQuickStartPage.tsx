@@ -271,15 +271,13 @@ function ProjectQuickStartPageContent() {
 		projectState,
 	]);
 
+	const headerTitle = `${annotationSessionState.currentDataIndex + 1}. ${projectState.dataList[annotationSessionState.currentDataIndex]?.imageData.imageName || ""}`;
+
 	return (
 		<div className={layoutStyles.wrapper}>
 			<HeaderWithNavigation
 				showNavigation={projectLoaded}
-				title={
-					activePanel === AnnotationPanelID || activePanel === StatisticPanelID
-						? `${annotationSessionState.currentDataIndex + 1}. ${projectState.dataList[annotationSessionState.currentDataIndex]?.imageData.imageName || ""}`
-						: ""
-				}
+				title={headerTitle}
 				prevImage={() => execute["prev-image"]()}
 				nextImage={() => execute["next-image"]()}
 				onClick={() => handlePanelChange(ImageGalleryPanelID)}
