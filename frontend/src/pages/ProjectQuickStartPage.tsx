@@ -1,9 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { useCallback, useEffect, useRef, useState } from "react";
 import layoutStyles from "./PageLayout.module.css";
-import styles from "./ProjectQuickStartPage.module.css";
 
-import { HeaderWithNavigation } from "../components/layout";
+import { HeaderWithNavigation } from "../components/ui/Header";
 import {
 	ProjectProvider,
 	AnnotationSessionProvider,
@@ -275,7 +274,7 @@ function ProjectQuickStartPageContent() {
 	return (
 		<div className={layoutStyles.wrapper}>
 			<HeaderWithNavigation
-				projectState={projectState}
+				showNavigation={projectLoaded}
 				title={
 					activePanel === AnnotationPanelID || activePanel === StatisticPanelID
 						? `${annotationSessionState.currentDataIndex + 1}. ${projectState.dataList[annotationSessionState.currentDataIndex]?.imageData.imageName || ""}`
@@ -423,29 +422,44 @@ function ProjectQuickStartPageContent() {
 				</SideBar>
 
 				{!projectLoaded && activePanel !== ProjectSettingPanelID && (
-					<div className={`${layoutStyles.mainSection} ${layoutStyles.page} ${layoutStyles.activePage}`} id="quickStartPage">
+					<div
+						className={`${layoutStyles.mainSection} ${layoutStyles.page} ${layoutStyles.activePage}`}
+						id="quickStartPage"
+					>
 						<QuickStartUploadImagePanel />
 					</div>
 				)}
 				{activePanel === ProjectSettingPanelID && (
-					<div className={`${layoutStyles.mainSection} ${layoutStyles.page} ${layoutStyles.activePage}`} id="settingPage">
+					<div
+						className={`${layoutStyles.mainSection} ${layoutStyles.page} ${layoutStyles.activePage}`}
+						id="settingPage"
+					>
 						<ProjectSettingPanel />
 					</div>
 				)}
 				{projectLoaded && activePanel === ImageGalleryPanelID && (
-					<div className={`${layoutStyles.mainSection} ${layoutStyles.page} ${layoutStyles.activePage}`} id="galleryPage">
+					<div
+						className={`${layoutStyles.mainSection} ${layoutStyles.page} ${layoutStyles.activePage}`}
+						id="galleryPage"
+					>
 						<ImageGalleryPanel
 							onImageClick={() => handlePanelChange(AnnotationPanelID)}
 						/>
 					</div>
 				)}
 				{projectLoaded && activePanel === SCALE_DEFINE_PANEL_ID && (
-					<div className={`${layoutStyles.mainSection} ${layoutStyles.page} ${layoutStyles.activePage}`} id="scaleDefinePage">
+					<div
+						className={`${layoutStyles.mainSection} ${layoutStyles.page} ${layoutStyles.activePage}`}
+						id="scaleDefinePage"
+					>
 						<ScaleDefinePanel />
 					</div>
 				)}
 				{projectLoaded && activePanel === AnnotationPanelID && (
-					<div className={`${layoutStyles.mainSection} ${layoutStyles.page} ${layoutStyles.activePage}`} id="annotationPage">
+					<div
+						className={`${layoutStyles.mainSection} ${layoutStyles.page} ${layoutStyles.activePage}`}
+						id="annotationPage"
+					>
 						<AnnotationPanel
 							selectModeChildren={
 								<ActionButton
@@ -458,7 +472,10 @@ function ProjectQuickStartPageContent() {
 					</div>
 				)}
 				{projectLoaded && activePanel === StatisticPanelID && (
-					<div className={`${layoutStyles.mainSection} ${layoutStyles.page} ${layoutStyles.activePage}`} id="statisticPage">
+					<div
+						className={`${layoutStyles.mainSection} ${layoutStyles.page} ${layoutStyles.activePage}`}
+						id="statisticPage"
+					>
 						<StatisticPanel />
 					</div>
 				)}

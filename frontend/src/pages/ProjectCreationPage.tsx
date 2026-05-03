@@ -1,9 +1,9 @@
 import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import layoutStyles from "./PageLayout.module.css";
-import { SideBarButton } from "../components/ui";
+import { SideBarButton, Header } from "../components/ui";
 import { ProjectCreationProvider } from "../store";
-import { Header, SideBar } from "../components/layout/";
+import { SideBar } from "../components/layout/";
 import {
 	UploadImagePanel,
 	UploadImagePanelID,
@@ -51,12 +51,18 @@ function ProjectCreationPage() {
 						/>
 					</SideBar>
 					{activePanel === UploadImagePanelID && (
-						<div className={`${layoutStyles.mainSection} ${layoutStyles.page} ${layoutStyles.activePage}`} id="galleryPage">
+						<div
+							className={`${layoutStyles.mainSection} ${layoutStyles.page} ${layoutStyles.activePage}`}
+							id="galleryPage"
+						>
 							<UploadImagePanel />
 						</div>
 					)}
 					{activePanel === ProjectSettingPanelID && (
-						<div className={`${layoutStyles.mainSection} ${layoutStyles.page} ${layoutStyles.activePage}`} id="settingPage">
+						<div
+							className={`${layoutStyles.mainSection} ${layoutStyles.page} ${layoutStyles.activePage}`}
+							id="settingPage"
+						>
 							<ProjectSettingPanel />
 						</div>
 					)}

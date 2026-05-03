@@ -10,3 +10,4 @@ export * from "./Setting";
 export * from "./SettingSideBar";
 export * from "./SideBar";
 export * from "./Statistic";
+export * from "./Header";

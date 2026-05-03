@@ -1,9 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { useCallback, useEffect, useRef, useState } from "react";
 import layoutStyles from "./PageLayout.module.css";
-import styles from "./ProjectAnnotationPage.module.css";
 
-import { HeaderWithNavigation } from "../components/layout";
+import { HeaderWithNavigation } from "../components/ui/Header";
 import {
 	ProjectProvider,
 	AnnotationSessionProvider,
@@ -46,32 +45,12 @@ import {
 
 import { SideBar } from "../components/layout";
 
-function ConnectedHeader({
-	projectState,
-	title,
-	onClick,
-}: {
-	projectState: ProjectState;
-	title: string;
-	onClick: () => void;
-}) {
-	const { execute } = useAnnotationCommands();
-	return (
-		<HeaderWithNavigation
-			projectState={projectState}
-			title={title}
-			prevImage={() => execute["prev-image"]()}
-			nextImage={() => execute["next-image"]()}
-			onClick={onClick}
-		/>
-	);
-}
-
 function isProjectLoaded(state: ProjectState): boolean {
 	return state.dataList.length > 0;
 }
 
 function ProjectAnnotationContent() {
+	const { execute } = useAnnotationCommands();
 	const navigate = useNavigate();
 	const { projectState, projectDispatch } = useProject();
 	const { annotationSessionState, annotationSessionDispatch } =
@@ -240,19 +219,18 @@ function ProjectAnnotationContent() {
 		projectState,
 	]);
 
+	// We show the navigation only after the project has been loaded and it is not in image gallery panel
+	const showNavigation = projectLoaded && activePanel !== ImageGalleryPanelID;
+	const headerTitle = `${annotationSessionState.currentDataIndex + 1}. ${projectState.dataList[annotationSessionState.currentDataIndex]?.imageData.imageName || ""}`;
+
 	return (
 		<div className={layoutStyles.wrapper}>
-			<ConnectedHeader
-				projectState={projectState}
-				title={
-					activePanel === AnnotationPanelID ||
-					activePanel === StatisticPanelID
-						? `${annotationSessionState.currentDataIndex + 1}. ${projectState.dataList[annotationSessionState.currentDataIndex]?.imageData.imageName || ""}`
-						: ""
-				}
-				onClick={() => {
-					handlePanelChange(ImageGalleryPanelID);
-				}}
+			<HeaderWithNavigation
+				title={headerTitle}
+				showNavigation={showNavigation}
+				prevImage={() => execute["prev-image"]()}
+				nextImage={() => execute["next-image"]()}
+				onClick={() => handlePanelChange(ImageGalleryPanelID)}
 			/>
 			<div className={layoutStyles.main}>
 				<SideBar>
@@ -291,9 +269,7 @@ function ProjectAnnotationContent() {
 						icon="ico-wrench"
 						label="Scale"
 						onClick={() => handlePanelChange(SCALE_DEFINE_PANEL_ID)}
-						isActive={
-							projectLoaded && activePanel === SCALE_DEFINE_PANEL_ID
-						}
+						isActive={projectLoaded && activePanel === SCALE_DEFINE_PANEL_ID}
 						disabled={!projectLoaded}
 					/>
 					<SideBarButton
@@ -303,11 +279,7 @@ function ProjectAnnotationContent() {
 						onClick={handleSaveProject}
 						disabled={!projectLoaded}
 					/>
-					<SideBarDropDownList
-						id="file-button"
-						label="Export"
-						icon="ico-exit"
-					>
+					<SideBarDropDownList id="file-button" label="Export" icon="ico-exit">
 						<SideBarDropDownButton
 							id="export-image-button"
 							label="Export All Images"
@@ -330,9 +302,7 @@ function ProjectAnnotationContent() {
 										title: "Export Failed",
 										content: "Failed to export images. Please try again.",
 										errorMessage:
-											error instanceof Error
-												? error.message
-												: String(error),
+											error instanceof Error ? error.message : String(error),
 										buttons: [
 											{
 												label: "Close",
@@ -371,9 +341,7 @@ function ProjectAnnotationContent() {
 										content:
 											"Failed to export annotated images. Please try again.",
 										errorMessage:
-											error instanceof Error
-												? error.message
-												: String(error),
+											error instanceof Error ? error.message : String(error),
 										buttons: [
 											{
 												label: "Close",
@@ -392,8 +360,7 @@ function ProjectAnnotationContent() {
 							onClick={async () => {
 								showLoading({
 									title: "Exporting COCO Annotations",
-									content:
-										"Please wait while we prepare your annotations...",
+									content: "Please wait while we prepare your annotations...",
 									progress: null,
 									buttons: [
 										{
@@ -410,9 +377,7 @@ function ProjectAnnotationContent() {
 										content:
 											"Failed to export COCO annotations. Please try again.",
 										errorMessage:
-											error instanceof Error
-												? error.message
-												: String(error),
+											error instanceof Error ? error.message : String(error),
 										buttons: [
 											{
 												label: "Close",
@@ -444,7 +409,10 @@ function ProjectAnnotationContent() {
 					</div>
 				)}
 				{projectLoaded && activePanel === ImageGalleryPanelID && (
-					<div className={`${layoutStyles.mainSection} ${layoutStyles.page} ${layoutStyles.activePage}`} id="galleryPage">
+					<div
+						className={`${layoutStyles.mainSection} ${layoutStyles.page} ${layoutStyles.activePage}`}
+						id="galleryPage"
+					>
 						<ImageGalleryPanel
 							onImageClick={() => handlePanelChange(AnnotationPanelID)}
 						/>
