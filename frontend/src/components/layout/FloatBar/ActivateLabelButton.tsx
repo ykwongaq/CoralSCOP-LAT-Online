@@ -2,6 +2,7 @@ import { useAnnotationSession, useProject } from "../../../store";
 import type { Label } from "../../../types";
 import { getLabelColor, getTextColor } from "../../../utils";
 import LabelPickerButton from "../../ui/FloatBar/LabelPickerButton";
+import styles from "./ActivateLabelButton.module.css";
 
 interface ActivateLabelButtonProps {
 	isOpen: boolean;
@@ -34,7 +35,7 @@ export default function ActivateLabelButton({
 			buttonChildren={
 				<>
 					<span
-						className="color-blk selected-category-box"
+						className={styles.colorBlk}
 						style={{
 							backgroundColor: activeLabel
 								? getLabelColor(activeLabel.id)
@@ -43,7 +44,7 @@ export default function ActivateLabelButton({
 						}}
 					>
 						{activeLabel && (
-							<span className="label-sm-blk__text selected-category-text">
+							<span className={styles.labelSmBlkText}>
 								{activeLabel.id + 1}
 							</span>
 						)}
