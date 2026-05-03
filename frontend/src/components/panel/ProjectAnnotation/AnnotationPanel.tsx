@@ -6,6 +6,7 @@ import {
 	FlowBarSelectMode,
 	FlowBarAddMode,
 } from "../../layout";
+import styles from "./AnnotationPanel.module.css";
 interface AnnotationPanelProps {
 	selectModeChildren?: React.ReactNode;
 	addModeChildren?: React.ReactNode;
@@ -31,9 +32,11 @@ export default function AnnotationPanel({
 	return (
 		<>
 			<AnnotationSideBar />
-			<AnnotationCanvas />
-			<FlowBarSelectMode>{selectModeChildren}</FlowBarSelectMode>
-			<FlowBarAddMode>{addModeChildren}</FlowBarAddMode>
+			<div className={styles.canvasWrapper}>
+				<AnnotationCanvas />
+				<FlowBarSelectMode>{selectModeChildren}</FlowBarSelectMode>
+				<FlowBarAddMode>{addModeChildren}</FlowBarAddMode>
+			</div>
 		</>
 	);
 }
