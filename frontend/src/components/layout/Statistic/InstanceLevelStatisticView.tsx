@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import type { Label, Data, Annotation, RLE } from "../../../types";
 import { computeBleachingPercentages } from "../../../services";
-import { StatisticTable, type InstanceRowData } from "../../ui/Statistic";
+import CroppedCanvas from "../../ui/Statistic/CroppedCanvas";
 
 import styles from "./InstanceLevelStatisticView.module.css";
 
@@ -15,16 +15,25 @@ interface Props {
 	selectedIds: number[];
 }
 
+interface InstanceStats {
+	labelName: string;
+	statuses: string[];
+	areaPct: number;
+	bleachingPct: number | null;
+}
+
 export default function InstanceLevelStatisticView({
 	data,
 	labels,
 	selectedIds,
 }: Props) {
-	const [rows, setRows] = useState<InstanceRowData[]>([]);
+	const [stats, setStats] = useState<InstanceStats | null>(null);
 
-	const selectedAnnotations = useMemo(() => {
-		if (!data) return [];
-		return data.annotations.filter((ann) => selectedIds.includes(ann.id));
+	const selectedAnnotation = useMemo(() => {
+		if (!data) return null;
+		const firstId = selectedIds[0];
+		if (firstId === undefined) return null;
+		return data.annotations.find((a) => a.id === firstId) ?? null;
 	}, [data, selectedIds]);
 
 	const computeBleaching = useCallback(
@@ -63,34 +72,41 @@ export default function InstanceLevelStatisticView({
 	);
 
 	useEffect(() => {
-		if (!data || selectedAnnotations.length === 0) {
-			setRows([]);
+		if (!data || !selectedAnnotation) {
+			setStats(null);
 			return;
 		}
 
 		const labelMap = new Map(labels.map((l) => [l.id, l]));
-		const baseRows: InstanceRowData[] = selectedAnnotations.map((ann) => ({
-			id: ann.id,
-			labelName: labelMap.get(ann.labelId)?.name ?? "(unlabeled)",
-			statuses: labelMap.get(ann.labelId)?.status ?? [],
+		const label = labelMap.get(selectedAnnotation.labelId);
+		const areaPct = calculateAreaPercentage(
+			selectedAnnotation,
+			data.imageData.width,
+			data.imageData.height,
+		);
+
+		setStats({
+			labelName: label?.name ?? "(unlabeled)",
+			statuses: label?.status ?? [],
+			areaPct,
 			bleachingPct: null,
-			areaPct: calculateAreaPercentage(
-				ann,
-				data.imageData.width,
-				data.imageData.height,
-			),
-		}));
-		setRows(baseRows);
+		});
 
 		const { imageUrl, width, height } = data.imageData;
-		computeBleaching(imageUrl, selectedAnnotations, width, height).then(
+		computeBleaching(imageUrl, [selectedAnnotation], width, height).then(
 			(pcts) => {
-				setRows(baseRows.map((row, i) => ({ ...row, bleachingPct: pcts[i] })));
+				setStats((prev) => (prev ? { ...prev, bleachingPct: pcts[0] } : null));
 			},
 		);
-	}, [data, selectedAnnotations, labels, computeBleaching]);
+	}, [
+		data,
+		selectedAnnotation,
+		labels,
+		computeBleaching,
+		calculateAreaPercentage,
+	]);
 
-	if (selectedAnnotations.length === 0) {
+	if (!selectedAnnotation) {
 		return (
 			<div className={`${styles.statSection} ${styles.statSectionInstance}`}>
 				<h3 className={styles.statSectionTitle}>Instance Statistics</h3>
@@ -103,22 +119,54 @@ export default function InstanceLevelStatisticView({
 
 	return (
 		<div className={`${styles.statSection} ${styles.statSectionInstance}`}>
-			<h3 className={styles.statSectionTitle}>
-				Instance Statistics
-				<span className={styles.statSectionCount}>
-					&nbsp;({selectedAnnotations.length} selected)
-				</span>
-			</h3>
-			{data && (
-				<StatisticTable
-					rows={rows}
-					annotations={selectedAnnotations}
-					imageUrl={data.imageData.imageUrl}
-					imageWidth={data.imageData.width}
-					imageHeight={data.imageData.height}
-					showCroppedCanvas={true}
-					maxHeight={280}
-				/>
+			<h3 className={styles.statSectionTitle}>Instance Statistics</h3>
+			{data && stats && (
+				<div className={styles.statSplitRow}>
+					<div className={styles.statImagePanel}>
+						<CroppedCanvas
+							imageUrl={data.imageData.imageUrl}
+							annotation={selectedAnnotation}
+							imageWidth={data.imageData.width}
+							imageHeight={data.imageData.height}
+						/>
+					</div>
+					<div className={styles.statDataPanel}>
+						<div className={styles.statDetailItem}>
+							<span className={styles.statDetailLabel}>Category</span>
+							<span className={styles.statDetailValue}>{stats.labelName}</span>
+						</div>
+						<div className={styles.statDetailItem}>
+							<span className={styles.statDetailLabel}>Status Tags</span>
+							<div className={styles.statTagList}>
+								{stats.statuses.length > 0 ? (
+									stats.statuses.map((s) => (
+										<span key={s} className={styles.statTag}>
+											{s}
+										</span>
+									))
+								) : (
+									<span className={styles.statNoStatus}>—</span>
+								)}
+							</div>
+						</div>
+						<div className={styles.statDetailItem}>
+							<span className={styles.statDetailLabel}>White Pixel %</span>
+							<span className={styles.statDetailValue}>
+								{stats.bleachingPct === null ? (
+									<span className={styles.statLoading}>…</span>
+								) : (
+									`${stats.bleachingPct.toFixed(1)}%`
+								)}
+							</span>
+						</div>
+						<div className={styles.statDetailItem}>
+							<span className={styles.statDetailLabel}>Area %</span>
+							<span className={styles.statDetailValue}>
+								{stats.areaPct.toFixed(2)}%
+							</span>
+						</div>
+					</div>
+				</div>
 			)}
 		</div>
 	);

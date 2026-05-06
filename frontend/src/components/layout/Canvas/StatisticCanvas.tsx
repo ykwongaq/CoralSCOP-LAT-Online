@@ -1,11 +1,7 @@
 import { useRef, useEffect, useCallback, useState } from "react";
 
-import {
-	useAnnotationSession,
-	useProject,
-	useVisualizationSetting,
-} from "../../../store";
-import { type Annotation } from "../../../types";
+import { useVisualizationSetting } from "../../../store";
+import { type Data, type Annotation } from "../../../types";
 import {
 	type Layers,
 	buildLayers,
@@ -16,14 +12,18 @@ import { useCanvasInteraction, type CanvasAction } from "../../../hooks";
 import styles from "./CanvasCommon.module.css";
 type Viewport = { scale: number; originX: number; originY: number };
 
-export default function StatisticCanvas() {
-	const { projectState } = useProject();
-	const { annotationSessionState, annotationSessionDispatch } =
-		useAnnotationSession();
-	const { visualizationSettingState } = useVisualizationSetting();
+interface Props {
+	data: Data | null;
+	selectedIds: number[];
+	onSelectIds: (ids: number[]) => void;
+}
 
-	const data =
-		projectState.dataList[annotationSessionState.currentDataIndex] ?? null;
+export default function StatisticCanvas({
+	data,
+	selectedIds,
+	onSelectIds,
+}: Props) {
+	const { visualizationSettingState } = useVisualizationSetting();
 
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const containerRef = useRef<HTMLDivElement>(null);
@@ -97,7 +97,7 @@ export default function StatisticCanvas() {
 			switch (action.type) {
 				case "hit-test": {
 					if (!masks) {
-						annotationSessionDispatch({ type: "CLEAR_SELECTION" });
+						onSelectIds([]);
 						return;
 					}
 					let hit: Annotation | null = null;
@@ -108,12 +108,9 @@ export default function StatisticCanvas() {
 						}
 					}
 					if (hit) {
-						annotationSessionDispatch({
-							type: "TOGGLE_ANNOTATION_SELECTION",
-							payload: { annIds: [hit.id] },
-						});
+						onSelectIds([hit.id]);
 					} else {
-						annotationSessionDispatch({ type: "CLEAR_SELECTION" });
+						onSelectIds([]);
 					}
 					break;
 				}
@@ -132,17 +129,16 @@ export default function StatisticCanvas() {
 								action.y1,
 							),
 						);
-					annotationSessionDispatch({
-						type: "TOGGLE_ANNOTATION_SELECTION",
-						payload: { annIds: selectedIds },
-					});
+					// Only select the last (top-most) annotation in the rect
+					const lastId = selectedIds.length > 0 ? selectedIds[selectedIds.length - 1] : null;
+					onSelectIds(lastId ? [lastId] : []);
 					break;
 				}
 				default:
 					return;
 			}
 		},
-		[data, annotationSessionDispatch],
+		[data, onSelectIds],
 	);
 
 	const {
@@ -212,7 +208,7 @@ export default function StatisticCanvas() {
 			return;
 		}
 		let cancelled = false;
-		buildLayers(data, annotationSessionState, visualizationSettingState)
+		buildLayers(data, selectedIds, visualizationSettingState)
 			.then(({ layers, pixelMasks }) => {
 				if (!cancelled) {
 					layersRef.current = layers;
@@ -225,12 +221,7 @@ export default function StatisticCanvas() {
 			cancelled = true;
 		};
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [
-		data,
-		imageSize,
-		annotationSessionState.selectedAnnotations,
-		requestDraw,
-	]);
+	}, [data, imageSize, selectedIds, requestDraw]);
 
 	useEffect(() => {
 		requestDraw();

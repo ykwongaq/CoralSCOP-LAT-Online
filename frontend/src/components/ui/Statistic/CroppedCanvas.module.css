@@ -1,6 +1,6 @@
 .statCropCanvas {
     display: block;
-    max-width: 260px;
-    max-height: 220px;
-    object-fit: contain;
+    width: min(260px, 60vw);
+    height: min(220px, 35vh);
+    border-radius: 4px;
 }

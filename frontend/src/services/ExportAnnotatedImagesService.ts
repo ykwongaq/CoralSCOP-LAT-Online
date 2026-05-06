@@ -48,7 +48,7 @@ async function renderAnnotatedImage(
 
 	if (data.annotations.length > 0) {
 		// buildLayers decodes all RLE masks in parallel via Web Workers.
-		const { layers } = await buildLayers(data, EXPORT_SESSION, vizSetting);
+		const { layers } = await buildLayers(data, EXPORT_SESSION.selectedAnnotations, vizSetting);
 
 		// Mask fill at the user-configured opacity, then border + text badges at
 		// full opacity — mirrors how AnnotationCanvas composites the layers.

@@ -344,7 +344,7 @@ export default function AnnotationCanvas() {
 			return;
 		}
 		let cancelled = false;
-		buildLayers(data, annotationSessionState, visualizationSettingState)
+		buildLayers(data, annotationSessionState.selectedAnnotations, visualizationSettingState)
 			.then(({ layers, pixelMasks }) => {
 				if (!cancelled) {
 					layersRef.current = layers;

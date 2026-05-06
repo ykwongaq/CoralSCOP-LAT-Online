@@ -3,7 +3,6 @@ import { hexToRgb } from "./color";
 import type {
 	Annotation,
 	Data,
-	AnnotationSessionState,
 	PendingAnnotation,
 	VisualizationSetting,
 } from "../types";
@@ -36,8 +35,8 @@ export type LayersResult = {
 
 export async function buildLayers(
 	data: Data,
-	annotationSessionState: AnnotationSessionState,
-	visualizationSetting: VisualizationSetting, // ADD THIS PARAMETER
+	selectedAnnotationIds: number[],
+	visualizationSetting: VisualizationSetting,
 ): Promise<LayersResult> {
 	const width =
 		data.imageData.width ?? data.annotations[0]?.segmentation.size[1] ?? 0;
@@ -87,9 +86,7 @@ export async function buildLayers(
 	);
 
 	function isMaskSelected(annotation: Annotation): boolean {
-		return annotationSessionState.selectedAnnotations.some(
-			(sel) => sel === annotation.id,
-		);
+		return selectedAnnotationIds.some((sel) => sel === annotation.id);
 	}
 
 	function isLabelHidden(labelId: number): boolean {
