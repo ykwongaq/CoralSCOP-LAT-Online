@@ -2,6 +2,7 @@ import { type CocoCategory } from "./CocoCategory";
 
 import { type CocoAnnotation } from "./CocoAnnotation";
 import type { ScaledLine } from "../annoations/ScaledLine";
+import type CoralWatchCard from "../CoralWatch/CoralWatchCard";
 
 export interface AnnotationFile {
 	image: {
@@ -13,4 +14,5 @@ export interface AnnotationFile {
 	annotations: CocoAnnotation[];
 	categories: CocoCategory[];
 	scaledLineList?: ScaledLine[];
+	coralWatch?: CoralWatchCard;
 }

@@ -32,6 +32,7 @@ function buildAnnotationFile(data: Data, labels: Label[]): AnnotationFile {
 		scaledLineList: data.scaledLineList.map((line: ScaledLine) => ({
 			...line,
 		})),
+		coralWatch: data.coralWatch ?? undefined,
 	};
 }
 

@@ -24,7 +24,7 @@ interface ViewState {
 function clampPan(
 	state: ViewState,
 	containerWidth: number,
-	containerHeight: number
+	containerHeight: number,
 ) {
 	const scaledW = state.cropW * state.baseScale;
 	const scaledH = state.cropH * state.baseScale;
@@ -75,7 +75,7 @@ export default function CroppedCanvas({
 
 		state.baseScale = Math.min(
 			containerWidth / state.cropW,
-			containerHeight / state.cropH
+			containerHeight / state.cropH,
 		);
 
 		const ctx = canvas.getContext("2d")!;
@@ -100,7 +100,7 @@ export default function CroppedCanvas({
 			offsetX + state.panX - (drawW - scaledW) / 2,
 			offsetY + state.panY - (drawH - scaledH) / 2,
 			drawW,
-			drawH
+			drawH,
 		);
 	};
 
@@ -186,7 +186,7 @@ export default function CroppedCanvas({
 			const oldZoom = state.zoom;
 			const newZoom = Math.min(
 				Math.max(oldZoom * Math.exp(-e.deltaY * 0.001), 1),
-				10
+				10,
 			);
 
 			const scaledW = state.cropW * state.baseScale;
@@ -195,15 +195,11 @@ export default function CroppedCanvas({
 			const oldDrawH = scaledH * oldZoom;
 			const oldOffsetX = (rect.width - scaledW) / 2;
 			const oldOffsetY = (rect.height - scaledH) / 2;
-			const oldDrawX =
-				oldOffsetX + state.panX - (oldDrawW - scaledW) / 2;
-			const oldDrawY =
-				oldOffsetY + state.panY - (oldDrawH - scaledH) / 2;
+			const oldDrawX = oldOffsetX + state.panX - (oldDrawW - scaledW) / 2;
+			const oldDrawY = oldOffsetY + state.panY - (oldDrawH - scaledH) / 2;
 
-			const nx =
-				oldDrawW > 0 ? (mx - oldDrawX) / oldDrawW : 0.5;
-			const ny =
-				oldDrawH > 0 ? (my - oldDrawY) / oldDrawH : 0.5;
+			const nx = oldDrawW > 0 ? (mx - oldDrawX) / oldDrawW : 0.5;
+			const ny = oldDrawH > 0 ? (my - oldDrawY) / oldDrawH : 0.5;
 
 			const newDrawW = scaledW * newZoom;
 			const newDrawH = scaledH * newZoom;
@@ -213,10 +209,8 @@ export default function CroppedCanvas({
 			const newDrawX = mx - nx * newDrawW;
 			const newDrawY = my - ny * newDrawH;
 
-			state.panX =
-				newDrawX - newOffsetX + (newDrawW - scaledW) / 2;
-			state.panY =
-				newDrawY - newOffsetY + (newDrawH - scaledH) / 2;
+			state.panX = newDrawX - newOffsetX + (newDrawW - scaledW) / 2;
+			state.panY = newDrawY - newOffsetY + (newDrawH - scaledH) / 2;
 			state.zoom = newZoom;
 
 			clampPan(state, rect.width, rect.height);
@@ -254,27 +248,6 @@ export default function CroppedCanvas({
 
 		const handleContextMenu = (e: MouseEvent) => {
 			e.preventDefault();
-		};
-
-		const handleTouchMove = (e: TouchEvent) => {
-			if (!isDragging || e.touches.length !== 1) return;
-			e.preventDefault();
-			const dx = e.touches[0].clientX - lastX;
-			const dy = e.touches[0].clientY - lastY;
-			lastX = e.touches[0].clientX;
-			lastY = e.touches[0].clientY;
-
-			const state = stateRef.current;
-			state.panX += dx;
-			state.panY += dy;
-
-			const rect = canvas.getBoundingClientRect();
-			clampPan(state, rect.width, rect.height);
-			drawRef.current();
-		};
-
-		const handleTouchEnd = () => {
-			isDragging = false;
 		};
 
 		const handleDoubleClick = () => {

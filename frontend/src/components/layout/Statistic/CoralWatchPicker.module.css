@@ -1,0 +1,229 @@
+.backdrop {
+	position: fixed;
+	inset: 0;
+	background-color: rgba(0, 0, 0, 0.6);
+	z-index: 50;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.modal {
+	background: var(--surface-surface-primary5, #ffffff);
+	border-radius: 10px;
+	padding: 32px 40px;
+	max-width: 960px;
+	width: 90vw;
+	max-height: 90vh;
+	overflow-y: auto;
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+}
+
+.header {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	padding-bottom: 16px;
+	border-bottom: 1px solid var(--line-line-primary1, #dedede);
+}
+
+.logo {
+	height: 32px;
+	width: auto;
+}
+
+.title {
+	font-size: 20px;
+	font-weight: 600;
+	color: var(--text-text-primary2, #425df9);
+	margin: 0;
+}
+
+.instructions {
+	background: var(--surface-surface-primary3, #f4f6ff);
+	padding: 14px 18px;
+	border-radius: 8px;
+}
+
+.instructionText {
+	font-family: "Roboto", sans-serif;
+	font-size: 14px;
+	font-weight: 400;
+	color: var(--text-text-primary1, #000000);
+	margin: 0 0 10px 0;
+	line-height: 1.5;
+}
+
+.instructionText strong {
+	font-weight: 500;
+	color: var(--text-text-primary2, #425df9);
+}
+
+.cornerChips {
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+.chip {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 5px 12px;
+	border-radius: 100px;
+	font-size: 11px;
+	font-weight: 500;
+	color: var(--text-text-secondary1, #999898);
+	border: 1px solid var(--line-line-primary1, #dedede);
+	transition: all 0.2s ease;
+	min-height: 26px;
+}
+
+.chip.completed {
+	color: #ffffff;
+	border-color: rgba(0, 0, 0, 0.08);
+}
+
+.chipLabel {
+	text-transform: capitalize;
+	letter-spacing: 0.3px;
+}
+
+.checkmark {
+	font-size: 12px;
+	font-weight: 700;
+}
+
+.canvasArea {
+	display: flex;
+	gap: 20px;
+	min-height: 360px;
+	flex: 1;
+}
+
+.sourcePanel {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	min-width: 0;
+}
+
+.canvasLabel {
+	font-size: 12px;
+	font-weight: 500;
+	color: var(--text-text-secondary1, #999898);
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.sourceCanvas {
+	border: 1px solid var(--line-line-primary1, #dedede);
+	border-radius: 8px;
+	cursor: crosshair;
+	display: block;
+	width: 100%;
+	height: auto;
+	max-height: 480px;
+	background: var(--surface-surface-primary3, #f4f6ff);
+	transition: border-color 0.2s ease;
+}
+
+.sourceCanvas:hover {
+	border-color: var(--line-line-primary2, #7a9ae3);
+}
+
+.previewPanel {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	max-width: 0;
+	opacity: 0;
+	overflow: hidden;
+	transition: max-width 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+		opacity 0.35s ease;
+	min-width: 0;
+}
+
+.previewPanel.visible {
+	max-width: 320px;
+	opacity: 1;
+}
+
+.previewCanvas {
+	border: 1px solid var(--line-line-primary1, #dedede);
+	border-radius: 8px;
+	display: block;
+	width: 100%;
+	aspect-ratio: 1 / 1;
+	max-width: 300px;
+	background: var(--surface-surface-primary3, #f4f6ff);
+}
+
+.footer {
+	display: flex;
+	gap: 10px;
+	justify-content: flex-end;
+	padding-top: 16px;
+	border-top: 1px solid var(--line-line-primary1, #dedede);
+}
+
+.cancelBtn,
+.resetBtn,
+.confirmBtn {
+	font-family: inherit;
+	font-size: 13px;
+	font-weight: 500;
+	padding: 10px 22px;
+	border-radius: 100px;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	min-height: 38px;
+	line-height: 1;
+}
+
+.cancelBtn {
+	background: var(--surface-surface-primary5, #ffffff);
+	color: var(--text-text-primary1, #000000);
+	border: 1px solid var(--line-line-primary1, #dedede);
+}
+
+.cancelBtn:hover {
+	background: var(--surface-surface-primary3, #f4f6ff);
+	border-color: var(--line-line-primary2, #7a9ae3);
+}
+
+.resetBtn {
+	background: var(--surface-surface-primary5, #ffffff);
+	color: var(--text-text-primary1, #000000);
+	border: 1px solid var(--line-line-primary1, #dedede);
+}
+
+.resetBtn:hover:not(:disabled) {
+	background: var(--surface-surface-primary3, #f4f6ff);
+	border-color: var(--line-line-primary2, #7a9ae3);
+}
+
+.resetBtn:disabled {
+	opacity: 0.4;
+	cursor: not-allowed;
+}
+
+.confirmBtn {
+	background: var(--surface-surface-primary1, #425df9);
+	color: #ffffff;
+	font-weight: 600;
+	border: 1px solid var(--surface-surface-primary1, #425df9);
+}
+
+.confirmBtn:hover:not(:disabled) {
+	background: var(--surface-surface-primary4, #002a67);
+	border-color: var(--surface-surface-primary4, #002a67);
+}
+
+.confirmBtn:disabled {
+	opacity: 0.4;
+	cursor: not-allowed;
+}

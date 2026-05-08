@@ -3,6 +3,7 @@ import {
 	type RLE,
 	type ProjectState,
 	type ScaledLine,
+	type CoralWatchCard,
 } from "../../types";
 
 export const initialProjectAnnotationState: ProjectState = {
@@ -72,8 +73,28 @@ export type ProjectAction =
 				updates: Partial<Omit<ScaledLine, "id">>;
 			};
 	  }
-	| { type: "DELETE_SCALED_LINE"; payload: { dataId: number; lineId: number } };
+	| { type: "DELETE_SCALED_LINE"; payload: { dataId: number; lineId: number } }
+	| {
+			type: "SET_CORAL_WATCH_CARD";
+			payload: { dataId: number; card: CoralWatchCard };
+	  };
 
+function setCoralWatchCard(
+	state: ProjectState,
+	dataId: number,
+	card: CoralWatchCard,
+): ProjectState {
+	return {
+		...state,
+		dataList: state.dataList.map((data) => {
+			if (data.id !== dataId) return data;
+			return {
+				...data,
+				coralWatchCard: card,
+			};
+		}),
+	};
+}
 function addScaledLine(
 	state: ProjectState,
 	dataId: number,
@@ -430,6 +451,12 @@ export function projectReducer(
 				state,
 				action.payload.dataId,
 				action.payload.lineId,
+			);
+		case "SET_CORAL_WATCH_CARD":
+			return setCoralWatchCard(
+				state,
+				action.payload.dataId,
+				action.payload.card,
 			);
 		default:
 			return state;

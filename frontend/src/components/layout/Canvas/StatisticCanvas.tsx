@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback, useState } from "react";
+import { useRef, useEffect, useCallback, useState, forwardRef, useImperativeHandle } from "react";
 
 import { useVisualizationSetting } from "../../../store";
 import { type Data, type Annotation } from "../../../types";
@@ -18,11 +18,17 @@ interface Props {
 	onSelectIds: (ids: number[]) => void;
 }
 
-export default function StatisticCanvas({
+export interface StatisticCanvasRef {
+	resetViewport: () => void;
+	zoomIn: () => void;
+	zoomOut: () => void;
+}
+
+const StatisticCanvas = forwardRef<StatisticCanvasRef, Props>(function StatisticCanvas({
 	data,
 	selectedIds,
 	onSelectIds,
-}: Props) {
+}, ref) {
 	const { visualizationSettingState } = useVisualizationSetting();
 
 	const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -232,6 +238,40 @@ export default function StatisticCanvas({
 		return () => window.removeEventListener("resize", resetViewport);
 	}, [resetViewport]);
 
+	useImperativeHandle(ref, () => ({
+		resetViewport,
+		zoomIn: () => {
+			const canvas = canvasRef.current;
+			if (!canvas) return;
+			const rect = canvas.getBoundingClientRect();
+			const mouseX = rect.width / 2;
+			const mouseY = rect.height / 2;
+			const { scale, originX, originY } = viewportRef.current;
+			const newScale = Math.min(50, scale * 1.2);
+			viewportRef.current = {
+				scale: newScale,
+				originX: mouseX / scale + originX - mouseX / newScale,
+				originY: mouseY / scale + originY - mouseY / newScale,
+			};
+			requestDraw();
+		},
+		zoomOut: () => {
+			const canvas = canvasRef.current;
+			if (!canvas) return;
+			const rect = canvas.getBoundingClientRect();
+			const mouseX = rect.width / 2;
+			const mouseY = rect.height / 2;
+			const { scale, originX, originY } = viewportRef.current;
+			const newScale = Math.max(0.05, scale / 1.2);
+			viewportRef.current = {
+				scale: newScale,
+				originX: mouseX / scale + originX - mouseX / newScale,
+				originY: mouseY / scale + originY - mouseY / newScale,
+			};
+			requestDraw();
+		},
+	}), [resetViewport, requestDraw]);
+
 	useEffect(() => {
 		return () => cancelAnimationFrame(rafRef.current);
 	}, []);
@@ -286,4 +326,6 @@ export default function StatisticCanvas({
 			</div>
 		</div>
 	);
-}
+});
+
+export default StatisticCanvas;

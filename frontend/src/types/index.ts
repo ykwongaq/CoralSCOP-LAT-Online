@@ -8,3 +8,4 @@ export { type ImageData } from "./ImageData";
 export { type Point } from "./Point";
 export { type RLE } from "./RLE";
 export * from "./api";
+export { type default as CoralWatchCard } from "./CoralWatch/CoralWatchCard";

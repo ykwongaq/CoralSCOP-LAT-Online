@@ -6,6 +6,7 @@ import type {
 	Label,
 	ScaledLine,
 	AnnotationFile,
+	CoralWatchCard,
 } from "../types";
 
 export interface LoadProjectCallbacks {
@@ -73,6 +74,7 @@ export async function loadProject(
 
 			let annotations: Annotation[] = [];
 			let scaledLineList: ScaledLine[] = [];
+			let coralWatch: CoralWatchCard | null = null;
 			const annoEntry = annotationMap.get(stem);
 
 			if (annoEntry) {
@@ -80,6 +82,7 @@ export async function loadProject(
 					await annoEntry.async("text"),
 				) as AnnotationFile;
 				scaledLineList = annoFile.scaledLineList ?? [];
+				coralWatch = annoFile.coralWatch ?? null;
 
 				for (const cat of annoFile.categories) {
 					if (!labelsMap.has(cat.id)) {
@@ -108,6 +111,7 @@ export async function loadProject(
 				imageData: { imageUrl, imageName, width, height },
 				annotations,
 				scaledLineList,
+				coralWatch,
 			});
 		}
 
