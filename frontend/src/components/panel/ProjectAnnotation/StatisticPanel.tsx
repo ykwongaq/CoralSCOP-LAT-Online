@@ -72,6 +72,7 @@ export function StatisticPanel() {
 			{isPickerOpen && data !== null && (
 				<CoralWatchPicker
 					data={data}
+					initialCard={data.coralWatch ?? undefined}
 					onClose={() => setIsPickerOpen(false)}
 					onConfirm={(card) => {
 						projectDispatch({

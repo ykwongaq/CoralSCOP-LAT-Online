@@ -90,7 +90,7 @@ function setCoralWatchCard(
 			if (data.id !== dataId) return data;
 			return {
 				...data,
-				coralWatchCard: card,
+				coralWatch: card,
 			};
 		}),
 	};
