@@ -61,4 +61,6 @@ export {
 	getCombinedBoundingBox,
 	type PixelScaleResult,
 	calculatePixelScale,
+	type ColorClassificationResult,
+	classifyPixelsByColor,
 } from "./StatisticService";

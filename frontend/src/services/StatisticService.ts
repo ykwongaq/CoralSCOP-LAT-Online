@@ -1,5 +1,7 @@
 import type { RLE } from "../types/RLE";
 import type { Label, Data, Annotation, ScaledLine } from "../types";
+import type Color from "../types/Color";
+import type { ClassPoint } from "../types/CoralWatch/CoralWatchCard";
 export interface CoverageData {
 	totalPct: number;
 	byLabel: { name: string; pixels: number; pct: number; color: string }[];
@@ -329,4 +331,91 @@ export function calculatePixelScale(
 	const { value, unit } = pickBestAreaUnit(squareMetersPerPixel);
 
 	return { value, unit, squareMetersPerPixel };
+}
+
+// ---------------------------------------------------------------------------
+// Color classification for CoralWatch
+// ---------------------------------------------------------------------------
+
+function colorDistance(c1: Color, c2: Color): number {
+	const dr = (c1.r - c2.r) ** 2;
+	const dg = (c1.g - c2.g) ** 2;
+	const db = (c1.b - c2.b) ** 2;
+	return Math.sqrt(dr + dg + db);
+}
+
+export interface ColorClassificationResult {
+	label: string;
+	pixels: number;
+	pct: number;
+	color: Color;
+}
+
+export async function classifyPixelsByColor(
+	imageUrl: string,
+	annotation: Annotation,
+	classPoints: ClassPoint[],
+	imageWidth: number,
+	imageHeight: number,
+): Promise<ColorClassificationResult[]> {
+	if (classPoints.length === 0) {
+		return [];
+	}
+
+	const img = new Image();
+	await new Promise<void>((res, rej) => {
+		img.onload = () => res();
+		img.onerror = () => rej();
+		img.src = imageUrl;
+	});
+
+	const offscreen = document.createElement("canvas");
+	offscreen.width = imageWidth;
+	offscreen.height = imageHeight;
+	const ctx = offscreen.getContext("2d")!;
+	ctx.drawImage(img, 0, 0, imageWidth, imageHeight);
+	const pixelData = ctx.getImageData(0, 0, imageWidth, imageHeight);
+
+	const mask = decodeRLE(annotation.segmentation);
+	const { data } = pixelData;
+
+	const classCounts: Record<string, number> = {};
+	for (const cp of classPoints) {
+		classCounts[cp.label] = 0;
+	}
+
+	let totalPixels = 0;
+	for (let i = 0; i < mask.length; i++) {
+		if (mask[i] !== 1) continue;
+		totalPixels++;
+
+		const idx = i * 4;
+		const pixelColor: Color = {
+			r: data[idx],
+			g: data[idx + 1],
+			b: data[idx + 2],
+		};
+
+		let closestClass = classPoints[0];
+		let closestDistance = colorDistance(pixelColor, closestClass.color);
+
+		for (let j = 1; j < classPoints.length; j++) {
+			const dist = colorDistance(pixelColor, classPoints[j].color);
+			if (dist < closestDistance) {
+				closestDistance = dist;
+				closestClass = classPoints[j];
+			}
+		}
+
+		classCounts[closestClass.label]++;
+	}
+
+	const results: ColorClassificationResult[] = classPoints.map((cp) => ({
+		label: cp.label,
+		pixels: classCounts[cp.label],
+		pct: totalPixels > 0 ? (classCounts[cp.label] / totalPixels) * 100 : 0,
+		color: cp.color,
+	}));
+
+	return results.sort((a, b) => b.pct - a.pct);
 }

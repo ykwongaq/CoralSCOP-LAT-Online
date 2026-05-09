@@ -1,7 +1,19 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import type { Label, Data, Annotation, RLE } from "../../../types";
-import { computeBleachingPercentages } from "../../../services";
+import {
+	computeBleachingPercentages,
+	classifyPixelsByColor,
+	type ColorClassificationResult,
+} from "../../../services";
+import { colorToHex } from "../../../utils/color";
 import CroppedCanvas from "../../ui/Statistic/CroppedCanvas";
+import {
+	PieChart,
+	Pie,
+	Cell,
+	Tooltip,
+	ResponsiveContainer,
+} from "recharts";
 
 import styles from "./InstanceLevelStatisticView.module.css";
 
@@ -20,6 +32,7 @@ interface InstanceStats {
 	statuses: string[];
 	areaPct: number;
 	bleachingPct: number | null;
+	colorClassification: ColorClassificationResult[] | null;
 }
 
 export default function InstanceLevelStatisticView({
@@ -28,6 +41,8 @@ export default function InstanceLevelStatisticView({
 	selectedIds,
 }: Props) {
 	const [stats, setStats] = useState<InstanceStats | null>(null);
+	const [hoveredClass, setHoveredClass] = useState<string | null>(null);
+	const [isExpanded, setIsExpanded] = useState(false);
 
 	const selectedAnnotation = useMemo(() => {
 		if (!data) return null;
@@ -90,6 +105,7 @@ export default function InstanceLevelStatisticView({
 			statuses: label?.status ?? [],
 			areaPct,
 			bleachingPct: null,
+			colorClassification: null,
 		});
 
 		const { imageUrl, width, height } = data.imageData;
@@ -98,6 +114,21 @@ export default function InstanceLevelStatisticView({
 				setStats((prev) => (prev ? { ...prev, bleachingPct: pcts[0] } : null));
 			},
 		);
+
+		// Compute color classification if coralWatch is available
+		if (data.coralWatch && data.coralWatch.classPoints.length > 0) {
+			classifyPixelsByColor(
+				imageUrl,
+				selectedAnnotation,
+				data.coralWatch.classPoints,
+				width,
+				height,
+			).then((results) => {
+				setStats((prev) =>
+					prev ? { ...prev, colorClassification: results } : null,
+				);
+			});
+		}
 	}, [
 		data,
 		selectedAnnotation,
@@ -105,6 +136,24 @@ export default function InstanceLevelStatisticView({
 		computeBleaching,
 		calculateAreaPercentage,
 	]);
+
+
+	const sortedColorData = useMemo(() => {
+		if (!stats?.colorClassification) return [];
+		return [...stats.colorClassification]
+			.sort((a, b) => b.pct - a.pct)
+			.map((item) => ({
+				...item,
+				hex: colorToHex(item.color),
+			}));
+	}, [stats?.colorClassification]);
+
+	const topColors = useMemo(() => {
+		return sortedColorData.slice(0, 5);
+	}, [sortedColorData]);
+
+	const remainingCount = sortedColorData.length - topColors.length;
+	const hasColorData = sortedColorData.length > 0;
 
 	if (!selectedAnnotation) {
 		return (
@@ -131,40 +180,262 @@ export default function InstanceLevelStatisticView({
 						/>
 					</div>
 					<div className={styles.statDataPanel}>
-						<div className={styles.statDetailItem}>
-							<span className={styles.statDetailLabel}>Category</span>
-							<span className={styles.statDetailValue}>{stats.labelName}</span>
+						{/* Category Name */}
+						<div className={styles.statCategoryBlock}>
+							<span className={styles.statCategoryLabel}>Category</span>
+							<span className={styles.statCategoryName}>
+								{stats.labelName}
+							</span>
 						</div>
-						<div className={styles.statDetailItem}>
-							<span className={styles.statDetailLabel}>Status Tags</span>
+
+						{/* Status Tags */}
+						{stats.statuses.length > 0 && (
 							<div className={styles.statTagList}>
-								{stats.statuses.length > 0 ? (
-									stats.statuses.map((s) => (
-										<span key={s} className={styles.statTag}>
-											{s}
-										</span>
-									))
-								) : (
-									<span className={styles.statNoStatus}>—</span>
-								)}
+								{stats.statuses.map((s) => (
+									<span key={s} className={styles.statTag}>
+										{s}
+									</span>
+								))}
+							</div>
+						)}
+
+						{/* Compact Metrics Row */}
+						<div className={styles.statMetricsRow}>
+							<div className={styles.statMetricBlock}>
+								<span className={styles.statMetricValue}>
+									{stats.bleachingPct === null ? (
+										<span className={styles.statLoading}>…</span>
+									) : (
+										`${stats.bleachingPct.toFixed(1)}%`
+									)}
+								</span>
+								<span className={styles.statMetricLabel}>White Pixel</span>
+							</div>
+							<div className={styles.statMetricDivider} />
+							<div className={styles.statMetricBlock}>
+								<span className={styles.statMetricValue}>
+									{stats.areaPct.toFixed(2)}%
+								</span>
+								<span className={styles.statMetricLabel}>Area</span>
 							</div>
 						</div>
-						<div className={styles.statDetailItem}>
-							<span className={styles.statDetailLabel}>White Pixel %</span>
-							<span className={styles.statDetailValue}>
-								{stats.bleachingPct === null ? (
-									<span className={styles.statLoading}>…</span>
-								) : (
-									`${stats.bleachingPct.toFixed(1)}%`
+
+						{/* Color Classification */}
+						{hasColorData ? (
+							<div className={`${styles.statClassificationWrap} ${isExpanded ? styles.expanded : ""}`}>
+								<div className={styles.statClassificationHeader}>
+									<span className={styles.statSectionSubTitle}>
+										Color Classification
+									</span>
+									<span className={styles.statClassCount}>
+										{sortedColorData.length} classes
+									</span>
+								</div>
+
+								{/* Collapsed: Pie Chart + Top 5 */}
+								{!isExpanded && (
+									<>
+										<div className={styles.statChartWrap}>
+											<ResponsiveContainer width="100%" height="100%">
+												<PieChart>
+													<Pie
+														data={sortedColorData}
+														dataKey="pct"
+														nameKey="label"
+														cx="50%"
+														cy="50%"
+														outerRadius={60}
+														innerRadius={30}
+														paddingAngle={1}
+														label={false}
+														onMouseEnter={(_, index) =>
+															setHoveredClass(
+																sortedColorData[index].label,
+															)
+														}
+														onMouseLeave={() =>
+															setHoveredClass(null)
+														}
+													>
+														{sortedColorData.map((entry) => (
+															<Cell
+																key={entry.label}
+																fill={entry.hex}
+																stroke="#ffffff"
+																strokeWidth={1.5}
+																opacity={
+																	hoveredClass === null ||
+																	hoveredClass === entry.label
+																		? 1
+																		: 0.4
+																}
+															/>
+														))}
+													</Pie>
+													<Tooltip
+														// eslint-disable-next-line @typescript-eslint/no-explicit-any
+														formatter={(value: any, name: any) => [
+															typeof value === "number"
+																? `${value.toFixed(1)}%`
+																: String(value),
+															name,
+														]}
+														contentStyle={{
+															fontSize: 12,
+															fontFamily: "Roboto",
+															borderRadius: 6,
+															border: "1px solid var(--line-line-primary1)",
+															boxShadow:
+																"0 2px 8px rgba(0,0,0,0.08)",
+														}}
+													/>
+												</PieChart>
+											</ResponsiveContainer>
+										</div>
+
+										{/* Top Classes Grid */}
+										<div className={styles.statTopClassesGrid}>
+											{topColors.map((item) => (
+												<div
+													key={item.label}
+													className={`${styles.statTopClassItem} ${
+														hoveredClass &&
+														hoveredClass !== item.label
+															? styles.dimmed
+															: ""
+													}`}
+													onMouseEnter={() =>
+														setHoveredClass(item.label)
+													}
+													onMouseLeave={() =>
+														setHoveredClass(null)
+													}
+												>
+													<span
+														className={styles.statTopClassDot}
+														style={{
+															backgroundColor: item.hex,
+														}}
+													/>
+													<span className={styles.statTopClassName}>
+														{item.label}
+													</span>
+													<span className={styles.statTopClassPct}>
+														{item.pct.toFixed(1)}%
+													</span>
+												</div>
+											))}
+										</div>
+
+										{/* Expand Button */}
+										{remainingCount > 0 && (
+											<button
+												className={styles.statToggleBtn}
+												onClick={() => setIsExpanded(true)}
+											>
+												Show all {sortedColorData.length}{" "}
+												classes ▼
+											</button>
+										)}
+									</>
 								)}
-							</span>
-						</div>
-						<div className={styles.statDetailItem}>
-							<span className={styles.statDetailLabel}>Area %</span>
-							<span className={styles.statDetailValue}>
-								{stats.areaPct.toFixed(2)}%
-							</span>
-						</div>
+
+								{/* Expanded: Stacked Bar + Full List */}
+								{isExpanded && (
+									<>
+										{/* Compact Stacked Bar */}
+										<div className={styles.statStackedBar}>
+											{sortedColorData.map((item) => (
+												<div
+													key={item.label}
+													className={styles.statStackedSegment}
+													style={{
+														width: `${item.pct}%`,
+														backgroundColor: item.hex,
+													}}
+													onMouseEnter={() =>
+														setHoveredClass(item.label)
+													}
+													onMouseLeave={() =>
+														setHoveredClass(null)
+													}
+													title={`${item.label}: ${item.pct.toFixed(1)}%`}
+												/>
+											))}
+										</div>
+
+										{/* Full Classes Grid */}
+										<div className={`${styles.statTopClassesGrid} ${styles.statGridScrollable}`}>
+											{sortedColorData.map((item) =>(
+												<div
+													key={item.label}
+													className={`${styles.statTopClassItem} ${
+														hoveredClass &&
+															hoveredClass !== item.label
+																? styles.dimmed
+																: ""
+													}`}
+													onMouseEnter={() =>
+														setHoveredClass(item.label)
+													}
+													onMouseLeave={() =>
+														setHoveredClass(null)
+													}
+												>
+													<span
+														className={styles.statTopClassDot}
+														style={{
+															backgroundColor: item.hex,
+														}}
+													/>
+													<span className={styles.statTopClassName}>
+														{item.label}
+													</span>
+													<span className={styles.statTopClassPct}>
+														{item.pct.toFixed(1)}%
+													</span>
+												</div>
+											))}
+										</div>
+
+										{/* Collapse Button */}
+										<button
+											className={styles.statToggleBtn}
+											onClick={() => setIsExpanded(false)}
+										>
+											Show less ▲
+										</button>
+									</>
+								)}
+							</div>
+						) : (
+							<div className={styles.statClassificationWrap}>
+								<div className={styles.statClassificationHeader}>
+									<span className={styles.statSectionSubTitle}>
+										Color Classification
+									</span>
+								</div>
+								<div className={styles.statPlaceholder}>
+									<svg
+										width="28"
+										height="28"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										strokeWidth="1.5"
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										className={styles.statPlaceholderIcon}
+									>
+										<path d="M12 2.69l5.74 5.88-5.74 5.88-5.74-5.88z" />
+										<path d="M12 22a7 7 0 0 0 7-7c0-2.5-1.5-4.5-3-6.5L12 11 8 8.5C6.5 10.5 5 12.5 5 15a7 7 0 0 0 7 7z" />
+									</svg>
+									<span className={styles.statPlaceholderText}>
+										Define Coral Watch colors to see classification.
+									</span>
+								</div>
+							</div>
+						)}
 					</div>
 				</div>
 			)}

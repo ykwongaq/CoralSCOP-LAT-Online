@@ -12,11 +12,12 @@
 }
 
 .mainSection {
-  /* --gap: 14px; */
+  --gap: 14px;
   --padding: 40px;
   flex-grow: 1;
+  min-height: 0;
   position: relative;
-  padding: var(--gap) var(--gap) 0;
+  /* padding: var(--gap) var(--gap) 0; */
   display: flex;
 }
 
