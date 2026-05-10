@@ -76,13 +76,13 @@ export type ProjectAction =
 	| { type: "DELETE_SCALED_LINE"; payload: { dataId: number; lineId: number } }
 	| {
 			type: "SET_CORAL_WATCH_CARD";
-			payload: { dataId: number; card: CoralWatchCard };
+			payload: { dataId: number; card: CoralWatchCard | null };
 	  };
 
 function setCoralWatchCard(
 	state: ProjectState,
 	dataId: number,
-	card: CoralWatchCard,
+	card: CoralWatchCard | null,
 ): ProjectState {
 	return {
 		...state,

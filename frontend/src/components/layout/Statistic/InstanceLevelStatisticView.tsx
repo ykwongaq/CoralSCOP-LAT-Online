@@ -5,21 +5,11 @@ import {
 	classifyPixelsByColor,
 	type ColorClassificationResult,
 } from "../../../services";
-import { colorToHex } from "../../../utils/color";
 import CroppedCanvas from "../../ui/Statistic/CroppedCanvas";
-import {
-	PieChart,
-	Pie,
-	Cell,
-	Tooltip,
-	ResponsiveContainer,
-} from "recharts";
+import InstanceSettingsModal from "./InstanceSettingsModal";
+import ColorClassificationPanel from "./ColorClassificationPanel";
 
 import styles from "./InstanceLevelStatisticView.module.css";
-
-// ---------------------------------------------------------------------------
-// Main export
-// ---------------------------------------------------------------------------
 
 interface Props {
 	data: Data | null;
@@ -41,8 +31,11 @@ export default function InstanceLevelStatisticView({
 	selectedIds,
 }: Props) {
 	const [stats, setStats] = useState<InstanceStats | null>(null);
-	const [hoveredClass, setHoveredClass] = useState<string | null>(null);
-	const [isExpanded, setIsExpanded] = useState(false);
+	const [distanceThreshold, setDistanceThreshold] = useState(100);
+	const [workingDistanceThreshold, setWorkingDistanceThreshold] = useState(100);
+	const [showSettingsModal, setShowSettingsModal] = useState(false);
+	const [showMask, setShowMask] = useState(false);
+	const [maskAlpha, setMaskAlpha] = useState(100);
 
 	const selectedAnnotation = useMemo(() => {
 		if (!data) return null;
@@ -63,7 +56,6 @@ export default function InstanceLevelStatisticView({
 		[],
 	);
 
-	// Calculate area percentage from RLE segmentation
 	const calculateAreaPercentage = useCallback(
 		(
 			annotation: Annotation,
@@ -73,8 +65,6 @@ export default function InstanceLevelStatisticView({
 			const rle = annotation.segmentation as RLE;
 			if (!rle || !rle.counts || !rle.size) return 0;
 
-			// COCO RLE format: counts array alternates between background and foreground runs
-			// Odd indices (1, 3, 5, ...) represent foreground pixel counts
 			let pixelCount = 0;
 			for (let i = 1; i < rle.counts.length; i += 2) {
 				pixelCount += rle.counts[i];
@@ -115,14 +105,12 @@ export default function InstanceLevelStatisticView({
 			},
 		);
 
-		// Compute color classification if coralWatch is available
 		if (data.coralWatch && data.coralWatch.classPoints.length > 0) {
 			classifyPixelsByColor(
 				imageUrl,
 				selectedAnnotation,
 				data.coralWatch.classPoints,
-				width,
-				height,
+				distanceThreshold,
 			).then((results) => {
 				setStats((prev) =>
 					prev ? { ...prev, colorClassification: results } : null,
@@ -135,25 +123,8 @@ export default function InstanceLevelStatisticView({
 		labels,
 		computeBleaching,
 		calculateAreaPercentage,
+		distanceThreshold,
 	]);
-
-
-	const sortedColorData = useMemo(() => {
-		if (!stats?.colorClassification) return [];
-		return [...stats.colorClassification]
-			.sort((a, b) => b.pct - a.pct)
-			.map((item) => ({
-				...item,
-				hex: colorToHex(item.color),
-			}));
-	}, [stats?.colorClassification]);
-
-	const topColors = useMemo(() => {
-		return sortedColorData.slice(0, 5);
-	}, [sortedColorData]);
-
-	const remainingCount = sortedColorData.length - topColors.length;
-	const hasColorData = sortedColorData.length > 0;
 
 	if (!selectedAnnotation) {
 		return (
@@ -168,7 +139,51 @@ export default function InstanceLevelStatisticView({
 
 	return (
 		<div className={`${styles.statSection} ${styles.statSectionInstance}`}>
-			<h3 className={styles.statSectionTitle}>Instance Statistics</h3>
+			<div className={styles.statHeaderRow}>
+				<h3 className={styles.statSectionTitle}>Instance Statistics</h3>
+				<div className={styles.statSettingsButtonWrapper}>
+					<button
+						className={styles.statSettingsBtn}
+						onClick={() => setShowSettingsModal(!showSettingsModal)}
+						title="Settings"
+					>
+						<svg
+							width="16"
+							height="16"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							strokeWidth="2"
+							strokeLinecap="round"
+							strokeLinejoin="round"
+						>
+							<path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16z" />
+							<path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" />
+							<path d="M12 2v2" />
+							<path d="M12 20v2" />
+							<path d="m4.93 4.93 1.41 1.41" />
+							<path d="m17.66 17.66 1.41 1.41" />
+							<path d="M2 12h2" />
+							<path d="M20 12h2" />
+							<path d="m6.34 17.66-1.41 1.41" />
+							<path d="m19.07 4.93-1.41 1.41" />
+						</svg>
+					</button>
+					{showSettingsModal && (
+						<InstanceSettingsModal
+							showMask={showMask}
+							maskAlpha={maskAlpha}
+							onShowMaskChange={setShowMask}
+							onMaskAlphaChange={setMaskAlpha}
+							workingDistanceThreshold={workingDistanceThreshold}
+							onThresholdChange={setDistanceThreshold}
+							onWorkingThresholdChange={setWorkingDistanceThreshold}
+							hasCoralWatch={!!data?.coralWatch}
+							onClose={() => setShowSettingsModal(false)}
+						/>
+					)}
+				</div>
+			</div>
 			{data && stats && (
 				<div className={styles.statSplitRow}>
 					<div className={styles.statImagePanel}>
@@ -178,18 +193,16 @@ export default function InstanceLevelStatisticView({
 							imageWidth={data.imageData.width}
 							imageHeight={data.imageData.height}
 							colorClassification={stats.colorClassification}
+							showMask={showMask}
+							maskAlpha={maskAlpha}
 						/>
 					</div>
 					<div className={styles.statDataPanel}>
-						{/* Category Name */}
 						<div className={styles.statCategoryBlock}>
 							<span className={styles.statCategoryLabel}>Category</span>
-							<span className={styles.statCategoryName}>
-								{stats.labelName}
-							</span>
+							<span className={styles.statCategoryName}>{stats.labelName}</span>
 						</div>
 
-						{/* Status Tags */}
 						{stats.statuses.length > 0 && (
 							<div className={styles.statTagList}>
 								{stats.statuses.map((s) => (
@@ -200,7 +213,6 @@ export default function InstanceLevelStatisticView({
 							</div>
 						)}
 
-						{/* Compact Metrics Row */}
 						<div className={styles.statMetricsRow}>
 							<div className={styles.statMetricBlock}>
 								<span className={styles.statMetricValue}>
@@ -221,222 +233,9 @@ export default function InstanceLevelStatisticView({
 							</div>
 						</div>
 
-						{/* Color Classification */}
-						{hasColorData ? (
-							<div className={`${styles.statClassificationWrap} ${isExpanded ? styles.expanded : ""}`}>
-								<div className={styles.statClassificationHeader}>
-									<span className={styles.statSectionSubTitle}>
-										Color Classification
-									</span>
-									<span className={styles.statClassCount}>
-										{sortedColorData.length} classes
-									</span>
-								</div>
-
-								{/* Collapsed: Pie Chart + Top 5 */}
-								{!isExpanded && (
-									<>
-										<div className={styles.statChartWrap}>
-											<ResponsiveContainer width="100%" height="100%">
-												<PieChart>
-													<Pie
-														data={sortedColorData}
-														dataKey="pct"
-														nameKey="label"
-														cx="50%"
-														cy="50%"
-														outerRadius={60}
-														innerRadius={30}
-														paddingAngle={1}
-														label={false}
-														onMouseEnter={(_, index) =>
-															setHoveredClass(
-																sortedColorData[index].label,
-															)
-														}
-														onMouseLeave={() =>
-															setHoveredClass(null)
-														}
-													>
-														{sortedColorData.map((entry) => (
-															<Cell
-																key={entry.label}
-																fill={entry.hex}
-																stroke="#ffffff"
-																strokeWidth={1.5}
-																opacity={
-																	hoveredClass === null ||
-																	hoveredClass === entry.label
-																		? 1
-																		: 0.4
-																}
-															/>
-														))}
-													</Pie>
-													<Tooltip
-														// eslint-disable-next-line @typescript-eslint/no-explicit-any
-														formatter={(value: any, name: any) => [
-															typeof value === "number"
-																? `${value.toFixed(1)}%`
-																: String(value),
-															name,
-														]}
-														contentStyle={{
-															fontSize: 12,
-															fontFamily: "Roboto",
-															borderRadius: 6,
-															border: "1px solid var(--line-line-primary1)",
-															boxShadow:
-																"0 2px 8px rgba(0,0,0,0.08)",
-														}}
-													/>
-												</PieChart>
-											</ResponsiveContainer>
-										</div>
-
-										{/* Top Classes Grid */}
-										<div className={styles.statTopClassesGrid}>
-											{topColors.map((item) => (
-												<div
-													key={item.label}
-													className={`${styles.statTopClassItem} ${
-														hoveredClass &&
-														hoveredClass !== item.label
-															? styles.dimmed
-															: ""
-													}`}
-													onMouseEnter={() =>
-														setHoveredClass(item.label)
-													}
-													onMouseLeave={() =>
-														setHoveredClass(null)
-													}
-												>
-													<span
-														className={styles.statTopClassDot}
-														style={{
-															backgroundColor: item.hex,
-														}}
-													/>
-													<span className={styles.statTopClassName}>
-														{item.label}
-													</span>
-													<span className={styles.statTopClassPct}>
-														{item.pct.toFixed(1)}%
-													</span>
-												</div>
-											))}
-										</div>
-
-										{/* Expand Button */}
-										{remainingCount > 0 && (
-											<button
-												className={styles.statToggleBtn}
-												onClick={() => setIsExpanded(true)}
-											>
-												Show all {sortedColorData.length}{" "}
-												classes ▼
-											</button>
-										)}
-									</>
-								)}
-
-								{/* Expanded: Stacked Bar + Full List */}
-								{isExpanded && (
-									<>
-										{/* Compact Stacked Bar */}
-										<div className={styles.statStackedBar}>
-											{sortedColorData.map((item) => (
-												<div
-													key={item.label}
-													className={styles.statStackedSegment}
-													style={{
-														width: `${item.pct}%`,
-														backgroundColor: item.hex,
-													}}
-													onMouseEnter={() =>
-														setHoveredClass(item.label)
-													}
-													onMouseLeave={() =>
-														setHoveredClass(null)
-													}
-													title={`${item.label}: ${item.pct.toFixed(1)}%`}
-												/>
-											))}
-										</div>
-
-										{/* Full Classes Grid */}
-										<div className={`${styles.statTopClassesGrid} ${styles.statGridScrollable}`}>
-											{sortedColorData.map((item) =>(
-												<div
-													key={item.label}
-													className={`${styles.statTopClassItem} ${
-														hoveredClass &&
-															hoveredClass !== item.label
-																? styles.dimmed
-																: ""
-													}`}
-													onMouseEnter={() =>
-														setHoveredClass(item.label)
-													}
-													onMouseLeave={() =>
-														setHoveredClass(null)
-													}
-												>
-													<span
-														className={styles.statTopClassDot}
-														style={{
-															backgroundColor: item.hex,
-														}}
-													/>
-													<span className={styles.statTopClassName}>
-														{item.label}
-													</span>
-													<span className={styles.statTopClassPct}>
-														{item.pct.toFixed(1)}%
-													</span>
-												</div>
-											))}
-										</div>
-
-										{/* Collapse Button */}
-										<button
-											className={styles.statToggleBtn}
-											onClick={() => setIsExpanded(false)}
-										>
-											Show less ▲
-										</button>
-									</>
-								)}
-							</div>
-						) : (
-							<div className={styles.statClassificationWrap}>
-								<div className={styles.statClassificationHeader}>
-									<span className={styles.statSectionSubTitle}>
-										Color Classification
-									</span>
-								</div>
-								<div className={styles.statPlaceholder}>
-									<svg
-										width="28"
-										height="28"
-										viewBox="0 0 24 24"
-										fill="none"
-										stroke="currentColor"
-										strokeWidth="1.5"
-										strokeLinecap="round"
-										strokeLinejoin="round"
-										className={styles.statPlaceholderIcon}
-									>
-										<path d="M12 2.69l5.74 5.88-5.74 5.88-5.74-5.88z" />
-										<path d="M12 22a7 7 0 0 0 7-7c0-2.5-1.5-4.5-3-6.5L12 11 8 8.5C6.5 10.5 5 12.5 5 15a7 7 0 0 0 7 7z" />
-									</svg>
-									<span className={styles.statPlaceholderText}>
-										Define Coral Watch colors to see classification.
-									</span>
-								</div>
-							</div>
-						)}
+						<ColorClassificationPanel
+							colorClassification={stats.colorClassification}
+						/>
 					</div>
 				</div>
 			)}

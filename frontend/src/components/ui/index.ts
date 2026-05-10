@@ -1,6 +1,7 @@
 export { default as Button } from "./Button";
 export { default as LogoBlock } from "./LogoBlock";
 
+export * from "./Charts";
 export * from "./FloatBar";
 export * from "./ImageGallery";
 export * from "./ImageUploader";

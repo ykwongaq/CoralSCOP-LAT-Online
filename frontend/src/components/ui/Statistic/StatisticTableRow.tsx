@@ -9,7 +9,6 @@ export interface InstanceRowData {
 	bleachingPct: number | null;
 	areaPct: number;
 }
-
 interface StatisticTableRowProps {
 	row: InstanceRowData;
 	annotation: Annotation;

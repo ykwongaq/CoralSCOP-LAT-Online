@@ -167,15 +167,20 @@ const StatisticCanvas = forwardRef<StatisticCanvasRef, Props>(function Statistic
 		const canvas = canvasRef.current;
 		if (!canvas) return;
 		const rect = canvas.getBoundingClientRect();
-		canvas.width = rect.width;
-		canvas.height = rect.height;
+		const width = Math.round(rect.width);
+		const height = Math.round(rect.height);
+
+		if (canvas.width !== width || canvas.height !== height) {
+			canvas.width = width;
+			canvas.height = height;
+		}
 
 		const { width: imgW, height: imgH } = imageSizeRef.current;
 		if (imgW === 0 || imgH === 0) return;
 
-		const scale = Math.min(rect.width / imgW, rect.height / imgH);
-		const originX = -(rect.width / scale - imgW) / 2;
-		const originY = -(rect.height / scale - imgH) / 2;
+		const scale = Math.min(width / imgW, height / imgH);
+		const originX = -(width / scale - imgW) / 2;
+		const originY = -(height / scale - imgH) / 2;
 		viewportRef.current = { scale, originX, originY };
 		requestDraw();
 	}, [requestDraw]);
@@ -234,8 +239,15 @@ const StatisticCanvas = forwardRef<StatisticCanvasRef, Props>(function Statistic
 	}, [visualizationSettingState, requestDraw]);
 
 	useEffect(() => {
-		window.addEventListener("resize", resetViewport);
-		return () => window.removeEventListener("resize", resetViewport);
+		const canvas = canvasRef.current;
+		if (!canvas) return;
+
+		const resizeObserver = new ResizeObserver(() => {
+			resetViewport();
+		});
+
+		resizeObserver.observe(canvas);
+		return () => resizeObserver.disconnect();
 	}, [resetViewport]);
 
 	useImperativeHandle(ref, () => ({

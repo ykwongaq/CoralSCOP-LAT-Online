@@ -27,7 +27,7 @@ export interface UseCoralWatchPickerReturn {
 export function useCoralWatchPicker(
 	data: Data,
 	initialCard: CoralWatchCard | undefined,
-	onConfirm: (card: CoralWatchCard) => void,
+	onConfirm: (card: CoralWatchCard | null) => void,
 ): UseCoralWatchPickerReturn {
 	const [corners, setCorners] = useState<Point[]>([]);
 	const [showPreview, setShowPreview] = useState(false);
@@ -296,6 +296,11 @@ export function useCoralWatchPicker(
 	};
 
 	const handleConfirm = () => {
+		if (corners.length === 0) {
+			onConfirm(null);
+			return;
+		}
+
 		if (corners.length !== 4) return;
 		const [topLeft, topRight, bottomRight, bottomLeft] = corners;
 

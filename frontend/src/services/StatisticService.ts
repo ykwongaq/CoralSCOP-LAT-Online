@@ -337,11 +337,11 @@ export function calculatePixelScale(
 // Color classification for CoralWatch
 // ---------------------------------------------------------------------------
 
-function colorDistance(c1: Color, c2: Color): number {
-	const dr = (c1.r - c2.r) ** 2;
-	const dg = (c1.g - c2.g) ** 2;
-	const db = (c1.b - c2.b) ** 2;
-	return Math.sqrt(dr + dg + db);
+function colorDistanceSq(r: number, g: number, b: number, cr: number, cg: number, cb: number): number {
+	const dr = r - cr;
+	const dg = g - cg;
+	const db = b - cb;
+	return dr * dr + dg * dg + db * db;
 }
 
 export interface ColorClassificationResult {
@@ -349,14 +349,14 @@ export interface ColorClassificationResult {
 	pixels: number;
 	pct: number;
 	color: Color;
+	pixelMap?: string[];
 }
 
 export async function classifyPixelsByColor(
 	imageUrl: string,
 	annotation: Annotation,
 	classPoints: ClassPoint[],
-	imageWidth: number,
-	imageHeight: number,
+	distanceThreshold: number = 50,
 ): Promise<ColorClassificationResult[]> {
 	if (classPoints.length === 0) {
 		return [];
@@ -370,19 +370,31 @@ export async function classifyPixelsByColor(
 	});
 
 	const offscreen = document.createElement("canvas");
-	offscreen.width = imageWidth;
-	offscreen.height = imageHeight;
+	offscreen.width = img.naturalWidth;
+	offscreen.height = img.naturalHeight;
 	const ctx = offscreen.getContext("2d")!;
-	ctx.drawImage(img, 0, 0, imageWidth, imageHeight);
-	const pixelData = ctx.getImageData(0, 0, imageWidth, imageHeight);
+	ctx.drawImage(img, 0, 0);
+	const pixelData = ctx.getImageData(0, 0, img.naturalWidth, img.naturalHeight);
 
 	const mask = decodeRLE(annotation.segmentation);
 	const { data } = pixelData;
 
-	const classCounts: Record<string, number> = {};
-	for (const cp of classPoints) {
-		classCounts[cp.label] = 0;
+	// Precompute class point colors as flat typed arrays for faster access
+	const len = classPoints.length;
+	const rs = new Int32Array(len);
+	const gs = new Int32Array(len);
+	const bs = new Int32Array(len);
+	for (let i = 0; i < len; i++) {
+		rs[i] = classPoints[i].color.r;
+		gs[i] = classPoints[i].color.g;
+		bs[i] = classPoints[i].color.b;
 	}
+
+	// Use typed arrays for counts and pixel label map
+	const classCounts = new Uint32Array(len);
+	const pixelLabelMap = new Int16Array(mask.length);
+	pixelLabelMap.fill(-1); // -1 = unclassified
+	const thresholdSq = distanceThreshold * distanceThreshold;
 
 	let totalPixels = 0;
 	for (let i = 0; i < mask.length; i++) {
@@ -390,32 +402,41 @@ export async function classifyPixelsByColor(
 		totalPixels++;
 
 		const idx = i * 4;
-		const pixelColor: Color = {
-			r: data[idx],
-			g: data[idx + 1],
-			b: data[idx + 2],
-		};
+		const r = data[idx];
+		const g = data[idx + 1];
+		const b = data[idx + 2];
 
-		let closestClass = classPoints[0];
-		let closestDistance = colorDistance(pixelColor, closestClass.color);
+		let closestIdx = 0;
+		let closestDist = colorDistanceSq(r, g, b, rs[0], gs[0], bs[0]);
 
-		for (let j = 1; j < classPoints.length; j++) {
-			const dist = colorDistance(pixelColor, classPoints[j].color);
-			if (dist < closestDistance) {
-				closestDistance = dist;
-				closestClass = classPoints[j];
+		for (let j = 1; j < len; j++) {
+			if (closestDist === 0) break; // exact match, no need to continue
+			const dist = colorDistanceSq(r, g, b, rs[j], gs[j], bs[j]);
+			if (dist < closestDist) {
+				closestDist = dist;
+				closestIdx = j;
 			}
 		}
 
-		classCounts[closestClass.label]++;
+		if (closestDist <= thresholdSq) {
+			classCounts[closestIdx]++;
+			pixelLabelMap[i] = closestIdx;
+		}
 	}
 
-	const results: ColorClassificationResult[] = classPoints.map((cp) => ({
+	// Convert pixelLabelMap to string[] once for results[0]
+	const pixelMapStrings = Array.from(pixelLabelMap, (idx) =>
+		idx >= 0 ? classPoints[idx].label : "",
+	);
+
+	const results: ColorClassificationResult[] = classPoints.map((cp, i) => ({
 		label: cp.label,
-		pixels: classCounts[cp.label],
-		pct: totalPixels > 0 ? (classCounts[cp.label] / totalPixels) * 100 : 0,
+		pixels: classCounts[i],
+		pct: totalPixels > 0 ? (classCounts[i] / totalPixels) * 100 : 0,
 		color: cp.color,
 	}));
 
-	return results.sort((a, b) => b.pct - a.pct);
+	results.sort((a, b) => b.pct - a.pct);
+	results[0].pixelMap = pixelMapStrings; // only attach where it's read
+	return results;
 }

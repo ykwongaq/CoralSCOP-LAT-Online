@@ -6,6 +6,7 @@
   padding: 10px 12px;
   flex: 1;
   min-height: 0;
+  max-height: 44vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -54,10 +55,10 @@
   align-items: center;
   justify-content: center;
   background: var(--surface-surface-primary3);
-  border-radius: 8px;
-  border: 1px solid var(--line-line-primary1);
+  /* border-radius: 8px;
+  border: 1px solid var(--line-line-primary1); */
   overflow: hidden;
-  padding: 8px;
+  /* padding: 8px; */
 }
 
 .statImagePanel canvas {
@@ -115,7 +116,7 @@
 .statCategoryName {
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-text-primary1);
+  color: #000000;
   line-height: 1.3;
   word-break: break-word;
 }
@@ -227,7 +228,8 @@
   border-radius: 8px;
   border: 1px solid var(--line-line-primary1);
   padding: 8px 10px;
-  flex-shrink: 0;
+  min-height: 0;
+  flex: 1;
 }
 
 .statClassificationWrap.expanded {
@@ -243,6 +245,77 @@
 .statClassCount {
   font-size: 10px;
   color: var(--text-text-secondary1);
+  font-family: Roboto;
+}
+
+/* ============================================================
+   Threshold Control
+   ============================================================ */
+
+.statThresholdControl {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 0;
+  border-top: 1px solid var(--line-line-primary2);
+  flex-shrink: 0;
+}
+
+.statThresholdLabel {
+  font-size: 9px;
+  font-weight: 500;
+  color: var(--text-text-secondary1);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-family: Roboto;
+  line-height: 1.2;
+}
+
+.statThresholdSliderWrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.statThresholdSlider {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--line-line-primary1);
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+
+.statThresholdSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--text-text-primary1);
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.statThresholdSlider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--text-text-primary1);
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.statThresholdValue {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-text-primary1);
+  min-width: 30px;
+  text-align: center;
   font-family: Roboto;
 }
 
@@ -418,4 +491,170 @@
   font-family: Roboto;
   line-height: 1.4;
   max-width: 180px;
+}
+
+/* ============================================================
+   Settings Header and Modal
+   ============================================================ */
+
+.statHeaderRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.statSettingsButtonWrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.statSettingsBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #000000;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.statSettingsBtn:hover {
+  background: var(--surface-surface-primary5);
+}
+
+.statSettingsModal {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--surface-surface-primary3);
+  border-radius: 8px;
+  border: 1px solid var(--line-line-primary1);
+  padding: 12px;
+  margin-top: 8px;
+  min-width: 240px;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.statSettingsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line-line-primary2);
+}
+
+.statSettingsTitle {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-text-primary1);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-family: Roboto;
+}
+
+.statSettingControl {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.statSettingLabel {
+  font-size: 9px;
+  font-weight: 500;
+  color: var(--text-text-secondary1);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-family: Roboto;
+  line-height: 1.2;
+}
+
+.statSettingCheckbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--text-text-primary1);
+}
+
+.statSettingInputGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.statSettingSlider {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--line-line-primary1);
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+
+.statSettingSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--text-text-primary1);
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.statSettingSlider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--text-text-primary1);
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.statSettingValueInput {
+  width: 45px;
+  height: 24px;
+  padding: 4px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-text-primary1);
+  background: var(--surface-surface-primary5);
+  border: 1px solid var(--line-line-primary1);
+  border-radius: 4px;
+  font-family: Roboto;
+  text-align: center;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.statSettingValueInput:focus {
+  outline: none;
+  border-color: var(--line-line-secondary1);
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(66, 93, 249, 0.18);
+}
+
+.statSettingValueInput::-webkit-outer-spin-button,
+.statSettingValueInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.statSettingValueInput[type="number"] {
+  -moz-appearance: textfield;
 }

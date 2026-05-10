@@ -10,7 +10,7 @@ import styles from "./CoralWatchPicker.module.css";
 export interface CoralWatchPickerProps {
 	data: Data;
 	onClose: () => void;
-	onConfirm: (card: CoralWatchCard) => void;
+	onConfirm: (card: CoralWatchCard | null) => void;
 	initialCard?: CoralWatchCard;
 }
 
@@ -142,7 +142,7 @@ export function CoralWatchPicker({
 					<button
 						className={styles.confirmBtn}
 						onClick={handleConfirm}
-						disabled={corners.length !== 4}
+						disabled={corners.length !== 4 && corners.length !== 0}
 					>
 						Confirm
 					</button>
