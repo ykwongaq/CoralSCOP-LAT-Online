@@ -201,8 +201,8 @@ export function useCanvasRenderer(
 
 		viewportRef.current = {
 			scale,
-			offsetX: bboxWidth / 2,
-			offsetY: bboxHeight / 2,
+			offsetX: bbox.minX + bboxWidth / 2,
+			offsetY: bbox.minY + bboxHeight / 2,
 		};
 		draw();
 	}, [draw]);

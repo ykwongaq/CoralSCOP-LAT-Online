@@ -10,23 +10,29 @@ import styles from "./InstanceLevelStatisticView.module.css";
 
 interface Props {
 	colorClassification: ColorClassificationResult[] | null;
+	showUnclassified?: boolean;
 }
 
 export default function ColorClassificationPanel({
 	colorClassification,
+	showUnclassified = false,
 }: Props) {
 	const [isExpanded, setIsExpanded] = useState(false);
 	const [hoveredClass, setHoveredClass] = useState<string | null>(null);
 
 	const sortedColorData = useMemo(() => {
 		if (!colorClassification) return [];
-		return [...colorClassification]
+		let data = [...colorClassification];
+		if (!showUnclassified) {
+			data = data.filter((item) => item.label !== "Unclassified");
+		}
+		return data
 			.sort((a, b) => b.pct - a.pct)
 			.map((item) => ({
 				...item,
 				hex: colorToHex(item.color),
 			}));
-	}, [colorClassification]);
+	}, [colorClassification, showUnclassified]);
 
 	const topColors = useMemo(() => {
 		return sortedColorData.slice(0, 4);

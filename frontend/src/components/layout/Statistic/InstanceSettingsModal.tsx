@@ -10,6 +10,8 @@ interface Props {
 	onThresholdChange: (value: number) => void;
 	onWorkingThresholdChange: (value: number) => void;
 	hasCoralWatch: boolean;
+	showUnclassified: boolean;
+	onShowUnclassifiedChange: (value: boolean) => void;
 	onClose: () => void;
 }
 
@@ -22,6 +24,8 @@ export default function InstanceSettingsModal({
 	onThresholdChange,
 	onWorkingThresholdChange,
 	hasCoralWatch,
+	showUnclassified,
+	onShowUnclassifiedChange,
 	onClose,
 }: Props) {
 	const settingsRef = useRef<HTMLDivElement>(null);
@@ -129,6 +133,21 @@ export default function InstanceSettingsModal({
 							className={styles.statSettingValueInput}
 						/>
 					</div>
+				</div>
+			)}
+
+			{/* Show Unclassified Toggle */}
+			{hasCoralWatch && (
+				<div className={styles.statSettingControl}>
+					<label className={styles.statSettingLabel}>
+						Show Unclassified
+					</label>
+					<input
+						type="checkbox"
+						checked={showUnclassified}
+						onChange={(e) => onShowUnclassifiedChange(e.target.checked)}
+						className={styles.statSettingCheckbox}
+					/>
 				</div>
 			)}
 		</div>

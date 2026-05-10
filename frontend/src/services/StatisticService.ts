@@ -397,6 +397,7 @@ export async function classifyPixelsByColor(
 	const thresholdSq = distanceThreshold * distanceThreshold;
 
 	let totalPixels = 0;
+	let unclassifiedPixels = 0;
 	for (let i = 0; i < mask.length; i++) {
 		if (mask[i] !== 1) continue;
 		totalPixels++;
@@ -421,6 +422,8 @@ export async function classifyPixelsByColor(
 		if (closestDist <= thresholdSq) {
 			classCounts[closestIdx]++;
 			pixelLabelMap[i] = closestIdx;
+		} else {
+			unclassifiedPixels++;
 		}
 	}
 
@@ -436,7 +439,21 @@ export async function classifyPixelsByColor(
 		color: cp.color,
 	}));
 
+	// Add unclassified label as the last entry
+	results.push({
+		label: "Unclassified",
+		pixels: unclassifiedPixels,
+		pct: totalPixels > 0 ? (unclassifiedPixels / totalPixels) * 100 : 0,
+		color: { r: 128, g: 128, b: 128 },
+	});
+
 	results.sort((a, b) => b.pct - a.pct);
+	// Move unclassified to the end if it got sorted differently
+	const unclassifiedIndex = results.findIndex((r) => r.label === "Unclassified");
+	if (unclassifiedIndex !== -1 && unclassifiedIndex !== results.length - 1) {
+		const [unclassified] = results.splice(unclassifiedIndex, 1);
+		results.push(unclassified);
+	}
 	results[0].pixelMap = pixelMapStrings; // only attach where it's read
 	return results;
 }

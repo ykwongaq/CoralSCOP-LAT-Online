@@ -36,6 +36,7 @@ export default function InstanceLevelStatisticView({
 	const [showSettingsModal, setShowSettingsModal] = useState(false);
 	const [showMask, setShowMask] = useState(false);
 	const [maskAlpha, setMaskAlpha] = useState(100);
+	const [showUnclassified, setShowUnclassified] = useState(false);
 
 	const selectedAnnotation = useMemo(() => {
 		if (!data) return null;
@@ -179,6 +180,8 @@ export default function InstanceLevelStatisticView({
 							onThresholdChange={setDistanceThreshold}
 							onWorkingThresholdChange={setWorkingDistanceThreshold}
 							hasCoralWatch={!!data?.coralWatch}
+							showUnclassified={showUnclassified}
+							onShowUnclassifiedChange={setShowUnclassified}
 							onClose={() => setShowSettingsModal(false)}
 						/>
 					)}
@@ -235,6 +238,7 @@ export default function InstanceLevelStatisticView({
 
 						<ColorClassificationPanel
 							colorClassification={stats.colorClassification}
+							showUnclassified={showUnclassified}
 						/>
 					</div>
 				</div>

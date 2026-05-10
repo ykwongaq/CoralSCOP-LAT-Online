@@ -67,11 +67,8 @@ export default function CroppedCanvas({
 		colorClassification,
 	);
 
-	const { handleMouseDown, handleMouseMove } = useCanvasInteraction(
-		canvasRef,
-		viewportRef,
-		requestDraw,
-	);
+	const { handleMouseDown, handleMouseMove } =
+		useCanvasInteraction(canvasRef, viewportRef, requestDraw);
 
 	const colorMap = colorClassification
 		? new Map(colorClassification.map((c) => [c.label, c]))
