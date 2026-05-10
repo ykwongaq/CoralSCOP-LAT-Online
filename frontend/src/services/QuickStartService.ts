@@ -5,6 +5,7 @@ import type { ProjectConfig } from "../types";
 export interface QuickStartRequest {
 	image: File;
 	config: ProjectConfig;
+	projectId?: string;
 }
 
 export function quickStart(
@@ -23,6 +24,9 @@ export function quickStart(
 			max_overlap: request.config.max_overlap,
 		}),
 	);
+	if (request.projectId) {
+		formData.append("projectId", request.projectId);
+	}
 	// model is intentionally omitted — backend defaults to None (no auto-segmentation)
 
 	return apiClient.request<Blob>("/api/projects/quick-start", {

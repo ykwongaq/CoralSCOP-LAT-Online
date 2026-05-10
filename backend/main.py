@@ -46,9 +46,11 @@ _logger.info("Loaded config from %s", config_path)
 _server = server.Server(config)
 app = FastAPI(title="CoralSCOP-LAT API")
 
+# CORS must be added first (outermost middleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],  # Vite dev server
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -308,14 +310,21 @@ async def quick_start_project(
     image: UploadFile = File(...),
     config: Annotated[str, Form()] = "{}",
     model: Annotated[str | None, Form()] = None,
+    projectId: Annotated[str | None, Form()] = None,
 ):
     """
     Create a project from a single image and return the .coral file directly.
 
     Accepts multipart/form-data:
-      - image  : one image file
-      - config : JSON string  { min_area, min_confidence, max_overlap }
-      - model  : optional model identifier (CoralSCOP | CoralTank)
+      - image    : one image file
+      - config   : JSON string  { min_area, min_confidence, max_overlap }
+      - model    : optional model identifier (CoralSCOP | CoralTank)
+      - projectId: optional sample image identifier (e.g., "sample" without extension)
+
+    If projectId is provided (for sample images):
+      - Embeddings are reused if they already exist under this sample ID
+      - A new unique project_id is generated for this user
+      - project_info.json includes both project_id and sample_id
 
     Returns the .coral binary as application/octet-stream.
     The frontend can pass the response blob directly to loadProject().
@@ -337,10 +346,13 @@ async def quick_start_project(
 
     loop = asyncio.get_running_loop()
     zip_path = await loop.run_in_executor(
-        None, _server.quick_start, pil_image, filename, config_data
+        None, _server.quick_start, pil_image, filename, config_data, projectId
     )
 
     token = os.path.basename(zip_path).replace("project_", "").replace(".coral", "")
+
+    # Always delete temporary projects after download.
+    # For sample images, embeddings are cached under sample_id, not the project token.
     background_tasks.add_task(_server.delete_project, token)
 
     return FileResponse(

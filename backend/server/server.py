@@ -279,18 +279,37 @@ class Server:
             "best_mask_logit": best_mask_logit_b64,
         }
 
-    def quick_start(self, image: Image.Image, image_filename: str, config: Dict) -> str:
+    def quick_start(self, image: Image.Image, image_filename: str, config: Dict, sample_id: Optional[str] = None) -> str:
         """
         Create a single-image project and return the path to the .coral ZIP file.
-        The caller is responsible for deleting the file after it has been sent.
+
+        For sample images:
+          - sample_id: identifier for the sample image (e.g., "sample")
+          - Embeddings are stored under sample_id and reused across users
+          - A unique project_id (token) is generated for each user
+          - project_info.json includes both project_id and sample_id
+
+        For custom uploads:
+          - sample_id is None
+          - Embeddings and project both use the same unique token
+
+        The caller is responsible for deleting temporary files after sending.
         """
-        _logger.info("Running quick_start (image_filename=%s)", image_filename)
-        token = self.gen_token()
+        token = self.gen_token()  # Always generate new unique project_id
+
+        _logger.info(
+            "Running quick_start (image_filename=%s, project_id=%s, sample_id=%s)",
+            image_filename,
+            token,
+            sample_id,
+        )
+
         # Consume the synchronous generator in-place (single image, CPU-bound)
         for _ in self.project_handler.stream_create_project(
-            token, [image], [image_filename], config
+            token, [image], [image_filename], config, sample_id=sample_id
         ):
             pass
+
         return self.project_handler.get_zip_path(token)
 
     def run_model(self, image: Image.Image, config: Dict) -> Dict:

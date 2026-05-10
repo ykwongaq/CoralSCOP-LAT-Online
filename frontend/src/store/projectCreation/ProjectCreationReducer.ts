@@ -107,7 +107,7 @@ export const initialProjectCreationState: ProjectCreationState = {
 		min_confidence: 0.5,
 		max_overlap: 0.001,
 	},
-	model_selection: null,
+	model_selection: "CoralSCOP",
 };
 
 export function projectCreationReducer(

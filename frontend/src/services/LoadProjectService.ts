@@ -132,7 +132,9 @@ export async function loadProject(
 		}
 
 		const projectId = info.project_id;
-		const sessionId = projectId; // token = session_id on the backend
+		// For sample images, sessionId comes from sample_id (shared embeddings).
+		// For regular projects, sessionId is the projectId (backward compatible).
+		const sessionId = (info.sample_id as string) ?? projectId;
 
 		callbacks.onProgress?.(100);
 		callbacks.onComplete?.({

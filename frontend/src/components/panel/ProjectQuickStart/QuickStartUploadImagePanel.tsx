@@ -9,6 +9,7 @@ import { loadProject, quickStart } from "../../../services";
 import type { ApiRequestHandle, ProjectConfig } from "../../../types";
 export const QuickStartUploadImagePanelID = "quick-start-upload-image-panel";
 import { BottomBar } from "../../layout";
+
 const ACCEPTED_IMAGE_TYPES = [
 	"image/jpeg",
 	"image/png",
@@ -22,8 +23,18 @@ const DEFAULT_CONFIG: ProjectConfig = {
 	max_overlap: 0.001,
 };
 
+const sampleImageModules = import.meta.glob<{ default: string }>(
+	'../../../assets/samples/*',
+	{ eager: true }
+);
+
+const SAMPLE_IMAGES = Object.entries(sampleImageModules).map(([path, module]) => ({
+	name: path.split('/').pop() || 'Sample',
+	path: module.default,
+}));
+
 export default function QuickStartUploadImagePanel() {
-	const { projectState, projectDispatch } = useProject();
+	const { projectDispatch } = useProject();
 	const { showLoading, showError, updateLoadingProgress, closeMessage } =
 		usePopMessage();
 
@@ -77,12 +88,10 @@ export default function QuickStartUploadImagePanel() {
 		fileInputRef.current?.click();
 	}, []);
 
-	const handleStartAnnotation = useCallback(() => {
-		if (!selectedImage || isProcessing) return;
-
+	const processImage = useCallback((image: File, imageName: string, projectId?: string) => {
 		setIsProcessing(true);
 		requestHandleRef.current = quickStart(
-			{ image: selectedImage, config },
+			{ image, config, projectId },
 			{
 				onLoading: () => {
 					showLoading({
@@ -114,7 +123,7 @@ export default function QuickStartUploadImagePanel() {
 				onComplete: (blob) => {
 					const coralFile = new File(
 						[blob],
-						`${selectedImage.name.replace(/\.[^.]+$/, "")}.coral`,
+						`${imageName.replace(/\.[^.]+$/, "")}.coral`,
 						{ type: "application/octet-stream" },
 					);
 
@@ -140,15 +149,33 @@ export default function QuickStartUploadImagePanel() {
 				},
 			},
 		);
-	}, [
-		selectedImage,
-		isProcessing,
-		showLoading,
-		showError,
-		updateLoadingProgress,
-		closeMessage,
-		projectState,
-	]);
+	}, [config, showLoading, showError, updateLoadingProgress, closeMessage, projectDispatch]);
+
+	const handleStartAnnotation = useCallback(() => {
+		if (!selectedImage || isProcessing) return;
+		processImage(selectedImage, selectedImage.name);
+	}, [selectedImage, isProcessing, processImage]);
+
+	const handleLoadSampleImage = useCallback((imagePath: string, imageName: string) => {
+		if (isProcessing) return;
+
+		fetch(imagePath)
+			.then((response) => response.blob())
+			.then((blob) => {
+				const file = new File([blob], imageName, { type: blob.type });
+				const projectId = imageName.replace(/\.[^.]+$/, "");
+				processImage(file, imageName, projectId);
+			})
+			.catch((error) => {
+				console.error("Failed to load sample image:", error);
+				showError({
+					title: "Failed to Load Sample",
+					content: "Could not load the sample image.",
+					errorMessage: error.message,
+					buttons: [{ label: "Close", onClick: closeMessage }],
+				});
+			});
+	}, [isProcessing, processImage, showError, closeMessage]);
 
 	useEffect(() => {
 		if (selectedImage) {
@@ -195,6 +222,28 @@ export default function QuickStartUploadImagePanel() {
 						/>
 					</div>
 				)}
+
+				<div className={styles.sampleImagesSection}>
+					<p className={styles.sampleImagesTitle}>Or start with a sample image:</p>
+					<div className={styles.sampleImagesBar}>
+						{SAMPLE_IMAGES.map((sample) => (
+							<button
+								key={sample.name}
+								className={styles.sampleImageItem}
+								onClick={() => handleLoadSampleImage(sample.path, sample.name)}
+								disabled={isProcessing}
+								title={sample.name}
+							>
+								<img
+									src={sample.path}
+									alt={sample.name}
+									className={styles.sampleImage}
+								/>
+								<span className={styles.sampleImageLabel}>{sample.name}</span>
+							</button>
+						))}
+					</div>
+				</div>
 			</div>
 
 			<BottomBar>

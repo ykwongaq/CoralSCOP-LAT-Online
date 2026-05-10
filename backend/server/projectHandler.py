@@ -3,7 +3,7 @@ import json
 import os
 import shutil
 import zipfile
-from typing import Dict, Iterator, List
+from typing import Dict, Iterator, List, Optional
 
 import numpy as np
 import torch
@@ -125,6 +125,7 @@ class ProjectHandler:
         images: List[Image.Image],
         image_filenames: List[str],
         config: Dict,
+        sample_id: Optional[str] = None,
     ) -> List[Dict]:
         """
         Non stream version of create_project
@@ -180,8 +181,9 @@ class ProjectHandler:
                 if self.embedding_store is not None:
                     buf = io.BytesIO()
                     torch.save(state, buf)
+                    embedding_session_id = sample_id if sample_id else token
                     self.embedding_store.save(
-                        token, filename_without_ext, buf.getvalue()
+                        embedding_session_id, filename_without_ext, buf.getvalue()
                     )
 
             project_info = {
@@ -190,6 +192,8 @@ class ProjectHandler:
                 "creation_time": token,
                 "config": config,
             }
+            if sample_id:
+                project_info["sample_id"] = sample_id
 
             with open(os.path.join(temp_dir, "project_info.json"), "w") as f:
                 json.dump(project_info, f, indent=4)
@@ -219,18 +223,22 @@ class ProjectHandler:
         images: List[Image.Image],
         image_filenames: List[str],
         config: Dict,
+        sample_id: Optional[str] = None,
     ) -> Iterator[Dict]:
         """
         Generator that processes images and yields progress events.
 
-        Embeddings are stored persistently in the EmbeddingStore under the
-        project token (which doubles as the SAM session_id).  The .coral ZIP
-        contains only images, annotations, and project_info.json — no
+        Embeddings are stored persistently in the EmbeddingStore. For regular projects,
+        embeddings use the token as the session_id. For sample images, embeddings use
+        the sample_id as the session_id, allowing embeddings to be shared across users.
+
+        The .coral ZIP contains only images, annotations, and project_info.json — no
         embeddings — keeping the download size small.
 
         Args:
-            token: Externally-generated UUID used for temp file naming,
-                   download token, and SAM session_id.
+            token: Externally-generated UUID used for temp file naming and download token.
+            sample_id: Optional identifier for sample images. If provided, embeddings
+                      are stored under sample_id instead of token, enabling reuse across users.
 
         Yields:
             {"type": "progress", "value": <0-95>, "message": <str>}
@@ -293,12 +301,15 @@ class ProjectHandler:
                 ) as f:
                     json.dump(output_json, f, indent=4)
 
-                # Save embedding to persistent store (token doubles as session_id)
+                # Save embedding to persistent store
+                # For sample images, use sample_id as session_id (shared across users)
+                # For regular projects, use token as session_id
                 if self.embedding_store is not None:
                     buf = io.BytesIO()
                     torch.save(state, buf)
+                    embedding_session_id = sample_id if sample_id else token
                     self.embedding_store.save(
-                        token, filename_without_ext, buf.getvalue()
+                        embedding_session_id, filename_without_ext, buf.getvalue()
                     )
 
                 yield {
@@ -309,13 +320,16 @@ class ProjectHandler:
 
             yield {"type": "progress", "value": 85, "message": "Packaging project file"}
 
-            # token is also the SAM session_id for loading embeddings server-side
+            # For sample images, sample_id is the SAM session_id (shared embeddings)
+            # For regular projects, token is the SAM session_id
             project_info = {
                 "project_id": token,
                 "last_idx": 0,
                 "creation_time": token,
                 "config": config,
             }
+            if sample_id:
+                project_info["sample_id"] = sample_id
             with open(os.path.join(temp_dir, "project_info.json"), "w") as f:
                 json.dump(project_info, f, indent=4)
 
