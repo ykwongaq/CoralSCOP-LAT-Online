@@ -15,6 +15,7 @@ interface Props {
 	colorClassification?: ColorClassificationResult[] | null;
 	showMask?: boolean;
 	maskAlpha?: number;
+	showColorBoxes?: boolean;
 }
 
 interface GridCell {
@@ -53,6 +54,7 @@ export default function CroppedCanvas({
 	colorClassification,
 	showMask = true,
 	maskAlpha = 100,
+	showColorBoxes = true,
 }: Props) {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -67,8 +69,25 @@ export default function CroppedCanvas({
 		colorClassification,
 	);
 
-	const { handleMouseDown, handleMouseMove } =
+	const { handleMouseDown, handleMouseMove, handleMouseUp, handleMouseLeave, handleWheel } =
 		useCanvasInteraction(canvasRef, viewportRef, requestDraw);
+
+	if (!showColorBoxes) {
+		return (
+			<div className={styles.simpleCanvasContainer}>
+				<canvas
+					ref={canvasRef}
+					className={styles.canvas}
+					onMouseDown={handleMouseDown}
+					onMouseMove={handleMouseMove}
+					onMouseUp={handleMouseUp}
+					onMouseLeave={handleMouseLeave}
+					onWheel={handleWheel}
+					onContextMenu={(e) => e.preventDefault()}
+				/>
+			</div>
+		);
+	}
 
 	const colorMap = colorClassification
 		? new Map(colorClassification.map((c) => [c.label, c]))
@@ -102,6 +121,9 @@ export default function CroppedCanvas({
 					className={styles.canvas}
 					onMouseDown={handleMouseDown}
 					onMouseMove={handleMouseMove}
+					onMouseUp={handleMouseUp}
+					onMouseLeave={handleMouseLeave}
+					onWheel={handleWheel}
 					onContextMenu={(e) => e.preventDefault()}
 				/>
 			</div>

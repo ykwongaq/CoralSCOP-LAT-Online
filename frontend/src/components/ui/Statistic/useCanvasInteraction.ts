@@ -90,10 +90,30 @@ export function useCanvasInteraction(
 		};
 	}, [handleMouseUp, handleMouseLeave]);
 
+	const handleWheelEvent = useCallback(
+		(e: React.WheelEvent<HTMLCanvasElement>) => {
+			e.preventDefault();
+			const { scale, offsetX, offsetY } = viewportRef.current;
+
+			const zoom = e.deltaY < 0 ? 1.1 : 0.9;
+			const newScale = Math.max(0.1, Math.min(10, scale * zoom));
+
+			viewportRef.current = {
+				scale: newScale,
+				offsetX,
+				offsetY,
+			};
+
+			requestDraw();
+		},
+		[viewportRef, requestDraw],
+	);
+
 	return {
 		handleMouseDown,
 		handleMouseMove,
 		handleMouseUp,
 		handleMouseLeave,
+		handleWheel: handleWheelEvent,
 	};
 }

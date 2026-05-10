@@ -11,6 +11,7 @@ interface StatisticTableProps {
 	imageHeight: number;
 	maxHeight?: number;
 	showCroppedCanvas?: boolean;
+	showColorBoxes?: boolean;
 }
 
 /**
@@ -24,6 +25,7 @@ export default function StatisticTable({
 	imageWidth,
 	imageHeight,
 	showCroppedCanvas = true,
+	showColorBoxes = true,
 	maxHeight = 150,
 }: StatisticTableProps) {
 	// Create a map for quick annotation lookup by ID
@@ -105,6 +107,7 @@ export default function StatisticTable({
 								imageWidth={imageWidth}
 								imageHeight={imageHeight}
 								showCroppedCanvas={showCroppedCanvas}
+								showColorBoxes={showColorBoxes}
 							/>
 						);
 					})}

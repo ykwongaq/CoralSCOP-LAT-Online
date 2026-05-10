@@ -16,6 +16,7 @@ interface StatisticTableRowProps {
 	imageWidth: number;
 	imageHeight: number;
 	showCroppedCanvas?: boolean;
+	showColorBoxes?: boolean;
 }
 
 /**
@@ -29,6 +30,7 @@ export default function StatisticTableRow({
 	imageWidth,
 	imageHeight,
 	showCroppedCanvas = true,
+	showColorBoxes = true,
 }: StatisticTableRowProps) {
 	return (
 		<tr>
@@ -40,6 +42,7 @@ export default function StatisticTableRow({
 							annotation={annotation}
 							imageWidth={imageWidth}
 							imageHeight={imageHeight}
+							showColorBoxes={showColorBoxes}
 						/>
 					</div>
 				</td>

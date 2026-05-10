@@ -198,6 +198,7 @@ export default function InstanceLevelStatisticView({
 							colorClassification={stats.colorClassification}
 							showMask={showMask}
 							maskAlpha={maskAlpha}
+							showColorBoxes={!!data.coralWatch}
 						/>
 					</div>
 					<div className={styles.statDataPanel}>
