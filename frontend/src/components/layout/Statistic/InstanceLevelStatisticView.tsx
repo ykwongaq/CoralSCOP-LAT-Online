@@ -177,6 +177,7 @@ export default function InstanceLevelStatisticView({
 							annotation={selectedAnnotation}
 							imageWidth={data.imageData.width}
 							imageHeight={data.imageData.height}
+							colorClassification={stats.colorClassification}
 						/>
 					</div>
 					<div className={styles.statDataPanel}>

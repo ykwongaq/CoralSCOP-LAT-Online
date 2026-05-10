@@ -1,291 +1,316 @@
-import { useRef, useEffect } from "react";
-import { decodeRLE } from "../../../utils/cocoRle";
+import { useRef, useEffect, useCallback } from "react";
 import type { Annotation } from "../../../types";
-import { getMaskBoundingBox } from "../../../services/StatisticService";
+import type { ColorClassificationResult } from "../../../services";
+import { getMaskBoundingBox } from "../../../services";
+import { decodeRLE } from "../../../utils/cocoRle";
+import { colorToHex } from "../../../utils/color";
+
 import styles from "./CroppedCanvas.module.css";
 
-interface CroppedCanvasProps {
+interface Props {
 	imageUrl: string;
 	annotation: Annotation;
 	imageWidth: number;
 	imageHeight: number;
+	colorClassification?: ColorClassificationResult[] | null;
 }
 
-interface ViewState {
-	zoom: number;
-	panX: number;
-	panY: number;
-	offCanvas: HTMLCanvasElement | null;
-	cropW: number;
-	cropH: number;
-	baseScale: number;
+interface Viewport {
+	scale: number;
+	offsetX: number;
+	offsetY: number;
 }
 
-function clampPan(
-	state: ViewState,
-	containerWidth: number,
-	containerHeight: number,
-) {
-	const scaledW = state.cropW * state.baseScale;
-	const scaledH = state.cropH * state.baseScale;
-	const drawW = scaledW * state.zoom;
-	const drawH = scaledH * state.zoom;
-	const maxPanX = Math.max(0, (drawW - containerWidth) / 2);
-	const maxPanY = Math.max(0, (drawH - containerHeight) / 2);
-	state.panX = Math.max(-maxPanX, Math.min(maxPanX, state.panX));
-	state.panY = Math.max(-maxPanY, Math.min(maxPanY, state.panY));
+interface GridCell {
+	label: string;
+	row: number;
+	col: number;
 }
 
-/**
- * A canvas component that displays a cropped region of the image
- * showing only the specified annotation mask.
- * Supports zoom (scroll) and pan (drag) interactions.
- */
+function getGridPositions(): GridCell[] {
+	const cells: GridCell[] = [];
+
+	// B row (top)
+	for (let i = 1; i <= 6; i++) {
+		cells.push({ label: `B${i}`, row: 0, col: i - 1 });
+	}
+
+	// C column (right)
+	for (let i = 1; i <= 6; i++) {
+		cells.push({ label: `C${i}`, row: i - 1, col: 6 });
+	}
+
+	// D row (bottom)
+	for (let i = 1; i <= 6; i++) {
+		cells.push({ label: `D${i}`, row: 6, col: 7 - i });
+	}
+
+	// E column (left)
+	for (let i = 1; i <= 6; i++) {
+		cells.push({ label: `E${i}`, row: 7 - i, col: 0 });
+	}
+
+	return cells;
+}
+
 export default function CroppedCanvas({
 	imageUrl,
 	annotation,
 	imageWidth,
 	imageHeight,
-}: CroppedCanvasProps) {
+	colorClassification,
+}: Props) {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
-	const stateRef = useRef<ViewState>({
-		zoom: 1,
-		panX: 0,
-		panY: 0,
-		offCanvas: null,
-		cropW: 0,
-		cropH: 0,
-		baseScale: 0,
-	});
-	const drawRef = useRef(() => {});
+	const imageRef = useRef<HTMLImageElement | null>(null);
+	const maskRef = useRef<Uint8Array | null>(null);
+	const boundingBoxRef = useRef<{
+		minX: number;
+		minY: number;
+		maxX: number;
+		maxY: number;
+	} | null>(null);
+	const viewportRef = useRef<Viewport>({ scale: 1, offsetX: 0, offsetY: 0 });
+	const rafRef = useRef(0);
+	const isRightMouseDownRef = useRef(false);
+	const lastMousePosRef = useRef({ x: 0, y: 0 });
 
-	drawRef.current = () => {
+	const draw = useCallback(() => {
 		const canvas = canvasRef.current;
-		if (!canvas) return;
-		const state = stateRef.current;
-		if (!state.offCanvas || state.cropW === 0 || state.cropH === 0) return;
+		if (!canvas || !imageRef.current || !maskRef.current) return;
 
-		const rect = canvas.getBoundingClientRect();
-		const containerWidth = rect.width || 260;
-		const containerHeight = rect.height || 220;
+		const ctx = canvas.getContext("2d");
+		if (!ctx) return;
 
-		const dpr = window.devicePixelRatio || 1;
-		canvas.width = containerWidth * dpr;
-		canvas.height = containerHeight * dpr;
+		ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-		state.baseScale = Math.min(
-			containerWidth / state.cropW,
-			containerHeight / state.cropH,
-		);
+		const mask = maskRef.current;
+		const bbox = boundingBoxRef.current;
+		if (!bbox) return;
 
-		const ctx = canvas.getContext("2d")!;
-		ctx.scale(dpr, dpr);
-		ctx.clearRect(0, 0, containerWidth, containerHeight);
+		const { scale, offsetX, offsetY } = viewportRef.current;
 
-		const scaledW = state.cropW * state.baseScale;
-		const scaledH = state.cropH * state.baseScale;
-		const drawW = scaledW * state.zoom;
-		const drawH = scaledH * state.zoom;
-		const offsetX = (containerWidth - scaledW) / 2;
-		const offsetY = (containerHeight - scaledH) / 2;
+		// Create masked image
+		const offscreenCanvas = document.createElement("canvas");
+		offscreenCanvas.width = imageWidth;
+		offscreenCanvas.height = imageHeight;
+		const offscreenCtx = offscreenCanvas.getContext("2d");
+		if (!offscreenCtx) return;
 
-		clampPan(state, containerWidth, containerHeight);
+		offscreenCtx.drawImage(imageRef.current, 0, 0);
+		const pixelData = offscreenCtx.getImageData(0, 0, imageWidth, imageHeight);
+		const data = pixelData.data;
+
+		// Apply mask
+		for (let i = 0; i < mask.length; i++) {
+			if (mask[i] !== 1) {
+				const idx = i * 4;
+				data[idx + 3] = 0;
+			}
+		}
+
+		offscreenCtx.putImageData(pixelData, 0, 0);
+
+		// Get dimensions
+		const bboxWidth = bbox.maxX - bbox.minX + 1;
+		const bboxHeight = bbox.maxY - bbox.minY + 1;
+
+		// Apply viewport transform
+		ctx.save();
+		ctx.translate(canvas.width / 2, canvas.height / 2);
+		ctx.scale(scale, scale);
+		ctx.translate(-offsetX, -offsetY);
+
+		// Draw masked image centered
+		const centerX = (canvas.width / scale / 2) - bboxWidth / 2;
+		const centerY = (canvas.height / scale / 2) - bboxHeight / 2;
 
 		ctx.drawImage(
-			state.offCanvas,
-			0,
-			0,
-			state.cropW,
-			state.cropH,
-			offsetX + state.panX - (drawW - scaledW) / 2,
-			offsetY + state.panY - (drawH - scaledH) / 2,
-			drawW,
-			drawH,
+			offscreenCanvas,
+			bbox.minX,
+			bbox.minY,
+			bboxWidth,
+			bboxHeight,
+			centerX,
+			centerY,
+			bboxWidth,
+			bboxHeight,
 		);
-	};
 
-	// Load image and prepare masked offscreen canvas
-	useEffect(() => {
-		if (!imageUrl || !annotation) return;
+		ctx.restore();
+	}, [imageWidth, imageHeight]);
+
+	const requestDraw = useCallback(() => {
+		cancelAnimationFrame(rafRef.current);
+		rafRef.current = requestAnimationFrame(draw);
+	}, [draw]);
+
+	const resetViewport = useCallback(() => {
 		const canvas = canvasRef.current;
 		if (!canvas) return;
 
-		const img = new Image();
-		img.crossOrigin = "anonymous";
-		img.onload = () => {
-			// Decode the RLE mask and get bounding box for single annotation
+		const rect = canvas.getBoundingClientRect();
+		canvas.width = Math.round(rect.width);
+		canvas.height = Math.round(rect.height);
+
+		const bbox = boundingBoxRef.current;
+		if (!bbox) return;
+
+		const bboxWidth = bbox.maxX - bbox.minX + 1;
+		const bboxHeight = bbox.maxY - bbox.minY + 1;
+
+		const scale = Math.min(rect.width / bboxWidth, rect.height / bboxHeight) * 0.95;
+
+		viewportRef.current = {
+			scale,
+			offsetX: bboxWidth / 2,
+			offsetY: bboxHeight / 2,
+		};
+		// Draw immediately so user sees the coral right away
+		draw();
+	}, [draw]);
+
+	// Load image and decode mask
+	useEffect(() => {
+		const loadImageAndMask = async () => {
+			const img = new Image();
+			await new Promise<void>((res, rej) => {
+				img.onload = () => res();
+				img.onerror = () => rej();
+				img.src = imageUrl;
+			});
+
+			imageRef.current = img;
 			const mask = decodeRLE(annotation.segmentation);
-			const bb = getMaskBoundingBox(mask, imageWidth);
-			if (!bb) return;
+			maskRef.current = mask;
 
-			const { minX, minY, maxX, maxY } = bb;
-			const maskWidth = maxX - minX;
-			const maskHeight = maxY - minY;
+			const bbox = getMaskBoundingBox(mask, imageWidth);
+			boundingBoxRef.current = bbox;
 
-			// Minimal padding - only 3% of mask dimensions
-			const pad = Math.ceil(Math.max(maskWidth, maskHeight) * 0.03);
-			const cropX = Math.max(0, minX - pad);
-			const cropY = Math.max(0, minY - pad);
-			const cropW = Math.min(imageWidth, maxX + pad) - cropX;
-			const cropH = Math.min(imageHeight, maxY + pad) - cropY;
-
-			// Create offscreen canvas to apply mask transparency at original resolution
-			const offCanvas = document.createElement("canvas");
-			offCanvas.width = cropW;
-			offCanvas.height = cropH;
-			const offCtx = offCanvas.getContext("2d")!;
-			offCtx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
-
-			// Apply mask: set non-segmented pixels to transparent
-			const imgData = offCtx.getImageData(0, 0, cropW, cropH);
-			const data = imgData.data;
-			for (let y = 0; y < cropH; y++) {
-				for (let x = 0; x < cropW; x++) {
-					const origX = cropX + x;
-					const origY = cropY + y;
-					const maskIdx = origY * imageWidth + origX;
-					if (!mask[maskIdx]) {
-						const pixelIdx = (y * cropW + x) * 4;
-						data[pixelIdx + 3] = 0; // alpha = 0
-					}
-				}
-			}
-			offCtx.putImageData(imgData, 0, 0);
-
-			const state = stateRef.current;
-			state.offCanvas = offCanvas;
-			state.cropW = cropW;
-			state.cropH = cropH;
-			state.zoom = 1;
-			state.panX = 0;
-			state.panY = 0;
-
-			drawRef.current();
+			resetViewport();
 		};
-		img.src = imageUrl;
-	}, [imageUrl, annotation, imageWidth, imageHeight]);
 
-	// Setup zoom, pan, and resize interactions
+		loadImageAndMask();
+	}, [imageUrl, annotation, imageWidth, resetViewport]);
+
 	useEffect(() => {
-		const canvas = canvasRef.current;
-		if (!canvas) return;
+		window.addEventListener("resize", resetViewport);
+		return () => window.removeEventListener("resize", resetViewport);
+	}, [resetViewport]);
 
-		let isDragging = false;
-		let lastX = 0;
-		let lastY = 0;
-
-		const handleWheel = (e: WheelEvent) => {
+	// Mouse wheel zoom
+	const handleWheel = useCallback(
+		(e: WheelEvent) => {
 			e.preventDefault();
-			const state = stateRef.current;
-			if (!state.offCanvas) return;
+			const { scale, offsetX, offsetY } = viewportRef.current;
 
-			const rect = canvas.getBoundingClientRect();
-			const mx = e.clientX - rect.left;
-			const my = e.clientY - rect.top;
+			const zoom = e.deltaY < 0 ? 1.1 : 0.9;
+			const newScale = Math.max(0.1, Math.min(10, scale * zoom));
 
-			const oldZoom = state.zoom;
-			const newZoom = Math.min(
-				Math.max(oldZoom * Math.exp(-e.deltaY * 0.001), 1),
-				10,
-			);
+			viewportRef.current = {
+				scale: newScale,
+				offsetX,
+				offsetY,
+			};
 
-			const scaledW = state.cropW * state.baseScale;
-			const scaledH = state.cropH * state.baseScale;
-			const oldDrawW = scaledW * oldZoom;
-			const oldDrawH = scaledH * oldZoom;
-			const oldOffsetX = (rect.width - scaledW) / 2;
-			const oldOffsetY = (rect.height - scaledH) / 2;
-			const oldDrawX = oldOffsetX + state.panX - (oldDrawW - scaledW) / 2;
-			const oldDrawY = oldOffsetY + state.panY - (oldDrawH - scaledH) / 2;
+			requestDraw();
+		},
+		[requestDraw],
+	);
 
-			const nx = oldDrawW > 0 ? (mx - oldDrawX) / oldDrawW : 0.5;
-			const ny = oldDrawH > 0 ? (my - oldDrawY) / oldDrawH : 0.5;
+	const handleMouseDown = useCallback(
+		(e: React.MouseEvent<HTMLCanvasElement>) => {
+			if (e.button === 2) {
+				isRightMouseDownRef.current = true;
+				lastMousePosRef.current = { x: e.clientX, y: e.clientY };
+			}
+		},
+		[],
+	);
 
-			const newDrawW = scaledW * newZoom;
-			const newDrawH = scaledH * newZoom;
-			const newOffsetX = (rect.width - scaledW) / 2;
-			const newOffsetY = (rect.height - scaledH) / 2;
+	const handleMouseMove = useCallback(
+		(e: React.MouseEvent<HTMLCanvasElement>) => {
+			if (!isRightMouseDownRef.current) return;
 
-			const newDrawX = mx - nx * newDrawW;
-			const newDrawY = my - ny * newDrawH;
+			const dx = e.clientX - lastMousePosRef.current.x;
+			const dy = e.clientY - lastMousePosRef.current.y;
 
-			state.panX = newDrawX - newOffsetX + (newDrawW - scaledW) / 2;
-			state.panY = newDrawY - newOffsetY + (newDrawH - scaledH) / 2;
-			state.zoom = newZoom;
+			const { scale, offsetX, offsetY } = viewportRef.current;
+			viewportRef.current = {
+				scale,
+				offsetX: offsetX - dx / scale,
+				offsetY: offsetY - dy / scale,
+			};
 
-			clampPan(state, rect.width, rect.height);
-			drawRef.current();
-		};
+			lastMousePosRef.current = { x: e.clientX, y: e.clientY };
+			requestDraw();
+		},
+		[requestDraw],
+	);
 
-		const handleMouseDown = (e: MouseEvent) => {
-			if (e.button !== 2) return; // right mouse button only
-			isDragging = true;
-			lastX = e.clientX;
-			lastY = e.clientY;
-			canvas.style.cursor = "grabbing";
-		};
-
-		const handleMouseMove = (e: MouseEvent) => {
-			if (!isDragging) return;
-			const dx = e.clientX - lastX;
-			const dy = e.clientY - lastY;
-			lastX = e.clientX;
-			lastY = e.clientY;
-
-			const state = stateRef.current;
-			state.panX += dx;
-			state.panY += dy;
-
-			const rect = canvas.getBoundingClientRect();
-			clampPan(state, rect.width, rect.height);
-			drawRef.current();
-		};
-
-		const handleMouseUp = () => {
-			isDragging = false;
-			canvas.style.cursor = "grab";
-		};
-
-		const handleContextMenu = (e: MouseEvent) => {
-			e.preventDefault();
-		};
-
-		const handleDoubleClick = () => {
-			const state = stateRef.current;
-			state.zoom = 1;
-			state.panX = 0;
-			state.panY = 0;
-			drawRef.current();
-		};
-
-		const handleResize = () => {
-			drawRef.current();
-		};
-
-		canvas.addEventListener("wheel", handleWheel, { passive: false });
-		canvas.addEventListener("mousedown", handleMouseDown);
-		window.addEventListener("mousemove", handleMouseMove);
-		window.addEventListener("mouseup", handleMouseUp);
-		canvas.addEventListener("dblclick", handleDoubleClick);
-		canvas.addEventListener("contextmenu", handleContextMenu);
-		window.addEventListener("resize", handleResize);
-
-		return () => {
-			canvas.removeEventListener("wheel", handleWheel);
-			canvas.removeEventListener("mousedown", handleMouseDown);
-			window.removeEventListener("mousemove", handleMouseMove);
-			window.removeEventListener("mouseup", handleMouseUp);
-			canvas.removeEventListener("dblclick", handleDoubleClick);
-			canvas.removeEventListener("contextmenu", handleContextMenu);
-			window.removeEventListener("resize", handleResize);
-		};
+	const handleMouseUp = useCallback(() => {
+		isRightMouseDownRef.current = false;
 	}, []);
 
+	const handleMouseLeave = useCallback(() => {
+		isRightMouseDownRef.current = false;
+	}, []);
+
+	useEffect(() => {
+		const canvas = canvasRef.current;
+		if (!canvas) return;
+
+		canvas.addEventListener("wheel", handleWheel, { passive: false });
+		return () => canvas.removeEventListener("wheel", handleWheel);
+	}, [handleWheel]);
+
+	useEffect(() => {
+		document.addEventListener("mouseup", handleMouseUp);
+		document.addEventListener("mouseleave", handleMouseLeave);
+		return () => {
+			document.removeEventListener("mouseup", handleMouseUp);
+			document.removeEventListener("mouseleave", handleMouseLeave);
+		};
+	}, [handleMouseUp, handleMouseLeave]);
+
+	useEffect(() => {
+		return () => cancelAnimationFrame(rafRef.current);
+	}, []);
+
+	const colorMap = colorClassification
+		? new Map(colorClassification.map((c) => [c.label, c]))
+		: new Map();
+	const gridCells = getGridPositions();
+
 	return (
-		<canvas
-			ref={canvasRef}
-			className={styles.statCropCanvas}
-			style={{ cursor: "grab", touchAction: "none" }}
-		/>
+		<div className={styles.gridContainer}>
+			{gridCells.map((cell) => {
+				const colorData = colorMap.get(cell.label);
+				const colorHex = colorData ? colorToHex(colorData.color) : "#e5e7eb";
+
+				return (
+					<div
+						key={cell.label}
+						className={styles.colorBox}
+						style={{
+							gridRow: cell.row + 1,
+							gridColumn: cell.col + 1,
+							backgroundColor: colorHex,
+						}}
+					>
+						<div className={styles.colorBoxLabel}>{cell.label}</div>
+					</div>
+				);
+			})}
+
+			<div className={styles.canvasContainer}>
+				<canvas
+					ref={canvasRef}
+					className={styles.canvas}
+					onMouseDown={handleMouseDown}
+					onMouseMove={handleMouseMove}
+					onContextMenu={(e) => e.preventDefault()}
+				/>
+			</div>
+		</div>
 	);
 }
