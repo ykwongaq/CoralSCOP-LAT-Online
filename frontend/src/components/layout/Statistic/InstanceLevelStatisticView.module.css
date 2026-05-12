@@ -6,7 +6,7 @@
   padding: 10px 12px;
   flex: 1;
   min-height: 0;
-  max-height: 44vh;
+  max-height: 47vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -230,6 +230,7 @@
   padding: 8px 10px;
   min-height: 0;
   flex: 1;
+  overflow: hidden;
 }
 
 .statClassificationWrap.expanded {
@@ -639,7 +640,10 @@
   border-radius: 4px;
   font-family: Roboto;
   text-align: center;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease;
 }
 
 .statSettingValueInput:focus {
