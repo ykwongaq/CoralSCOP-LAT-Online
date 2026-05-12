@@ -58,6 +58,7 @@ export {
 	getBleachingStatus,
 	type BleachingResult,
 	computeBleachingPercentages,
+	computeBleachedPixelMap,
 	getCombinedBoundingBox,
 	type PixelScaleResult,
 	calculatePixelScale,

@@ -95,46 +95,44 @@ export default function InstanceSettingsModal({
 			</div>
 
 			{/* Color Distance Threshold */}
-			{hasCoralWatch && (
-				<div className={styles.statSettingControl}>
-					<label className={styles.statSettingLabel}>
-						Color Distance Threshold
-					</label>
-					<div className={styles.statSettingInputGroup}>
-						<input
-							type="range"
-							min="0"
-							max="150"
-							value={workingDistanceThreshold}
-							onChange={(e) =>
-								onWorkingThresholdChange(Number(e.target.value))
-							}
-							onMouseUp={() =>
-								onThresholdChange(workingDistanceThreshold)
-							}
-							onTouchEnd={() =>
-								onThresholdChange(workingDistanceThreshold)
-							}
-							className={styles.statSettingSlider}
-						/>
-						<input
-							type="number"
-							min="0"
-							max="150"
-							value={workingDistanceThreshold}
-							onChange={(e) => {
-								const val = Math.max(
-									0,
-									Math.min(150, Number(e.target.value)),
-								);
-								onWorkingThresholdChange(val);
-								onThresholdChange(val);
-							}}
-							className={styles.statSettingValueInput}
-						/>
-					</div>
+			<div className={styles.statSettingControl}>
+				<label className={styles.statSettingLabel}>
+					{hasCoralWatch ? "Color Distance Threshold" : "Bleach Distance Threshold"}
+				</label>
+				<div className={styles.statSettingInputGroup}>
+					<input
+						type="range"
+						min="0"
+						max="255"
+						value={workingDistanceThreshold}
+						onChange={(e) =>
+							onWorkingThresholdChange(Number(e.target.value))
+						}
+						onMouseUp={() =>
+							onThresholdChange(workingDistanceThreshold)
+						}
+						onTouchEnd={() =>
+							onThresholdChange(workingDistanceThreshold)
+						}
+						className={styles.statSettingSlider}
+					/>
+					<input
+						type="number"
+						min="0"
+						max="255"
+						value={workingDistanceThreshold}
+						onChange={(e) => {
+							const val = Math.max(
+								0,
+								Math.min(255, Number(e.target.value)),
+							);
+							onWorkingThresholdChange(val);
+							onThresholdChange(val);
+						}}
+						className={styles.statSettingValueInput}
+					/>
 				</div>
-			)}
+			</div>
 
 			{/* Show Unclassified Toggle */}
 			{hasCoralWatch && (

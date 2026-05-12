@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo, useCallback } from "react";
 import type { Label, Data, Annotation, RLE } from "../../../types";
 import {
 	computeBleachingPercentages,
+	computeBleachedPixelMap,
 	classifyPixelsByColor,
 	type ColorClassificationResult,
 } from "../../../services";
@@ -51,8 +52,9 @@ export default function InstanceLevelStatisticView({
 			annotations: Annotation[],
 			w: number,
 			h: number,
+			threshold: number,
 		) => {
-			return computeBleachingPercentages(imageUrl, annotations, w, h);
+			return computeBleachingPercentages(imageUrl, annotations, w, h, threshold);
 		},
 		[],
 	);
@@ -100,7 +102,7 @@ export default function InstanceLevelStatisticView({
 		});
 
 		const { imageUrl, width, height } = data.imageData;
-		computeBleaching(imageUrl, [selectedAnnotation], width, height).then(
+		computeBleaching(imageUrl, [selectedAnnotation], width, height, distanceThreshold).then(
 			(pcts) => {
 				setStats((prev) => (prev ? { ...prev, bleachingPct: pcts[0] } : null));
 			},
@@ -115,6 +117,35 @@ export default function InstanceLevelStatisticView({
 			).then((results) => {
 				setStats((prev) =>
 					prev ? { ...prev, colorClassification: results } : null,
+				);
+			});
+		} else {
+			computeBleachedPixelMap(
+				imageUrl,
+				selectedAnnotation,
+				width,
+				height,
+				distanceThreshold,
+			).then((pixelMap) => {
+				const bleachedPixels = pixelMap.filter((p) => p === "Bleached").length;
+				const totalPixels = pixelMap.filter((p) => p !== "").length;
+				const bleachedClassification: ColorClassificationResult[] = [
+					{
+						label: "Bleached",
+						pixels: bleachedPixels,
+						pct: totalPixels > 0 ? (bleachedPixels / totalPixels) * 100 : 0,
+						color: { r: 169, g: 169, b: 169 },
+						pixelMap,
+					},
+					{
+						label: "Unbleached",
+						pixels: totalPixels - bleachedPixels,
+						pct: totalPixels > 0 ? ((totalPixels - bleachedPixels) / totalPixels) * 100 : 0,
+						color: { r: 139, g: 79, b: 19 },
+					},
+				];
+				setStats((prev) =>
+					prev ? { ...prev, colorClassification: bleachedClassification } : null,
 				);
 			});
 		}

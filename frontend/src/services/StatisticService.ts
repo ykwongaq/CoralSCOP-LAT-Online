@@ -159,20 +159,30 @@ export function getMaskBoundingBox(
  * Calculates the bleaching percentage of a coral instance.
  * @param pixelData - Image pixel data from canvas
  * @param mask - Binary mask as Uint8Array
+ * @param distanceThreshold - Color distance threshold for classifying bleached pixels (default 50)
  * @returns Bleaching percentage (0-100)
  */
 export function calculateBleaching(
 	pixelData: ImageData,
 	mask: Uint8Array,
+	distanceThreshold: number = 50,
 ): number {
 	const { data } = pixelData;
 	let total = 0;
 	let bleached = 0;
+	const thresholdSq = distanceThreshold * distanceThreshold;
+	const whiteR = 255, whiteG = 255, whiteB = 255;
+
 	for (let i = 0; i < mask.length; i++) {
 		if (mask[i] !== 1) continue;
 		total++;
 		const idx = i * 4;
-		if (data[idx] > 200 && data[idx + 1] > 200 && data[idx + 2] > 200) {
+		const r = data[idx];
+		const g = data[idx + 1];
+		const b = data[idx + 2];
+
+		const dist = colorDistanceSq(r, g, b, whiteR, whiteG, whiteB);
+		if (dist <= thresholdSq) {
 			bleached++;
 		}
 	}
@@ -202,6 +212,7 @@ export interface BleachingResult {
  * @param annotations - Array of annotations to analyze
  * @param width - Image width
  * @param height - Image height
+ * @param distanceThreshold - Color distance threshold for classifying bleached pixels
  * @returns Array of bleaching percentages in the same order as annotations
  */
 export async function computeBleachingPercentages(
@@ -209,6 +220,7 @@ export async function computeBleachingPercentages(
 	annotations: Annotation[],
 	width: number,
 	height: number,
+	distanceThreshold: number = 50,
 ): Promise<number[]> {
 	const img = new Image();
 	await new Promise<void>((res, rej) => {
@@ -224,8 +236,58 @@ export async function computeBleachingPercentages(
 	const pixelData = ctx.getImageData(0, 0, width, height);
 	return annotations.map((ann) => {
 		const mask = decodeRLE(ann.segmentation);
-		return calculateBleaching(pixelData, mask);
+		return calculateBleaching(pixelData, mask, distanceThreshold);
 	});
+}
+
+/**
+ * Computes a pixel-level map showing which pixels are bleached.
+ * @param imageUrl - URL of the image to analyze
+ * @param annotation - The annotation to analyze
+ * @param width - Image width
+ * @param height - Image height
+ * @param distanceThreshold - Color distance threshold for classifying bleached pixels
+ * @returns Array of pixel labels ("Bleached" or "Unbleached") in image order
+ */
+export async function computeBleachedPixelMap(
+	imageUrl: string,
+	annotation: Annotation,
+	width: number,
+	height: number,
+	distanceThreshold: number = 50,
+): Promise<string[]> {
+	const img = new Image();
+	await new Promise<void>((res, rej) => {
+		img.onload = () => res();
+		img.onerror = () => rej();
+		img.src = imageUrl;
+	});
+
+	const offscreen = document.createElement("canvas");
+	offscreen.width = width;
+	offscreen.height = height;
+	const ctx = offscreen.getContext("2d")!;
+	ctx.drawImage(img, 0, 0, width, height);
+	const pixelData = ctx.getImageData(0, 0, width, height);
+
+	const mask = decodeRLE(annotation.segmentation);
+	const { data } = pixelData;
+	const thresholdSq = distanceThreshold * distanceThreshold;
+	const whiteR = 255, whiteG = 255, whiteB = 255;
+
+	const pixelMap = new Array(mask.length).fill("");
+	for (let i = 0; i < mask.length; i++) {
+		if (mask[i] !== 1) continue;
+		const idx = i * 4;
+		const r = data[idx];
+		const g = data[idx + 1];
+		const b = data[idx + 2];
+
+		const dist = colorDistanceSq(r, g, b, whiteR, whiteG, whiteB);
+		pixelMap[i] = dist <= thresholdSq ? "Bleached" : "Unbleached";
+	}
+
+	return pixelMap;
 }
 
 /**
