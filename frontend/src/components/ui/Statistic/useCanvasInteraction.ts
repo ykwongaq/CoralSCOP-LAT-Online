@@ -53,8 +53,8 @@ export function useCanvasInteraction(
 			const { scale, offsetX, offsetY } = viewportRef.current;
 			viewportRef.current = {
 				scale,
-				offsetX: offsetX - dx / scale,
-				offsetY: offsetY - dy / scale,
+				offsetX: offsetX + dx / scale,
+				offsetY: offsetY + dy / scale,
 			};
 
 			lastMousePosRef.current = { x: e.clientX, y: e.clientY };

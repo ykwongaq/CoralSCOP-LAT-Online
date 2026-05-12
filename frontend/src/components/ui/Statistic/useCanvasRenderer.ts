@@ -54,8 +54,6 @@ export function useCanvasRenderer(
 		const bbox = boundingBoxRef.current;
 		if (!bbox) return;
 
-		const { scale, offsetX, offsetY } = viewportRef.current;
-
 		if (!offscreenCanvasRef.current) {
 			offscreenCanvasRef.current = document.createElement("canvas");
 			offscreenCtxRef.current = offscreenCanvasRef.current.getContext(
@@ -150,13 +148,14 @@ export function useCanvasRenderer(
 		const bboxWidth = bbox.maxX - bbox.minX + 1;
 		const bboxHeight = bbox.maxY - bbox.minY + 1;
 
-		ctx.save();
-		ctx.translate(canvas.width / 2, canvas.height / 2);
-		ctx.scale(scale, scale);
-		ctx.translate(-offsetX, -offsetY);
+		const baseScale = Math.min(canvas.width / bboxWidth, canvas.height / bboxHeight) * 0.9;
+		const { scale, offsetX, offsetY } = viewportRef.current;
+		const finalScale = baseScale * scale;
+		const scaledWidth = bboxWidth * finalScale;
+		const scaledHeight = bboxHeight * finalScale;
 
-		const centerX = canvas.width / scale / 2 - bboxWidth / 2;
-		const centerY = canvas.height / scale / 2 - bboxHeight / 2;
+		const x = (canvas.width - scaledWidth) / 2 + offsetX;
+		const y = (canvas.height - scaledHeight) / 2 + offsetY;
 
 		ctx.drawImage(
 			offscreenCanvas,
@@ -164,13 +163,11 @@ export function useCanvasRenderer(
 			bbox.minY,
 			bboxWidth,
 			bboxHeight,
-			centerX,
-			centerY,
-			bboxWidth,
-			bboxHeight,
+			x,
+			y,
+			scaledWidth,
+			scaledHeight,
 		);
-
-		ctx.restore();
 	}, [imageWidth, imageHeight]);
 
 	const requestDraw = useCallback(() => {
@@ -191,19 +188,12 @@ export function useCanvasRenderer(
 			canvas.height = height;
 		}
 
-		const bbox = boundingBoxRef.current;
-		if (!bbox) return;
-
-		const bboxWidth = bbox.maxX - bbox.minX + 1;
-		const bboxHeight = bbox.maxY - bbox.minY + 1;
-
-		const scale = Math.min(width / bboxWidth, height / bboxHeight) * 0.95;
-
 		viewportRef.current = {
-			scale,
-			offsetX: bbox.minX + bboxWidth / 2,
-			offsetY: bbox.minY + bboxHeight / 2,
+			scale: 1,
+			offsetX: 0,
+			offsetY: 0,
 		};
+
 		draw();
 	}, [draw]);
 
