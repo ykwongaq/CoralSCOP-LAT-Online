@@ -69,7 +69,7 @@ export default function CroppedCanvas({
 		colorClassification,
 	);
 
-	const { handleMouseDown, handleMouseMove, handleMouseUp, handleMouseLeave, handleWheel } =
+	const { handleMouseDown, handleMouseMove, handleMouseUp, handleMouseLeave } =
 		useCanvasInteraction(canvasRef, viewportRef, requestDraw);
 
 	if (!showColorBoxes) {
@@ -82,7 +82,6 @@ export default function CroppedCanvas({
 					onMouseMove={handleMouseMove}
 					onMouseUp={handleMouseUp}
 					onMouseLeave={handleMouseLeave}
-					onWheel={handleWheel}
 					onContextMenu={(e) => e.preventDefault()}
 				/>
 			</div>
@@ -123,7 +122,6 @@ export default function CroppedCanvas({
 					onMouseMove={handleMouseMove}
 					onMouseUp={handleMouseUp}
 					onMouseLeave={handleMouseLeave}
-					onWheel={handleWheel}
 					onContextMenu={(e) => e.preventDefault()}
 				/>
 			</div>
